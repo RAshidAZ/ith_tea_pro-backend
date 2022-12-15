@@ -14,7 +14,10 @@ let port = process.env.SERVICE_REST_PORT || '9000';
 
 app.listen(port, onlistening);
 
-function onlistening() {
-
+function onlistening(err, res) {
+  if (err) {
+    console.log(err);
+    return
+  }
   console.log("Tea Pro app listening at", port)
 }
