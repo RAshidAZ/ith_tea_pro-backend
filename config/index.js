@@ -4,7 +4,7 @@ const env = process.env.NODE_ENV || 'development';
 // Common Environment Variables
 const commonVariables = {
 
-
+    STATUS: [200, 400, 401, 500],
 }
 
 //setting the common variables
