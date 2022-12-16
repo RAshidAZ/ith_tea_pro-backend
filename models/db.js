@@ -1,7 +1,7 @@
 /**
  * Database config and initialization
  */
-
+require('../config')
 const mongoose = require('mongoose');
 
 const opt = {
@@ -13,8 +13,7 @@ const opt = {
 };
 mongoose.set('debug', true);
 
-// const connstring = process.env.mongoConnectionString;
-const connstring = 'mongodb://localhost/tea-pro';
+const connstring = process.env.mongoConnectionString;
 
 console.log("connstring:", connstring);
 

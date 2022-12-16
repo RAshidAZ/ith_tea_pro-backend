@@ -5,6 +5,7 @@ if (!process.env.NODE_ENV) {
 
 // Required Files to make default Connections
 require('./config');
+require('./models/db')
 
 
 const express = require('express');

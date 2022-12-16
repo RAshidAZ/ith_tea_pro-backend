@@ -6,10 +6,6 @@ let commentSchema = new Schema({
         type: mongoose.Types.ObjectId,
         ref: "users"
     },
-    taskId: {
-        type: mongoose.Types.ObjectId,
-        ref: "tasks"
-    },
     isDeleted: {
         type: Boolean,
         default: false
@@ -29,10 +25,6 @@ let commentSchema = new Schema({
             ref: "users"
         }
     ],
-    ratingId: {
-        type: mongoose.Types.ObjectId,
-        ref: "ratings"
-    },
     comment: String
 
 });
