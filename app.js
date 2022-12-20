@@ -37,11 +37,13 @@ const comment = require('./routes/comment')
 const rating = require('./routes/rating')
 const task = require('./routes/task')
 const user = require('./routes/user')
+const project = require('./routes/project')
 
 app.use('/rating', rating)
 app.use('/comment', comment)
 app.use('/task', task)
 app.use('/user', user)
+app.use('/projects', project)
 
 
 
