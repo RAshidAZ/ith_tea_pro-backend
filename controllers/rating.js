@@ -1,7 +1,9 @@
 
 const { sendResponse } = require('../helpers/sendResponse')
-const { Rating } = require('../query');
-const { createPayloadAndInsertComment } = require('./comment');
+const queryController = require('../query')
+const { Rating } = queryController;
+
+const commentController = require('./comment');
 
 const getUserRating = async (req, res, next) => {
     let data = req.data;
@@ -46,7 +48,7 @@ const insertUserRating = async (req, res, next) => {
     }
 
     if (data.comment) {
-        let commentRes = await createPayloadAndInsertComment(data)
+        let commentRes = await commentController.createPayloadAndInsertComment(data)
         console.log('commentRes : ', commentRes)
         if (commentRes.error || !commentRes.data) {
             return res.status(500).send(sendResponse(500, '', 'insertUserRating', null, req.data.signature))
@@ -103,3 +105,20 @@ const findUserRatingGivenDate = async function (data) {
         return { data: error, error: true }
     }
 }
+
+const addCommnetIdInRatingById = async function (data) {
+    try {
+        let payload = {
+            _id: data.ratingId,
+        }
+        let updatePayload = {
+            $push: { comments: data.commentId }
+        }
+        let insertRes = await Rating.addCommnetIdInRatingById(payload, updatePayload)
+        return { data: insertRes, error: false }
+    } catch (error) {
+        console.log("addCommnetIdInRatingById Error : ", error)
+        return { data: error, error: true }
+    }
+}
+exports.addCommnetIdInRatingById = addCommnetIdInRatingById;

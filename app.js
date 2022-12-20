@@ -33,10 +33,11 @@ app.set('trust proxy', true);
 const formatRequest = require('./helpers/formatRequest');
 app.use(formatRequest)
 
+const comment = require('./routes/comment')
 const rating = require('./routes/rating')
 
-
 app.use('/rating', rating)
+app.use('/comment', comment)
 
 
 
