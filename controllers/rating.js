@@ -65,6 +65,22 @@ const insertUserRating = async (req, res, next) => {
 }
 exports.insertUserRating = insertUserRating
 
+const getMonthAllUserRating = async (req, res, next) => {
+    let data = req.data;
+    console.log('getMonthAllUserRating data : ', req.data);
+
+    if (!data.month || !data.year) {
+        return res.status(400).send(sendResponse(400, "Params Missing", 'getMonthAllUserRating', null, req.data.signature))
+    }
+
+    let ratingRes = await getAllUsersRatingForMonth(data)
+    if (ratingRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getMonthAllUserRating', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, 'Ratings Fetched', 'getMonthAllUserRating', ratingRes.data, req.data.signature))
+}
+exports.getMonthAllUserRating = getMonthAllUserRating
+
 
 
 const createPayloadAndInsertRating = async function (data) {
@@ -122,3 +138,45 @@ const addCommnetIdInRatingById = async function (data) {
     }
 }
 exports.addCommnetIdInRatingById = addCommnetIdInRatingById;
+
+const getAllUsersRatingForMonth = async function (data) {
+    try {
+        let payload = [
+            {
+                $match: { "month": parseInt(data.month), "year": parseInt(data.year) }
+            },
+            {
+                $lookup: {
+                    from: "comments",
+                    localField: "comments",
+                    foreignField: "_id",
+                    as: "comments"
+                }
+            },
+            {
+                $group: {
+                    _id: "$userId",
+                    ratingsAndComment: { $addToSet: { rating: "$rating", date: "$date", month: "$month", year: "$year", comments: "$comments" } }
+                }
+            },
+            {
+                $project: {
+                    "ratingsAndComment.rating": 1,
+                    "ratingsAndComment.date": 1,
+                    "ratingsAndComment.month": 1,
+                    "ratingsAndComment.year": 1,
+                    "ratingsAndComment.comments.comment": 1,
+                    "ratingsAndComment.comments._id": 1,
+                    "ratingsAndComment.comments.commentedBy": 1,
+                }
+            },
+        ]
+        let ratingRes = await Rating.getAllUsersRatingForMonth(payload)
+        return { data: ratingRes, error: false }
+    } catch (error) {
+        console.log("getAllUsersRatingForMonth Error : ", error)
+        return { data: error, error: true }
+    }
+}
+exports.getAllUsersRatingForMonth = getAllUsersRatingForMonth;
+

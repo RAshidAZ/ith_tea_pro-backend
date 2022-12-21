@@ -3,11 +3,12 @@ const env = process.env.NODE_ENV || 'development';
 
 // Common Environment Variables
 const commonVariables = {
-
+    SERVICE_REST_PORT: 9000,
     STATUS: [200, 500, 400, 401],
     ROLE: ["USER", "SUPER_ADMIN", "ADMIN", "LEAD"],
     TASK_STATUS: ["NO_PROGRESS", "ONGOING", "COMPLETED", "ONHOLD"],
-    TASK_PRIORITY: ["LOW", "REPEATED", "MEDIUM", "HIGH"]
+    TASK_PRIORITY: ["LOW", "REPEATED", "MEDIUM", "HIGH"],
+
 }
 
 //setting the common variables

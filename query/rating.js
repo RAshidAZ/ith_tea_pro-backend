@@ -14,3 +14,7 @@ exports.addCommnetIdInRatingById = async function (payload, updatePayload) {
     console.log("addCommnetIdInRatingById------------------------", payload, updatePayload)
     return Rating.findOneAndUpdate(payload, updatePayload)
 }
+exports.getAllUsersRatingForMonth = async function (payload) {
+    console.log("getAllUsersRatingForMonth------------------------", payload)
+    return Rating.aggregate(payload)
+}
