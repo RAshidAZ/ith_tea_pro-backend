@@ -10,6 +10,8 @@ let projectsSchema = new Schema({
         type: Boolean,
         default: true
     },
+    image: String,
+    description: String,
     categories: [{
         type: String
     }],
