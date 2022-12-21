@@ -104,3 +104,73 @@ const createPayloadAndAddProject = async function (data) {
 }
 exports.createPayloadAndAddProject = createPayloadAndAddProject
 
+
+const editProject = async (req, res, next) => {
+    let data = req.data;
+    if (!data.projectId || !data.name || !data.categories || !data.description) {
+        return res.status(400).send(sendResponse(400, "", 'editProject', null, req.data.signature))
+    }
+
+    let projectRes = await createPayloadAndEditProject(data)
+    console.log('projectRes : ', projectRes)
+    if (projectRes.error || !projectRes.data) {
+        return res.status(500).send(sendResponse(500, '', 'editProject', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, "Project's Edited Successfully", 'editProject', null, req.data.signature))
+}
+exports.editProject = editProject
+
+
+const createPayloadAndEditProject = async function (data) {
+    try {
+        let payload = {
+            _id: data.projectId
+        }
+        let updatePayload = {
+            name: data.name,
+            categories: data.categories,
+            description: data.description,
+        }
+        let projectRes = await Project.editProjectDetails(payload, updatePayload)
+        return { data: projectRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndEditProject Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.createPayloadAndEditProject = createPayloadAndEditProject;
+
+
+const assignUserToProject = async (req, res, next) => {
+    let data = req.data;
+    if (!data.projectId || !data.userIds) {
+        return res.status(400).send(sendResponse(400, "", 'assignUserToProject', null, req.data.signature))
+    }
+
+    let projectRes = await createPayloadAndAssignProjectToUser(data)
+    console.log('projectRes : ', projectRes)
+    if (projectRes.error || !projectRes.data) {
+        return res.status(500).send(sendResponse(500, '', 'assignUserToProject', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, "Project's Edited Successfully", 'assignUserToProject', null, req.data.signature))
+}
+exports.assignUserToProject = assignUserToProject
+
+
+const createPayloadAndAssignProjectToUser = async function (data) {
+    try {
+        let payload = {
+            _id: data.projectId
+        }
+        let updatePayload = {
+            $addToSet: { accessibleBy: { $each: data.userIds } }
+        }
+        let projectRes = await Project.assignProjectToMultipleUsers(payload, updatePayload)
+        return { data: projectRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndEditProject Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.createPayloadAndEditProject = createPayloadAndEditProject
+

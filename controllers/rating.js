@@ -128,7 +128,7 @@ const addCommnetIdInRatingById = async function (data) {
             _id: data.ratingId,
         }
         let updatePayload = {
-            $push: { comments: data.commentId }
+            $addToSet: { comments: data.commentId }
         }
         let insertRes = await Rating.addCommnetIdInRatingById(payload, updatePayload)
         return { data: insertRes, error: false }
