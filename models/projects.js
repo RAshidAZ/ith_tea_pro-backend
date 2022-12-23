@@ -23,6 +23,8 @@ let projectsSchema = new Schema({
         type: mongoose.Types.ObjectId,
         ref: "users"
     }]
+}, {
+    timestamps: true
 });
 
 let projects = mongoose.model("projects", projectsSchema);

@@ -11,6 +11,10 @@ let userSchema = new Schema(
             type: String,
             default: "email",
         },
+        department: String,
+        wings: { type: String },
+        designation: String,
+        employeeId: String,
         role: {
             type: String,
             enum: {
@@ -19,8 +23,8 @@ let userSchema = new Schema(
             },
             default: "USER",
         },
-        githubLink : String,
-        linkedInLink : String,
+        githubLink: String,
+        linkedInLink: String,
     },
     { timestamps: true }
 );

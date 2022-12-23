@@ -1,6 +1,10 @@
 const Projects = require('../models/projects')
 
 
+exports.findInProjects = async function (payload, projection) {
+    console.log("------------------------", payload)
+    return Projects.find(payload, projection)
+}
 exports.getAllProjects = async function (payload, projection) {
     console.log("------------------------", payload)
     return Projects.find(payload, projection).populate('accessibleBy')

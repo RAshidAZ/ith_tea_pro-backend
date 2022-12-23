@@ -131,6 +131,7 @@ const addCommnetIdInRatingById = async function (data) {
             $addToSet: { comments: data.commentId }
         }
         let insertRes = await Rating.addCommnetIdInRatingById(payload, updatePayload)
+        console.log("insertRes---------------------------", insertRes)
         return { data: insertRes, error: false }
     } catch (error) {
         console.log("addCommnetIdInRatingById Error : ", error)
@@ -154,20 +155,32 @@ const getAllUsersRatingForMonth = async function (data) {
                 }
             },
             {
+                $lookup: {
+                    from: "users",
+                    localField: "comments.commentedBy",
+
+                    foreignField: "_id",
+                    as: "commentedByArray"
+                }
+            },
+            {
                 $group: {
                     _id: "$userId",
-                    ratingsAndComment: { $addToSet: { rating: "$rating", date: "$date", month: "$month", year: "$year", comments: "$comments" } }
+                    ratingsAndComment: { $addToSet: { ratingId: "$_id", rating: "$rating", date: "$date", month: "$month", year: "$year", comments: "$comments", commentedByArray: "$commentedByArray" } }
                 }
             },
             {
                 $project: {
                     "ratingsAndComment.rating": 1,
+                    "ratingsAndComment.ratingId": 1,
                     "ratingsAndComment.date": 1,
                     "ratingsAndComment.month": 1,
                     "ratingsAndComment.year": 1,
                     "ratingsAndComment.comments.comment": 1,
                     "ratingsAndComment.comments._id": 1,
-                    "ratingsAndComment.comments.commentedBy": 1,
+                    "ratingsAndComment.comments.createdAt": 1,
+                    // "ratingsAndComment.comments.commentedBy": 1,
+                    "ratingsAndComment.commentedByArray.name": 1
                 }
             },
         ]
