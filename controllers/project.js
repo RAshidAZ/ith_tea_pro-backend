@@ -13,7 +13,7 @@ const getAllProjects = async (req, res, next) => {
     if (projectRes.error || !projectRes.data) {
         return res.status(500).send(sendResponse(500, '', 'getAllProjects', null, req.data.signature))
     }
-    return res.status(200).send(sendResponse(200, 'Comment Inserted', 'getAllProjects', projectRes.data, req.data.signature))
+    return res.status(200).send(sendResponse(200, 'Projects Fetched', 'getAllProjects', projectRes.data, req.data.signature))
 }
 exports.getAllProjects = getAllProjects
 
@@ -24,7 +24,7 @@ const createPayloadAndgetAllProjects = async function (data) {
         }
         let projection = {
             managedBy: 0,
-            accessibleBy: 0,
+            // accessibleBy: 0,
         }
         let projectRes = await Project.getAllProjects(payload, projection)
         return { data: projectRes, error: false }
@@ -152,7 +152,7 @@ const assignUserToProject = async (req, res, next) => {
     if (projectRes.error || !projectRes.data) {
         return res.status(500).send(sendResponse(500, '', 'assignUserToProject', null, req.data.signature))
     }
-    return res.status(200).send(sendResponse(200, "Project's Edited Successfully", 'assignUserToProject', null, req.data.signature))
+    return res.status(200).send(sendResponse(200, "Project's  User Assigned Successfully", 'assignUserToProject', null, req.data.signature))
 }
 exports.assignUserToProject = assignUserToProject
 
