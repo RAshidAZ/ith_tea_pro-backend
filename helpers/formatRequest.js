@@ -2,7 +2,6 @@ const randomstring = require("randomstring");
 
 
 module.exports = function (req, res, next) {
-
     let reqData = { ...req.params, ...req.query, ...req.body };
     req.data = reqData;
     req.data.signature = generateSignature();
