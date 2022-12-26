@@ -24,7 +24,7 @@ exports.editProjectDetails = async function (payload, updatePayload) {
     console.log("editProjectDetails------------------------", payload)
     return Projects.findOneAndUpdate(payload, updatePayload)
 }
-exports.assignProjectToMultipleUsers = async function (payload, updatePayload) {
+exports.projectFindOneAndUpdate = async function (payload, updatePayload) {
     console.log("assignProjectToMultipleUsers------------------------", payload, updatePayload)
     return Projects.findOneAndUpdate(payload, updatePayload)
 }

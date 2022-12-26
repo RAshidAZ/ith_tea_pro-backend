@@ -3,14 +3,25 @@ const queryController = require('../query')
 const { Comments } = queryController;
 
 const ratingController = require('./rating')
-const { addCommnetIdInRatingById } = ratingController;
+const { addCommnetIdInRatingById,createPayloadAndGetComments } = ratingController;
 
-// const getUserRatingComment = async (req, res, next) => {
-//     let data = req.data;
-//     console.log('insertUserRatingComment data : ', req.data);
+const getCommentsOnRating = async (req, res, next) => {
+    let data = req.data;
+    console.log('getCommentsOnRating data : ', req.data);
+    if (!data.ratingId) {
+        return res.status(400).send(sendResponse(400, "", 'getCommentsOnRating', null, req.data.signature))
+    }
+    let commentRes = await createPayloadAndGetComments(data)
+    console.log('commentRes : ', commentRes)
+    if (commentRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getCommentsOnRating', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, 'Comments Fetched', 'insertUserRatingComment', commentRes.data, req.data.signature))
 
-// }
-// exports.getUserRatingComment = getUserRatingComment;
+
+}
+exports.getCommentsOnRating = getCommentsOnRating;
+
 
 
 const insertUserRatingComment = async (req, res, next) => {

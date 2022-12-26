@@ -6,9 +6,13 @@ exports.insertUserRating = async function (payload) {
     console.log("------------------------", payload)
     return Rating.create(payload)
 }
-exports.findUserRatingGivenDate = async function (payload, projections) {
+exports.applyAggregateOnRating = async function (payload) {
     console.log("findUserRatingGivenDate------------------------", payload)
-    return Rating.findOne(payload, projections)
+    return Rating.aggregate(payload)
+}
+exports.findCommentsForRatingId = async function (payload, projections) {
+    console.log("findCommentsForRatingId------------------------", payload)
+    return Rating.findOne(payload, projections).populate('comments comments.commentedBy')
 }
 exports.addCommnetIdInRatingById = async function (payload, updatePayload) {
     console.log("addCommnetIdInRatingById------------------------", payload, updatePayload)
@@ -17,4 +21,8 @@ exports.addCommnetIdInRatingById = async function (payload, updatePayload) {
 exports.getAllUsersRatingForMonth = async function (payload) {
     console.log("getAllUsersRatingForMonth------------------------", payload)
     return Rating.aggregate(payload)
+}
+exports.ratingFindOneAndUpdate = async function (payload, updatePayload) {
+    console.log("ratingFindOneAndUpdate------------------------", payload, updatePayload)
+    return Rating.findOneAndUpdate(payload, updatePayload)
 }
