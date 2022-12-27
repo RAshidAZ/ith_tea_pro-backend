@@ -52,7 +52,7 @@ const editUserTask = async (req, res, next) => {
     let data = req.data;
     console.log('editUserTask data : ', req.data);
 
-    if (!data.title || !data.category || !data.projectId || !data.createdById || !data.assignedToId || !data.taskId) {
+    if (!data.taskId) {
         return res.status(400).send(sendResponse(400, "", 'editUserTask', null, req.data.signature))
     }
     //TODO: Change after auth is updated
@@ -75,18 +75,20 @@ const createPayloadAndEditTask = async function (data) {
             _id: data.taskId
         }
         let updatePayload = {
-            title: data.title,
-            description: data.description,
-            status: data.status,
-            category: data.category,
-            projectId: data.projectId,
-            createdBy: data.createdById,
-            assignedTo: data.assignedToId,
-            dueDate: data.dueDate,
-            completedDate: data.completedDate,
-            priority: data.priority
+            $set: {
+                title: data.title,
+                description: data.description,
+                status: data.status,
+                category: data.category,
+                projectId: data.projectId,
+                createdBy: data.createdById,
+                assignedTo: data.assignedToId,
+                dueDate: data.dueDate,
+                completedDate: data.completedDate,
+                priority: data.priority
+            }
         }
-        let taskRes = await Task.updateUserTask(findPayload, updatePayload)
+        let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload)
         return { data: taskRes, error: false }
     } catch (err) {
         console.log("createPayloadAndEditTask Error : ", err)
@@ -191,11 +193,19 @@ const createPayloadAndGetTask = async function (data) {
             _id: data.taskId
         }
         let projection = {
-
+            // "comments.comment" : 1
         }
-        let populate = "comments createdBy projectId"
+        let populate = [
+            { path: 'comments', model: 'comments', select: 'comment _id createdAt commentedBy' },
+            { path: 'createdBy', model: 'users', select: 'name' },
+            { path: 'assignedTo', model: 'users', select: 'name' }
+        ]
         let taskRes = await Task.taskFindOneQuery(findData, projection, populate)
-        return { data: taskRes, error: false }
+        let commentPopulate = {
+            path: 'comments.commentedBy', model: 'users', select: 'name _id'
+        }
+        let populatedRes = await Task.taskPopulate(taskRes, commentPopulate)
+        return { data: populatedRes, error: false }
     } catch (err) {
         console.log("createPayloadAndGetTask Error : ", err)
         return { data: err, error: true }
@@ -203,3 +213,21 @@ const createPayloadAndGetTask = async function (data) {
 }
 exports.createPayloadAndGetTask = createPayloadAndGetTask
 
+
+const addCommentIdInTaskById = async function (data) {
+    try {
+        let payload = {
+            _id: data.taskId,
+        }
+        let updatePayload = {
+            $addToSet: { comments: data.commentId }
+        }
+        let insertRes = await Task.findOneAndUpdate(payload, updatePayload)
+        console.log("insertRes---------------------------", insertRes)
+        return { data: insertRes, error: false }
+    } catch (error) {
+        console.log("addCommentIdInTaskById Error : ", error)
+        return { data: error, error: true }
+    }
+}
+exports.addCommentIdInTaskById = addCommentIdInTaskById;

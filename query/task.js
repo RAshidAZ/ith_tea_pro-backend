@@ -4,7 +4,7 @@ exports.insertUserTask = function (payload) {
     return Tasks.create(payload)
 }
 
-exports.updateUserTask = function (findPayload, updatePayload) {
+exports.findOneAndUpdate = function (findPayload, updatePayload) {
     return Tasks.findOneAndUpdate(findPayload, updatePayload)
 }
 exports.taskAggregate = function (aggregate) {
