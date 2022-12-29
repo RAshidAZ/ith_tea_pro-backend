@@ -146,7 +146,7 @@ const findUserRatingGivenDate = async function (data) {
             _id: 0,
             rating: 1
         }
-        let insertRes = await Rating.findUserRatingGivenDate(payload, projections)
+        let insertRes = await Rating.ratingFindOne(payload, projections)
         return { data: insertRes, error: false }
     } catch (error) {
         console.log("findUserRatingGivenDate Error : ", error)

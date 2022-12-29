@@ -6,8 +6,12 @@ exports.insertUserRating = async function (payload) {
     console.log("------------------------", payload)
     return Rating.create(payload)
 }
+exports.ratingFindOne = async function (payload, projection) {
+    console.log("applyAggregateOnRating------------------------", payload)
+    return Rating.findOne(payload, projection)
+}
 exports.applyAggregateOnRating = async function (payload) {
-    console.log("findUserRatingGivenDate------------------------", payload)
+    console.log("applyAggregateOnRating------------------------", payload)
     return Rating.aggregate(payload)
 }
 exports.findCommentsForRatingId = async function (payload, projections) {

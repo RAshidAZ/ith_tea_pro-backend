@@ -10,9 +10,10 @@ const insertUserTask = async (req, res, next) => {
     let data = req.data;
     console.log('insertUserTask data : ', req.data);
 
-    if (!data.title || !data.category || !data.projectId || !data.createdById) {
+    if (!data.title || !data.category || !data.projectId) {
         return res.status(400).send(sendResponse(400, "", 'insertUserTask', null, req.data.signature))
     }
+
 
     let taskRes = await createPayloadAndInsertTask(data)
     console.log('taskRes : ', taskRes)
@@ -20,7 +21,7 @@ const insertUserTask = async (req, res, next) => {
         return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
     }
 
-    return res.status(200).send(sendResponse(200, 'Task Inserted', 'insertUserTask', null, req.data.signature))
+    return res.status(200).send(sendResponse(200, 'Task Inserted', 'insertUserTask', taskRes.data, req.data.signature))
 }
 exports.insertUserTask = insertUserTask
 
@@ -33,8 +34,9 @@ const createPayloadAndInsertTask = async function (data) {
             status: data.status,
             category: data.category,
             projectId: data.projectId,
-            createdBy: data.createdById,
-            assignedTo: data.assignedToId,
+            // createdBy: data?.auth?.req?.id , //TODO: Change after auth is updated
+            createdBy: '601e3c6ef5eb242d4408dcc8',
+            assignedTo: data.assignedTo,
             dueDate: data.dueDate,
             completedDate: data.completedDate,
             priority: data.priority
@@ -81,8 +83,8 @@ const createPayloadAndEditTask = async function (data) {
                 status: data.status,
                 category: data.category,
                 projectId: data.projectId,
-                createdBy: data.createdById,
-                assignedTo: data.assignedToId,
+                createdBy: data.createdBy,
+                assignedTo: data.assignedTo,
                 dueDate: data.dueDate,
                 completedDate: data.completedDate,
                 priority: data.priority
@@ -133,7 +135,8 @@ const createPayloadAndGetGroupByTask = async function (data) {
                     _id: `$${data.groupBy}`,
                     tasks: { $push: "$$ROOT" }
                 }
-            }
+            },
+            { $sort: { _id: 1 } }
         ]
         let taskRes = await Task.taskAggregate(aggregate)
         console.log(taskRes)
@@ -198,7 +201,8 @@ const createPayloadAndGetTask = async function (data) {
         let populate = [
             { path: 'comments', model: 'comments', select: 'comment _id createdAt commentedBy' },
             { path: 'createdBy', model: 'users', select: 'name' },
-            { path: 'assignedTo', model: 'users', select: 'name' }
+            { path: 'assignedTo', model: 'users', select: 'name' },
+            { path: 'projectId', model: 'projects', select: 'name _id' }
         ]
         let taskRes = await Task.taskFindOneQuery(findData, projection, populate)
         let commentPopulate = {
