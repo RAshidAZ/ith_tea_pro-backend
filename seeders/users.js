@@ -19,6 +19,9 @@ let insertUser = [
         salt: salt,
         emailVerified: true,
         isActive: true,
+        "department": "TECH",
+        "designation": "Software Engineer",
+        "wings": "Backend"
     },
     {
         _id: "601e3c6ef5eb242d4408dcc6",
@@ -34,6 +37,9 @@ let insertUser = [
         salt: salt,
         emailVerified: true,
         isActive: true,
+        "department": "TECH",
+        "designation": "Software Engineer",
+        "wings": "Backend"
     },
     {
         _id: "601e3c6ef5eb242d4408dcc7",
@@ -49,6 +55,9 @@ let insertUser = [
         salt: salt,
         emailVerified: true,
         isActive: true,
+        "department": "TECH",
+        "designation": "Software Engineer",
+        "wings": "Backend"
     },
     {
         _id: "601e3c6ef5eb242d4408dcc8",
@@ -64,6 +73,9 @@ let insertUser = [
         salt: salt,
         emailVerified: true,
         isActive: true,
+        "department": "TECH",
+        "designation": "Software Engineer",
+        "wings": "Backend"
     },
 ];
 
@@ -147,7 +159,7 @@ let insertCreds = [
     },
 ];
 
-let seedCredential= () => {
+let seedCredential = () => {
     Credential.find({}, (err, resp) => {
         if (resp.length > 0) {
             return;

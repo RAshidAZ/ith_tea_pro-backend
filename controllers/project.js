@@ -69,6 +69,39 @@ const createPayloadAndGetProjectsAllUser = async function (data) {
 }
 exports.createPayloadAndGetProjectsAllUser = createPayloadAndGetProjectsAllUser;
 
+const getUserAssignedProjects = async (req, res, next) => {
+    let data = req.data;
+    if (!data.userId) {
+        return res.status(400).send(sendResponse(400, "", 'getUserAssignedProjects', null, req.data.signature))
+    }
+
+    let projectRes = await createPayloadAndGetUserAssignedProjects(data)
+    console.log('projectRes : ', projectRes)
+    if (projectRes.error || !projectRes.data) {
+        return res.status(500).send(sendResponse(500, '', 'getUserAssignedProjects', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, "User Project Fetched", 'getUserAssignedProjects', projectRes.data, req.data.signature))
+}
+exports.getUserAssignedProjects = getUserAssignedProjects
+
+
+const createPayloadAndGetUserAssignedProjects = async function (data) {
+    try {
+        let payload = {
+            accessibleBy: data.userId,
+        }
+        let projection = {
+            _id: 1
+        }
+        let projectRes = await Project.findInProjects(payload, projection)
+        return { data: projectRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndGetUserAssignedProjects Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.createPayloadAndGetUserAssignedProjects = createPayloadAndGetUserAssignedProjects;
+
 const addNewProject = async (req, res, next) => {
     let data = req.data;
     if (!data.name || !data.categories || !data.managedBy || !data.description) {
@@ -165,12 +198,45 @@ const createPayloadAndAssignProjectToUser = async function (data) {
         let updatePayload = {
             $addToSet: { accessibleBy: { $each: data.userIds } }
         }
-        let projectRes = await Project.assignProjectToMultipleUsers(payload, updatePayload)
+        let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
         return { data: projectRes, error: false }
     } catch (err) {
         console.log("createPayloadAndEditProject Error : ", err)
         return { data: err, error: true }
     }
 }
-exports.createPayloadAndEditProject = createPayloadAndEditProject
+exports.createPayloadAndAssignProjectToUser = createPayloadAndAssignProjectToUser
+
+const removeUserFromProject = async (req, res, next) => {
+    let data = req.data;
+    if (!data.projectId || !data.userId) {
+        return res.status(400).send(sendResponse(400, "", 'removeUserFromProject', null, req.data.signature))
+    }
+
+    let projectRes = await createPayloadAndUnAssignUser(data)
+    console.log('projectRes : ', projectRes)
+    if (projectRes.error || !projectRes.data) {
+        return res.status(500).send(sendResponse(500, '', 'removeUserFromProject', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, "Project's  User Removed Successfully", 'removeUserFromProject', null, req.data.signature))
+}
+exports.removeUserFromProject = removeUserFromProject
+
+
+const createPayloadAndUnAssignUser = async function (data) {
+    try {
+        let payload = {
+            _id: data.projectId
+        }
+        let updatePayload = {
+            $pull: { accessibleBy: data.userId }
+        }
+        let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
+        return { data: projectRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndUnAssignUser Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.createPayloadAndUnAssignUser = createPayloadAndUnAssignUser
 

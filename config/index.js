@@ -8,7 +8,7 @@ const commonVariables = {
     ROLE: ["USER", "SUPER_ADMIN", "ADMIN", "LEAD"],
     TASK_STATUS: ["NO_PROGRESS", "ONGOING", "COMPLETED", "ONHOLD"],
     TASK_PRIORITY: ["LOW", "REPEATED", "MEDIUM", "HIGH"],
-
+    ALLOWED_GROUP_BY: ['category', 'status', "projectId", "createdBy", "assignedTo"]
 }
 
 //setting the common variables

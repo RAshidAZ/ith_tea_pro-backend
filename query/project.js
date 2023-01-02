@@ -1,6 +1,10 @@
 const Projects = require('../models/projects')
 
 
+exports.findInProjects = async function (payload, projection) {
+    console.log("------------------------", payload)
+    return Projects.find(payload, projection)
+}
 exports.getAllProjects = async function (payload, projection) {
     console.log("------------------------", payload)
     return Projects.find(payload, projection).populate('accessibleBy')
@@ -20,7 +24,7 @@ exports.editProjectDetails = async function (payload, updatePayload) {
     console.log("editProjectDetails------------------------", payload)
     return Projects.findOneAndUpdate(payload, updatePayload)
 }
-exports.assignProjectToMultipleUsers = async function (payload, updatePayload) {
+exports.projectFindOneAndUpdate = async function (payload, updatePayload) {
     console.log("assignProjectToMultipleUsers------------------------", payload, updatePayload)
     return Projects.findOneAndUpdate(payload, updatePayload)
 }

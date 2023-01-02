@@ -61,6 +61,8 @@ let tasksSchema = new Schema({
             message: "Priority ENUM FAILED",
         }
     }
+}, {
+    timestamps: true
 });
 
 let tasks = mongoose.model("tasks", tasksSchema);

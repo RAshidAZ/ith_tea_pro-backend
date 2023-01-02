@@ -27,6 +27,8 @@ let commentSchema = new Schema({
     ],
     comment: String
 
+}, {
+    timestamps: true
 });
 
 let comments = mongoose.model("comments", commentSchema);
