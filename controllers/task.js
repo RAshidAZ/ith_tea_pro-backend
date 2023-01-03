@@ -123,9 +123,10 @@ const createPayloadAndGetGroupByTask = async function (data) {
         }
         data.projectId ? findData["projectId"] = mongoose.Types.ObjectId(data.projectId) : ''
         data.assignedTo ? findData["assignedTo"] = mongoose.Types.ObjectId(data.assignedTo) : ''
-        data.category ? findData["category"] = mongoose.Types.ObjectId(data.category) : ''
-        data.status ? findData["status"] = mongoose.Types.ObjectId(data.status) : ''
         data.createdBy ? findData["createdBy"] = mongoose.Types.ObjectId(data.createdBy) : ''
+        data.category ? findData["category"] = data.category : ''
+        data.priority ? findData["priority"] = data.priority : ''
+        data.status ? findData["status"] = data.status : ''
         let aggregate = [
             {
                 $match: findData
@@ -235,3 +236,70 @@ const addCommentIdInTaskById = async function (data) {
     }
 }
 exports.addCommentIdInTaskById = addCommentIdInTaskById;
+
+
+const getTaskStatusAnalytics = async (req, res, next) => {
+    let data = req.data;
+    console.log('getTaskStatusAnalytics data : ', req.data);
+
+    let taskRes = await payloadGetTaskStatusAnalytics(data)
+    console.log('taskRes : ', taskRes)
+    if (taskRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getTaskStatusAnalytics', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, 'Task analytics Fetched Successfully', 'getTaskStatusAnalytics', taskRes.data, req.data.signature))
+}
+exports.getTaskStatusAnalytics = getTaskStatusAnalytics;
+
+const payloadGetTaskStatusAnalytics = async function (data) {
+    try {
+        // let aggregate = [
+        //     {
+
+        //         $group: {
+        //             _id: { status: '$status', project: "$projectId" },
+        //             count: { $sum: 1 },
+        //         }
+        //     },
+        //     {
+        //         $group: {
+        //             _id: { project: '$_id.project' },
+        //             docs: { $push: "$$ROOT" },
+        //             //            totalCount : {$sum : "$$ROOT.count"}
+        //         }
+        //     },
+        // ]
+        // let taskRes = await Task.taskAggregate(aggregate)
+        let taskRes = await Task.taskFindQuery({}, { status: 1, projectId: 1, _id: 0 })
+        let sendData = {}
+        for (let i = 0; i < taskRes.length; i++) {
+            if (sendData[taskRes[i].projectId]) {
+                sendData[taskRes[i].projectId][taskRes[i].status] += 1
+                sendData[taskRes[i].projectId].totalTask += 1
+            } else {
+                sendData[taskRes[i].projectId] = {
+                    COMPLETED: 0,
+                    ONGOING: 0,
+                    ONHOLD: 0,
+                    NO_PROGRESS: 0,
+                    totalTask: 0
+                }
+            }
+        }
+        let projectIds = Object.keys(sendData)
+        for (let i = 0; i < projectIds.length; i++) {
+            sendData[projectIds[i]]["totalTask"] && (sendData[projectIds[i]] = {
+                COMPLETED: sendData[projectIds[i]]['COMPLETED'] * 100 / sendData[projectIds[i]]["totalTask"],
+                ONGOING: sendData[projectIds[i]]['ONGOING'] * 100 / sendData[projectIds[i]]["totalTask"],
+                ONHOLD: sendData[projectIds[i]]['ONHOLD'] * 100 / sendData[projectIds[i]]["totalTask"],
+                NO_PROGRESS: sendData[projectIds[i]]['NO_PROGRESS'] * 100 / sendData[projectIds[i]]["totalTask"],
+                totalTask: sendData[projectIds[i]]["totalTask"]
+            })
+        }
+        return { data: sendData, error: false }
+    } catch (err) {
+        console.log("createPayloadAndGetGroupByTask Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.createPayloadAndGetGroupByTask = createPayloadAndGetGroupByTask;
