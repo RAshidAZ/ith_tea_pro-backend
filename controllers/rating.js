@@ -198,7 +198,8 @@ const getAllUsersRatingForMonth = async function (data) {
             {
                 $group: {
                     _id: "$userId",
-                    ratingsAndComment: { $addToSet: { ratingId: "$_id", rating: "$rating", date: "$date", month: "$month", year: "$year", comments: "$comments", commentedByArray: "$commentedByArray" } }
+                    // ratingsAndComment: { $addToSet: { ratingId: "$_id", rating: "$rating", date: "$date", month: "$month", year: "$year", comments: "$comments", commentedByArray: "$commentedByArray" } }
+                    ratingsAndComment: { $addToSet: { ratingId: "$_id", rating: "$rating", date: "$date", month: "$month", year: "$year" } }
                 }
             },
             {
@@ -208,11 +209,11 @@ const getAllUsersRatingForMonth = async function (data) {
                     "ratingsAndComment.date": 1,
                     "ratingsAndComment.month": 1,
                     "ratingsAndComment.year": 1,
-                    "ratingsAndComment.comments.comment": 1,
-                    "ratingsAndComment.comments._id": 1,
-                    "ratingsAndComment.comments.createdAt": 1,
+                    // "ratingsAndComment.comments.comment": 1,
+                    // "ratingsAndComment.comments._id": 1,
+                    // "ratingsAndComment.comments.createdAt": 1,
                     // "ratingsAndComment.comments.commentedBy": 1,
-                    "ratingsAndComment.commentedByArray.name": 1
+                    // "ratingsAndComment.commentedByArray.name": 1
                 }
             },
         ]
