@@ -6,6 +6,7 @@ const { User } = queryController;
 const getAllUsers = async (req, res, next) => {
     let data = req.data;
 
+    console.log("-------------------", data.auth)
     let userRes = await findAllUser(data)
     console.log('userRes : ', userRes)
     if (userRes.error) {

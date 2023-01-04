@@ -108,6 +108,7 @@ const addNewProject = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, "", 'addNewProject', null, req.data.signature))
     }
 
+    console.log("------", data.auth)
     let projectRes = await createPayloadAndAddProject(data)
     console.log('projectRes : ', projectRes)
     if (projectRes.error || !projectRes.data) {
