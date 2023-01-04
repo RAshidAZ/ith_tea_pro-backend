@@ -6,6 +6,8 @@ if (!process.env.NODE_ENV) {
 // Required Files to make default Connections
 require('./config');
 require('./models/db')
+require('./server');
+
 
 
 const express = require('express');
@@ -49,6 +51,11 @@ app.use('/comment', comment)
 app.use('/task', task)
 app.use('/user', user)
 app.use('/projects', project)
+const auth = require('./routes/auth');
+
+
+app.use('/rating', rating)
+app.use('/auth', auth);
 
 
 
