@@ -7,12 +7,12 @@ exports.findInProjects = async function (payload, projection) {
 }
 exports.getAllProjects = async function (payload, projection) {
     console.log("------------------------", payload)
-    return Projects.find(payload, projection).populate('accessibleBy')
+    return Projects.find(payload, projection).populate('accessibleBy managedBy')
 }
 
 exports.getProjectsAllUser = async function (payload, projection) {
     console.log("------------------------", payload)
-    return Projects.find(payload, projection).populate('accessibleBy')
+    return Projects.find(payload, projection).populate('accessibleBy managedBy')
 }
 
 exports.addNewProject = async function (payload,) {

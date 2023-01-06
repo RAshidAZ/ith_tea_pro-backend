@@ -34,8 +34,8 @@ const createPayloadAndInsertTask = async function (data) {
             status: data.status,
             category: data.category,
             projectId: data.projectId,
-            // createdBy: data?.auth?.req?.id , //TODO: Change after auth is updated
-            createdBy: '601e3c6ef5eb242d4408dcc8',
+            createdBy: data?.auth?.id ,    //TODO: Change after auth is updated
+            // createdBy: '601e3c6ef5eb242d4408dcc8',
             assignedTo: data.assignedTo,
             dueDate: data.dueDate,
             completedDate: data.completedDate,

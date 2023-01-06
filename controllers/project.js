@@ -7,6 +7,7 @@ const { addCommnetIdInRatingById } = ratingController;
 
 const getAllProjects = async (req, res, next) => {
     let data = req.data;
+    console.log("getAllProjects----------------------", data)
 
     let projectRes = await createPayloadAndgetAllProjects(data)
     console.log('projectRes : ', projectRes)
@@ -22,9 +23,13 @@ const createPayloadAndgetAllProjects = async function (data) {
     try {
         let payload = {
         }
+        if (data.auth.role !== 'SUPER_ADMIN') {
+            payload["$or"] = [
+                { accessibleBy: data.auth.id },
+                { managedBy: data.auth.id },
+            ]
+        }
         let projection = {
-            managedBy: 0,
-            // accessibleBy: 0,
         }
         let projectRes = await Project.getAllProjects(payload, projection)
         return { data: projectRes, error: false }

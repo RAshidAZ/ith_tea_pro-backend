@@ -150,12 +150,10 @@ const createPayloadAndInsertCredentials = async function (data) {
 
 //Login
 const userLogin = async (req, res, next) => {
-
     let data = req.body;
     if (!data.email || !data.password) {
         return res.status(400).send(sendResponse(400, "Email and Password are required", 'userLogin', null, req.data.signature))
     }
-
     let user = await findUserExistence(data);
     if (user.error) {
         return res.status(400).send(sendResponse(400, user.data, 'userLogin', null, req.data.signature))
@@ -187,7 +185,6 @@ const userLogin = async (req, res, next) => {
     if (encryptUserData.error) {
         return res.status(401).send(sendResponse(401, encryptUserData.data, 'userLogin', null, req.data.signature))
     }
-
     return res.status(200).send(sendResponse(200, "Successfully logged in", 'userLogin', encryptUserData.data, req.data.signature))
 }
 exports.userLogin = userLogin;

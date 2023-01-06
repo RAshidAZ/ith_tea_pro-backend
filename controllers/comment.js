@@ -32,10 +32,7 @@ const insertUserRatingComment = async (req, res, next) => {
     if (!data.ratingId || !data.comment) {
         return res.status(400).send(sendResponse(400, "", 'insertUserRatingComment', null, req.data.signature))
     }
-    //TODO: Change after auth is updated
-    // data.givenBy = data.auth.id 
-    data.givenBy = "601e3c6ef5eb242d4408dcc8"
-
+    data.givenBy = data.auth.id 
     let commentRes = await createPayloadAndInsertComment(data)
     console.log('commentRes : ', commentRes)
     if (commentRes.error || !commentRes.data) {
@@ -77,9 +74,7 @@ const insertUserTaskComment = async (req, res, next) => {
     if (!data.taskId || !data.comment) {
         return res.status(400).send(sendResponse(400, "", 'insertUserTaskComment', null, req.data.signature))
     }
-    //TODO: Change after auth is updated
-    // data.givenBy = data.auth.id 
-    data.givenBy = "601e3c6ef5eb242d4408dcc8"
+    data.givenBy = data.auth.id 
 
     let commentRes = await createPayloadAndInsertComment(data)
     console.log('commentRes : ', commentRes)

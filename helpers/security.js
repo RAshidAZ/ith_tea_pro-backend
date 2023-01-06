@@ -10,9 +10,10 @@ const encryptData = function (data) {
     try {
         var signOptions = {
             issuer: "Authorization",
-            subject: "recru@ith.tech",
-            audience: "recru",
-            expiresIn: "30d", // 30 days validity
+            subject: "teapro@ith.tech",
+            audience: "teapro",
+            // expiresIn: "30d", // 30 days validity
+            expiresIn: "1d", // 30 days validity
             algorithm: "HS256"
         };
         let encryptedData = jwt.sign(data, process.env.ENCRYPT_SALT_STATIC, signOptions);
@@ -35,21 +36,22 @@ exports.encryptData = encryptData;
 
 const decryptData = async function (encryptedData) {
 
-    console.log("decryptData1")
+    // console.log("decryptData1")
     try {
         let verifyOptions = {
             issuer: "Authorization",
-            subject: "recru@ith.tech",
-            audience: "recru",
-            expiresIn: "30d", // 30 days validity
+            subject: "teapro@ith.tech",
+            audience: "teapro",
+            // expiresIn: "1d", // 30 days validity
+            expiresIn: "1d", // 30 days validity
             algorithm: "HS256"
         };
         let decryptedData = jwt.verify(encryptedData.token, process.env.ENCRYPT_SALT_STATIC, verifyOptions);
         // console.log("decryptedData", decryptedData)
-        console.log("decryptData2")
+        // console.log("decryptData2")
 
         if (decryptedData.id == encryptedData.user.userId._id) {
-            console.log("decryptData3")
+            // console.log("decryptData3")
 
             return {
                 data: decryptedData,
@@ -185,12 +187,9 @@ const readUserByCredentials = async function (data) {
     }
     try {
 
-        console.log("Inside readUserByCredentials", findData)
         let userCredentials = await Auth.findUserCredentials(findData)
-        console.log("Inside readUserByCredentials", userCredentials)
 
         if (!userCredentials || userCredentials.userId.length == 0) {
-            console.log("Inside readUserByCredentials3", userCredentials)
 
             return {
                 data: "User Not found",
@@ -232,7 +231,6 @@ exports.readUserByCredentials = readUserByCredentials;
 
 exports.validateToken = async function (data, cb) {
 
-    console.log("Inside validateToken")
 
     // data.token = null;
     if (!data.token || !data.identifier) {
@@ -243,7 +241,6 @@ exports.validateToken = async function (data, cb) {
         })
     }
 
-    console.log("Inside validateToken2")
     let getUserCredentials = await readUserByCredentials(data);
     if (getUserCredentials.error) {
         return cb(getUserCredentials);

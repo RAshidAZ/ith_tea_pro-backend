@@ -7,20 +7,20 @@ const clients = {
         port: process.env.SERVICE_RPC_PORT
     }
 };
-const data={}
+const data = {}
 const authenticator = require('../middlewares/authenticator')(clients, data);
 
 const { getProjectsAllUser, getAllProjects, addNewProject, editProject, assignUserToProject, getUserAssignedProjects, removeUserFromProject } = require('../controllers/project');
 
 // router.get("/v1/user/", [], getUserRatingComment);
 
-router.get("/v1/all", [], getAllProjects);
-router.get("/v1/user/all", [], getProjectsAllUser);
+router.get("/v1/all", [authenticator], getAllProjects);
+router.get("/v1/user/all", [authenticator], getProjectsAllUser);
 router.post("/v1/add/new", [authenticator], addNewProject);
-router.patch("/v1/edit", [], editProject);
-router.patch("/v1/assign/users", [], assignUserToProject);
-router.patch("/v1/remove/user", [], removeUserFromProject);
-router.get("/v1/user/assigned", [], getUserAssignedProjects);
+router.patch("/v1/edit", [authenticator], editProject);
+router.patch("/v1/assign/users", [authenticator], assignUserToProject);
+router.patch("/v1/remove/user", [authenticator], removeUserFromProject);
+router.get("/v1/user/assigned", [authenticator], getUserAssignedProjects);
 
 
 
