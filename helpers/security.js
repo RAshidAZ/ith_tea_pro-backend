@@ -105,6 +105,26 @@ const comparePassword = function (plaintextInput, hash, salt) {
 };
 exports.comparePassword = comparePassword;
 
+exports.generateAccountId = async function (data) {
+    try {
+        console.log("In Generate AccountId function......")
+        let usedAccountIds = await Credentials.findDistinctQuery("accountId")
+        console.log(usedAccountIds)
+        let x = true;
+        let accountId = 0;
+        while (x) {
+            accountId = Math.floor(Math.random() * (99999999 - 11111111) + 11111111);
+            if (usedAccountIds.indexOf(accountId) < 0) {
+                x = false;
+            }
+        }
+        console.log("AccountId:", accountId);
+        return accountId
+    } catch (error) {
+        return
+    }
+}
+
 
 // Input Validators
 const validateEmail = function (email) {
