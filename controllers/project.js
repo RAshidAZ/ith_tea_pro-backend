@@ -109,7 +109,7 @@ exports.createPayloadAndGetUserAssignedProjects = createPayloadAndGetUserAssigne
 
 const addNewProject = async (req, res, next) => {
     let data = req.data;
-    if (!data.name || !data.categories || !data.managedBy || !data.description) {
+    if (!data.name || !data.projectCategories || !data.selectedManagers || !data.description) {
         return res.status(400).send(sendResponse(400, "", 'addNewProject', null, req.data.signature))
     }
 
@@ -128,9 +128,9 @@ const createPayloadAndAddProject = async function (data) {
     try {
         let payload = {
             name: data.name,
-            categories: data.categories,
-            managedBy: data.managedBy,
-            accessibleBy: data.accessibleBy,
+            categories: data.projectCategories,
+            managedBy: data.selectedManagers,
+            accessibleBy: data.selectAccessibleBy,
             description: data.description,
             // image : data.imagePath
         }

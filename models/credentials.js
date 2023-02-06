@@ -14,7 +14,7 @@ let credentialsSchema = new Schema(
         emailVerified: { type: Boolean, default: false },
         isActive: { type: Boolean, default: false },
         isBlocked: { type: Boolean, default: false },
-        employeeId: String
+        // employeeId: String
     },
     { timestamps: true }
 );

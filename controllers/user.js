@@ -157,7 +157,9 @@ const createPayloadAndRegisterUser = async function (data) {
         designation: data.designation,
         name: data.name,
         role: data.role,
-        wings: data.wings
+        wings: data.wings,
+        employeeId: data.employeeId,
+
     }
     let options = {
         upsert: true,
@@ -194,9 +196,9 @@ const createPayloadAndInsertCredentials = async function (data) {
         salt: salt,
         accountId: data.accountId
     }
-    if (data.employeeId) {
-        updateData.employeeId = data.employeeId
-    }
+    // if (data.employeeId) {
+    //     updateData.employeeId = data.employeeId
+    // }
     let options = {
         upsert: true,
         new: true,
@@ -218,3 +220,37 @@ const createPayloadAndInsertCredentials = async function (data) {
         }
     }
 }
+
+const getUserDetailsByUserId = async (req, res, next) => {
+    let data = req.data;
+
+    if (!data.userId) {
+        return res.status(400).send(sendResponse(400, "", 'getUserDetailsByUserId', null, req.data.signature))
+    }
+    let userRes = await createPayloadAndGetUserDetailsByUserId(data)
+    console.log('userRes : ', userRes)
+    if (userRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getUserDetailsByUserId', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'Users Fetched', 'getUserDetailsByUserId', userRes.data, req.data.signature))
+}
+exports.getUserDetailsByUserId = getUserDetailsByUserId
+
+const createPayloadAndGetUserDetailsByUserId = async function (data) {
+    try {
+        let payload = {
+            _id: data.userId,
+        }
+        let projection = {
+            // name: data.name,
+            // email: data.email,
+        }
+        let userRes = await User.userfindOneQuery(payload, projection)
+        return { data: userRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndGetUserDetailsByUserId Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.createPayloadAndGetUserDetailsByUserId = createPayloadAndGetUserDetailsByUserId

@@ -9,13 +9,14 @@ const clients = {
 const data = {}
 const authenticator = require('../middlewares/authenticator')(clients, data);
 
-const { getAllUsers, editUserDetails, addNewUser } = require('../controllers/user');
+const { getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId } = require('../controllers/user');
 
 // router.get("/v1/user/", [], getUserRatingComment);
 
 router.get("/v1/all/", [authenticator], getAllUsers);
 router.patch("/v1/edit/", [authenticator], editUserDetails);
 router.post("/v1/add/", [authenticator], addNewUser);
+router.get("/v1/userId", [authenticator], getUserDetailsByUserId);
 
 
 

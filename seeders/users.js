@@ -21,6 +21,7 @@ let insertUser = [
         isActive: true,
         "department": "TECH",
         "designation": "Software Engineer",
+        employeeId: "ITH2022181",
         "wings": "Backend"
     },
     {
@@ -39,6 +40,7 @@ let insertUser = [
         isActive: true,
         "department": "TECH",
         "designation": "Software Engineer",
+        employeeId: "ITH2022182",
         "wings": "Backend"
     },
     {
@@ -57,6 +59,7 @@ let insertUser = [
         isActive: true,
         "department": "TECH",
         "designation": "Software Engineer",
+        employeeId: "ITH2022183",
         "wings": "Backend"
     },
     {
@@ -72,6 +75,7 @@ let insertUser = [
             .toString("base64"),
         salt: salt,
         emailVerified: true,
+        employeeId: "ITH2022184",
         isActive: true,
         "department": "TECH",
         "designation": "Software Engineer",
@@ -102,7 +106,7 @@ let insertCreds = [
     {
         userId: "601e3c6ef5eb242d4408dcc5",
         accountId: "12345678",
-        employeeId: "ITH2022180",
+        // employeeId: "ITH2022180",
         provider: "email",
         userName: "super_admin_seed",
         password: crypto
@@ -116,7 +120,7 @@ let insertCreds = [
     {
         userId: "601e3c6ef5eb242d4408dcc6",
         accountId: "11223344",
-        employeeId: "ITH2022181",
+        // employeeId: "ITH2022181",
         userName: "admin_seed",
         provider: "email",
         password: crypto
@@ -131,7 +135,7 @@ let insertCreds = [
     {
         userId: "601e3c6ef5eb242d4408dcc7",
         accountId: "87654321",
-        employeeId: "ITH2022183",
+        // employeeId: "ITH2022183",
         userName: "user_seed",
         provider: "email",
         password: crypto
@@ -145,7 +149,7 @@ let insertCreds = [
     },
     {
         userId: "601e3c6ef5eb242d4408dcc8",
-        employeeId: "ITH2022185",
+        // employeeId: "ITH2022185",
         accountId: "87654322",
         provider: "email",
         userName: "lead_seed",
