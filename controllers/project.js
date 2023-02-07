@@ -22,6 +22,7 @@ exports.getAllProjects = getAllProjects
 const createPayloadAndgetAllProjects = async function (data) {
     try {
         let payload = {
+            isActive: true
         }
         if (data.auth.role !== 'SUPER_ADMIN') {
             payload["$or"] = [
@@ -246,3 +247,37 @@ const createPayloadAndUnAssignUser = async function (data) {
 }
 exports.createPayloadAndUnAssignUser = createPayloadAndUnAssignUser
 
+
+const deleteProject = async (req, res, next) => {
+    let data = req.data;
+    if (!data.projectId) {
+        return res.status(400).send(sendResponse(400, "", 'deleteProject', null, req.data.signature))
+    }
+    let projectRes = await createPayloadAndDeleteProject(data)
+    console.log('projectRes : ', projectRes)
+    if (projectRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'deleteProject', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, "Project Deleted Successfully", 'deleteProject', null, req.data.signature))
+}
+exports.deleteProject = deleteProject
+
+const createPayloadAndDeleteProject = async function (data) {
+    try {
+        let payload = {
+            _id: data.projectId
+        }
+        let updatePayload = {
+            $set: {
+                isActive: false,
+                updatedAt: new Date()
+            }
+        }
+        let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
+        return { data: projectRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndDeleteProject Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.createPayloadAndDeleteProject = createPayloadAndDeleteProject;

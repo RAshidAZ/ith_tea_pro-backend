@@ -9,8 +9,8 @@ const commonVariables = {
     STATUS: [200, 500, 400, 401],
     ROLE: ["USER", "SUPER_ADMIN", "ADMIN", "LEAD"],
     TASK_STATUS: ["NO_PROGRESS", "ONGOING", "COMPLETED", "ONHOLD"],
-    TASK_PRIORITY: ["LOW", "REPEATED", "MEDIUM", "HIGH"],
-    ALLOWED_GROUP_BY: ['category', 'status', "projectId", "createdBy", "assignedTo"],
+    TASK_PRIORITY: ["LOW", "REPEATED", "MEDIUM", "HIGH", "None"],
+    ALLOWED_GROUP_BY: ['category', 'status', "projectId", "createdBy", "assignedTo", "priority"],
 
     ENCRYPT_SALT_STATIC: 'dSDFeFenyL2jaSDasdaeFenyL2jas@766sar7^^#&W^FSDBGxg7dgBGxg7dgqw3FSQ'
 }
