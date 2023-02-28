@@ -132,7 +132,7 @@ const checkEmployeeIdExists = async (data) => {
             employeeId: data.employeeId,
         }
         let projection = { employeeId: 1 }
-        let userRes = await Credentials.findOneQuery(payload, projection)
+        let userRes = await User.userfindOneQuery(payload, projection)
         return { data: userRes, error: false }
     } catch (err) {
         console.log("createPayloadAndEditUserDetails Error : ", err)
