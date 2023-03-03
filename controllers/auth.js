@@ -6,7 +6,7 @@ const utilities = require('../helpers/security');
 
 const { sendResponse } = require('../helpers/sendResponse')
 const { Auth, Credentials } = require('../query');
-
+const emailUtitlites = require("../helpers/email");
 
 const userRegistry = async (req, res, next) => {
 
@@ -122,6 +122,8 @@ const createPayloadAndInsertCredentials = async function (data) {
         userId: data.registerUser._id,
         password: hash,
         salt: salt,
+        isActive:true,
+        emailVerified:true
     }
     if (data.employeeId) {
         updateData.employeeId = employeeId

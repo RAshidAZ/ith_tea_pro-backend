@@ -28,3 +28,14 @@ exports.projectFindOneAndUpdate = async function (payload, updatePayload) {
     console.log("assignProjectToMultipleUsers------------------------", payload, updatePayload)
     return Projects.findOneAndUpdate(payload, updatePayload)
 }
+
+exports.projectAggregate = async function (pipeline) {
+    return Projects.aggregate(pipeline)
+}
+
+exports.findSpecificProject = async function (payload, projection, populate) {
+    if(!projection){
+        projection = {}
+    }
+    return Projects.findOne(payload, projection).populate(populate);
+}

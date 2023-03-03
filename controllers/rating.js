@@ -84,7 +84,7 @@ exports.updateUserRating = updateUserRating
 
 const getMonthAllUserRating = async (req, res, next) => {
     let data = req.data;
-    console.log('getMonthAllUserRating data : ', req.data);
+    // console.log('getMonthAllUserRating data : ', req.data);
 
     if (!data.month || !data.year) {
         return res.status(400).send(sendResponse(400, "Params Missing", 'getMonthAllUserRating', null, req.data.signature))

@@ -7,40 +7,15 @@ const { addCommnetIdInRatingById } = ratingController;
 
 const getAllProjects = async (req, res, next) => {
     let data = req.data;
-    console.log("getAllProjects----------------------", data)
 
     let projectRes = await createPayloadAndgetAllProjects(data)
-    console.log('projectRes : ', projectRes)
+
     if (projectRes.error || !projectRes.data) {
         return res.status(500).send(sendResponse(500, '', 'getAllProjects', null, req.data.signature))
     }
     return res.status(200).send(sendResponse(200, 'Projects Fetched', 'getAllProjects', projectRes.data, req.data.signature))
 }
-exports.getAllProjects = getAllProjects
-
-
-const createPayloadAndgetAllProjects = async function (data) {
-    try {
-        let payload = {
-            isActive: true
-        }
-        if (data.auth.role !== 'SUPER_ADMIN') {
-            payload["$or"] = [
-                { accessibleBy: data.auth.id },
-                { managedBy: data.auth.id },
-            ]
-        }
-        let projection = {
-        }
-        let projectRes = await Project.getAllProjects(payload, projection)
-        return { data: projectRes, error: false }
-    } catch (err) {
-        console.log("createPayloadAndgetAllProjects Error : ", err)
-        return { data: err, error: true }
-    }
-}
-exports.createPayloadAndgetAllProjects = createPayloadAndgetAllProjects;
-
+exports.getAllProjects = getAllProjects;
 
 const getProjectsAllUser = async (req, res, next) => {
     let data = req.data;
@@ -281,3 +256,97 @@ const createPayloadAndDeleteProject = async function (data) {
     }
 }
 exports.createPayloadAndDeleteProject = createPayloadAndDeleteProject;
+
+
+const createPayloadAndgetAllProjects = async function (data) {
+    try {
+
+        let pipeline = [];
+
+        let projectAccess = {};
+
+        if (data.auth.role !== 'SUPER_ADMIN') {
+            projectAccess["$or"] = [
+                { accessibleBy: mongoose.types.ObjectId(data.auth.id) },
+                { managedBy: mongoose.types.ObjectId(data.auth.id) },
+            ]
+            pipeline.push(projectAccess);
+        }
+
+        pipeline.push(
+            {
+                $match: {
+                    "isActive": true
+                }
+            })
+        pipeline.push(
+            {
+                $lookup: {
+                    from: "tasks",
+                    let: { "projectId": "$_id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                "$expr": {
+                                    $and: [
+                                        { $ne: ["$status", "COMPLETED"] },
+                                        { $eq: ["$projectId", "$$projectId"] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: "tasks"
+                }
+            })
+        pipeline.push(
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "accessibleBy",
+                    foreignField: "_id",
+                    as: "accessibleBy"
+                }
+            }
+        )
+        let projectRes = await Project.projectAggregate(pipeline)
+        console.log("ProjectRes=>", projectRes.length)
+        return { data: projectRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndgetAllProjects Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.createPayloadAndgetAllProjects = createPayloadAndgetAllProjects;
+
+const getAllProjectsList = async (req, res, next) => {
+    let data = req.data;
+
+    let projectRes = await createPayloadAndgetAllProjectsList(data)
+
+    if (projectRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getAllProjects', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, 'Projects Fetched', 'getAllProjects', projectRes.data, req.data.signature))
+}
+exports.getAllProjectsList = getAllProjectsList;
+
+const createPayloadAndgetAllProjectsList = async function (data) {
+    try {
+        let payload = {
+            isActive: true
+        }
+        if (data.auth.role !== 'SUPER_ADMIN') {
+            payload["$or"] = [
+                { accessibleBy: data.auth.id },
+                { managedBy: data.auth.id },
+            ]
+        }
+        let projection = {}
+        let projectRes = await Project.getAllProjects(payload, projection)
+        return { data: projectRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndgetAllProjects Error : ", err)
+        return { data: err, error: true }
+    }
+}

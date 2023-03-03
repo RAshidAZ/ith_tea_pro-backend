@@ -9,11 +9,11 @@ let tasksSchema = new Schema({
         enum: {
             values: process.env.TASK_STATUS.split(","),  // ["NO_PROGRESS", "ONGOING", "COMPLETED", "ONHOLD"]
             message: "Status ENUM FAILED",
-        }
+        },
+        default: "NO_PROGRESS"
     },
     category: {
         type: String,
-
     },
     projectId: {
         type: mongoose.Types.ObjectId,
@@ -33,10 +33,13 @@ let tasksSchema = new Schema({
             ref: "comments"
         }
     ],
-
+    lead: [
+        {
+            type: mongoose.Types.ObjectId,
+            ref: "users"
+        }
+    ],
     dueDate: Date,
-
-
     completedDate: Date,
 
     // isCompleted: {
@@ -54,6 +57,21 @@ let tasksSchema = new Schema({
     //     default: false
     // },
 
+    isRated: {
+        type: Boolean,
+        default: false
+    },
+    rating: {
+        type: Number,
+        min: 0,
+        max: 5,
+        default: 0
+    },
+
+    createdBy: {
+        type: mongoose.Types.ObjectId,
+        ref: "users"
+    },
     priority: {
         type: String,
         enum: {

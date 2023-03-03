@@ -1,35 +1,55 @@
 const { sendResponse } = require('../helpers/sendResponse');
 const queryController = require('../query')
-const { User, Auth, Credentials } = queryController;
+const { User, Auth, Credentials, Project } = queryController;
 const utilities = require('../helpers/security');
 
+const emailUtitlities = require("../helpers/email");
 
-
+/**Get all users with Custom Pagination */
 const getAllUsers = async (req, res, next) => {
     let data = req.data;
 
-    console.log("-------------------", data.auth)
     let userRes = await findAllUser(data)
-    console.log('userRes : ', userRes)
+
     if (userRes.error) {
         return res.status(500).send(sendResponse(500, '', 'getAllUsers', null, req.data.signature))
     }
 
     return res.status(200).send(sendResponse(200, 'Users Fetched', 'getAllUsers', userRes.data, req.data.signature))
 }
-exports.getAllUsers = getAllUsers
-
+exports.getAllUsers = getAllUsers;
 
 const findAllUser = async function (data) {
     try {
         let payload = {
             role: 'USER'
         }
-        let projection = {
+        let projection = {};
 
+        let usersCount = await User.getAllUsersCountForPagination(payload);
+
+        let limit = process.env.PAGE_LIMIT;
+        if (data.limit) {
+            limit = parseInt(data.limit);
         }
-        let userRes = await User.getAllUsers(payload, projection)
-        return { data: userRes, error: false }
+
+        let skip = 0;
+        if (data.currentPage) {
+            skip = (data.currentPage - 1) * limit
+        }
+
+        let sortCriteria = {
+            createdAt: -1
+        }
+        let userRes = await User.getAllUsersPagination(payload, projection, sortCriteria, skip, limit);
+
+        let sendData = {
+            users: userRes,
+            totalCount: usersCount,
+            currentPage: data.currentPage,
+            limit: data.limit
+        }
+        return { data: sendData, error: false }
     } catch (err) {
         console.log("findAllUser Error : ", err)
         return { data: err, error: true }
@@ -109,6 +129,9 @@ const addNewUser = async (req, res, next) => {
     if (insertUserCredentials.error) {
         return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
     }
+
+    let sendWelcomeEmailRes = await emailUtitlities.sendWelcomeEmail(data);
+    console.log("sendWelcomeEmailRes ======> ", sendWelcomeEmailRes);
     return res.status(200).send(sendResponse(200, 'Users Created', 'addNewUser', null, req.data.signature))
 }
 exports.addNewUser = addNewUser
@@ -159,7 +182,9 @@ const createPayloadAndRegisterUser = async function (data) {
         role: data.role,
         wings: data.wings,
         employeeId: data.employeeId,
-
+        isActive:true,
+        isBlocked:false,
+        emailVerified:true
     }
     let options = {
         upsert: true,
@@ -254,3 +279,99 @@ const createPayloadAndGetUserDetailsByUserId = async function (data) {
     }
 }
 exports.createPayloadAndGetUserDetailsByUserId = createPayloadAndGetUserDetailsByUserId
+
+// Non Pagination Leads List
+const getAllLeadsLisitng = async (req, res, next) => {
+    let data = req.data;
+
+    let leadsRes;
+    if (data.projectId) {
+        leadsRes = await getLeadsOfSpecificProject(data);
+    } else {
+        leadsRes = await findAllLeadsList(data)
+    }
+
+    if (leadsRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getAllLeadsLisitng', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'Leads Fetched', 'getAllLeadsLisitng', leadsRes.data, req.data.signature))
+}
+exports.getAllLeadsLisitng = getAllLeadsLisitng
+
+const getLeadsOfSpecificProject = async function (data) {
+    try {
+
+        let payload = {
+            _id: data.projectId
+        }
+        let projection = {};
+        let populate = "managedBy";
+        let projectRes = await Project.findSpecificProject(payload, projection, populate);
+
+        let allLeads = projectRes?.managedBy;
+        console.log("All leads of given project => ", allLeads)
+        allLeads = allLeads.filter((e) => {
+            return (e.isActive && (!e.isBlocked) && e.emailVerified)
+        })
+
+        return { data: allLeads, error: false }
+    } catch (err) {
+        console.log("getLeadsOfSpecificProject Error : ", err)
+        return { data: err, error: true }
+    }
+}
+
+const findAllLeadsList = async function (data) {
+    try {
+
+        let findData = {
+            role: "LEAD",
+            isActive:true,
+            isBlocked:false,
+            emailVerified:true
+        }
+        let projection = {};
+
+        let leadsRes = await User.getAllUsers(findData, projection);
+        console.log("Leads res => ", leadsRes.length)
+        return { data: leadsRes, error: false }
+    } catch (err) {
+        console.log("findLeads Error : ", err)
+        return { data: err, error: true }
+    }
+}
+
+// Non Pagination Users List
+const getAllUsersNonPaginated = async (req, res, next) => {
+    let data = req.data;
+
+    let findData = {
+        role: 'USER',
+        // isActive:true,
+        // isBlocked:false,
+        // emailVerified:true
+    }
+    data.findData = findData;
+    let userRes = await findAllUsersList(data)
+
+    if (userRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getAllUsers', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'Users Fetched', 'getAllUsers', userRes.data, req.data.signature))
+}
+exports.getAllUsersNonPaginated = getAllUsersNonPaginated;
+
+const findAllUsersList = async function (data) {
+    try {
+
+        let projection = {};
+        let payload = data.findData;
+        let userRes = await User.getAllUsers(payload, projection);
+        return { data: userRes, error: false }
+    } catch (err) {
+        console.log("findAllUser Error : ", err)
+        return { data: err, error: true }
+    }
+}

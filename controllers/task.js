@@ -2,21 +2,29 @@ const mongoose = require('mongoose');
 const { sendResponse } = require('../helpers/sendResponse');
 const { populate } = require('../models/ratings');
 const queryController = require('../query')
-const { Task } = queryController;
-const Project = require('../models/projects');
+const { Task, Rating, Project } = queryController;
 
 
+//Insert Task
 const insertUserTask = async (req, res, next) => {
     let data = req.data;
-    console.log('insertUserTask data : ', req.data);
 
-    if (!data.title || !data.category || !data.projectId) {
-        return res.status(400).send(sendResponse(400, "", 'insertUserTask', null, req.data.signature))
+    if (!data.title || !data.category || !data.projectId || !data.tasklead) {
+        return res.status(400).send(sendResponse(400, "Please send all required Data fields", 'insertUserTask', null, req.data.signature))
     }
 
+    let ifAllowedToAddTask = await checkIfAllowedToAddTask(data);
+    if (ifAllowedToAddTask.error) {
+        return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
+    }
+
+    if (!ifAllowedToAddTask.data.allowed) {
+        return res.status(500).send(sendResponse(401, 'Not Allowed to add task for this project', 'insertUserTask', null, req.data.signature))
+    }
 
     let taskRes = await createPayloadAndInsertTask(data)
     console.log('taskRes : ', taskRes)
+
     if (taskRes.error || !taskRes.data) {
         return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
     }
@@ -25,21 +33,49 @@ const insertUserTask = async (req, res, next) => {
 }
 exports.insertUserTask = insertUserTask
 
+const checkIfAllowedToAddTask = async function (data) {
+
+    try {
+        if (["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) {
+            return { data: { allowed: true }, error: false }
+        }
+
+        let findData = {
+            _id: data.projectId,
+            "$or": [
+                { accessibleBy: data.auth.id },
+                { managedBy: data.auth.id },
+            ]
+        }
+        let getProject = await Project.findSpecificProject(findData);
+        console.log("Project Fetched => ", getProject);
+        if (getProject) {
+            return { data: { allowed: true }, error: false }
+        } else {
+            return { data: { allowed: false }, error: false }
+        }
+    } catch (err) {
+        console.log("Error => ", err);
+        return { data: err, error: true }
+    }
+}
 
 const createPayloadAndInsertTask = async function (data) {
     try {
+        if (["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) { }
         let payload = {
             title: data.title,
             description: data.description,
             status: data.status,
             category: data.category,
             projectId: data.projectId,
-            createdBy: data?.auth?.id ,    //TODO: Change after auth is updated
+            createdBy: data?.auth?.id,    //TODO: Change after auth is updated
             // createdBy: '601e3c6ef5eb242d4408dcc8',
             assignedTo: data.assignedTo,
             dueDate: data.dueDate,
             completedDate: data.completedDate,
-            priority: data.priority
+            priority: data.priority,
+            lead: [data.tasklead]
         }
         let taskRes = await Task.insertUserTask(payload)
         return { data: taskRes, error: false }
@@ -50,6 +86,7 @@ const createPayloadAndInsertTask = async function (data) {
 }
 exports.createPayloadAndInsertTask = createPayloadAndInsertTask
 
+//Edit user task
 const editUserTask = async (req, res, next) => {
     let data = req.data;
     console.log('editUserTask data : ', req.data);
@@ -90,7 +127,7 @@ const createPayloadAndEditTask = async function (data) {
                 priority: data.priority
             }
         }
-        let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload)
+        let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload, {})
         return { data: taskRes, error: false }
     } catch (err) {
         console.log("createPayloadAndEditTask Error : ", err)
@@ -101,7 +138,8 @@ exports.createPayloadAndEditTask = createPayloadAndEditTask
 
 const getGroupByTasks = async (req, res, next) => {
     let data = req.data;
-    console.log('getGroupByTasks data : ', req.data);
+    // console.log('getGroupByTasks data : ', req.data);
+
     let allowedTaskGroup = process.env.ALLOWED_GROUP_BY.split(',')
 
     if (!allowedTaskGroup.includes(data.groupBy)) {
@@ -201,7 +239,7 @@ const createPayloadAndGetTask = async function (data) {
         }
         let populate = [
             { path: 'comments', model: 'comments', select: 'comment _id createdAt commentedBy' },
-            { path: 'createdBy', model: 'users', select: 'name' },
+            { path: 'createdBy', model: 'users', select: 'name _id' },
             { path: 'assignedTo', model: 'users', select: 'name' },
             { path: 'projectId', model: 'projects', select: 'name _id' }
         ]
@@ -227,7 +265,7 @@ const addCommentIdInTaskById = async function (data) {
         let updatePayload = {
             $addToSet: { comments: data.commentId }
         }
-        let insertRes = await Task.findOneAndUpdate(payload, updatePayload)
+        let insertRes = await Task.findOneAndUpdate(payload, updatePayload, {})
         console.log("insertRes---------------------------", insertRes)
         return { data: insertRes, error: false }
     } catch (error) {
@@ -240,7 +278,7 @@ exports.addCommentIdInTaskById = addCommentIdInTaskById;
 
 const getTaskStatusAnalytics = async (req, res, next) => {
     let data = req.data;
-    console.log('getTaskStatusAnalytics data : ', req.data);
+    // console.log('getTaskStatusAnalytics data : ', req.data);
 
     let taskRes = await payloadGetTaskStatusAnalytics(data)
     console.log('taskRes : ', taskRes)
@@ -303,3 +341,235 @@ const payloadGetTaskStatusAnalytics = async function (data) {
     }
 }
 exports.createPayloadAndGetGroupByTask = createPayloadAndGetGroupByTask;
+
+const userGetTaskListForHomePage = async function (data) {
+
+    var curr = new Date;
+    var firstDateOfWeek = curr.getDate() - curr.getDay();
+    var lastDateOfWeek = firstDateOfWeek + 6;
+
+    let firstday = new Date(curr.setDate(firstDateOfWeek));
+    let lastday = new Date(curr.setDate(lastDateOfWeek));
+    console.log("--", firstday, lastday);
+
+    data.firstday = firstday;
+    data.lastday = lastday;
+    let tasksLists = await createPayloadAndGetTaskListForUser(data);
+}
+exports.userGetTaskListForHomePage = userGetTaskListForHomePage;
+
+const createPayloadAndGetTaskListForUser = async function (data) {
+    try {
+
+        let findData = {
+            dueDate: {
+                $lte: data.lastday,
+                $gte: data.firstday
+            }
+        }
+        let taskList = await Task.taskFindQuery(findData, {}, "");
+        console.log("TaskList of Past Seven Days => ", taskList)
+    } catch (error) {
+        console.log("Error => ", error)
+    }
+}
+
+// Controller of adding rating to user task
+const rateUserTask = async (req, res, next) => {
+
+    let data = req.data;
+
+    if (!data.taskId || !data.rating) {
+        return res.status(400).send(sendResponse(400, "Please send all required Data fields", 'rateUserTask', null, req.data.signature))
+    }
+
+    let task = await getTaskById(data);
+    console.log("task Details => ", task)
+    if (task.error || !task.data) {
+        return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
+    }
+
+    let taskDetails = task.data;
+    if (taskDetails.status != process.env.TASK_STATUS.split(",")[2]) {
+        return res.status(400).send(sendResponse(400, 'Task is not yet marked as completed', 'rateUserTask', null, req.data.signature))
+    }
+
+    if (!taskDetails.dueDate) {
+        return res.status(400).send(sendResponse(400, 'Task duedate is not present', 'rateUserTask', null, req.data.signature))
+    }
+
+    if (!taskDetails.assignedTo) {
+        return res.status(400).send(sendResponse(400, 'Task is not assigned to anyone', 'rateUserTask', null, req.data.signature))
+    }
+
+    // if (taskDetails.isRated) {
+    //     return res.status(400).send(sendResponse(400, 'Task is already rated', 'rateUserTask', null, req.data.signature))
+    // }
+
+    data.taskDetails = taskDetails;
+
+    if (!["SUPERADMIN", "ADMIN"].includes(data.auth.role)) {
+
+        console.log("Lead giving taks....", data.auth.role);
+
+        let checkIfAllowedToRateTask = taskDetails.lead.includes(data.auth.id);
+
+        if (!checkIfAllowedToRateTask) {
+            return res.status(400).send(sendResponse(400, 'Not allowed to rate task', 'rateUserTask', null, req.data.signature))
+        }
+    }
+
+    let updateTaskRating = await updateUserTaskRating(data);
+    console.log('updateTaskRating => ', updateTaskRating)
+
+    if (updateTaskRating.error || !updateTaskRating.data) {
+        return res.status(500).send(sendResponse(500, '', 'rateUserTask', null, req.data.signature))
+    }
+
+    //get all tasks of that user for given specififc due date
+    let allTasksWithSameDueDate = await getAllTasksWithSameDueDate(data);
+    data.allTasksWithSameDueDate = allTasksWithSameDueDate.data;
+
+    // get average rating doc of user
+    let updatedOverallRating = await updateOverallRatingDoc(data);
+    if (updatedOverallRating.error || !updateTaskRating.data) {
+        return res.status(500).send(sendResponse(500, 'Rating couldnot be updated', 'rateUserTask', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'Task Rated', 'rateUserTask', updatedOverallRating.data, req.data.signature));
+}
+exports.rateUserTask = rateUserTask;
+
+const getTaskById = async function (data) {
+    try {
+
+        let findData = {
+            _id: data.taskId,
+        }
+
+        let taskDetails = await Task.taskFindOneQuery(findData, {}, "");
+        return { data: taskDetails, error: false }
+    } catch (err) {
+        console.log("Error => ", err);
+        return { data: err, error: true }
+    }
+}
+
+const updateUserTaskRating = async function (data) {
+    try {
+
+        let findData = {
+            _id: data.taskId
+        }
+        let updateData = {
+            rating: data.rating,
+            isRated: true,
+            ratedBy: data.auth.id
+        }
+        let options = {
+            new: true
+        }
+        let taskRating = await Task.findOneAndUpdate(findData, updateData, options);
+        console.log("Task rated Successfully => ", taskRating);
+        return { data: taskRating, error: false }
+
+    } catch (err) {
+        console.log("Error => ", err);
+        return { data: err, error: true }
+    }
+}
+
+const getAllTasksWithSameDueDate = async function (data) {
+    try {
+
+        let findData = {
+            assignedTo: data.taskDetails.assignedTo,
+            dueDate: data.taskDetails.dueDate
+        }
+
+        console.log("Get all tasks of same due date => ", findData);
+
+        let allTasks = await Task.taskFindQuery(findData, {}, "");
+        console.log("Task for same due date fetched Successfully => ", allTasks.length);
+        return { data: allTasks, error: false }
+
+    } catch (err) {
+        console.log("Error => ", err);
+        return { data: err, error: true }
+    }
+}
+
+const updateOverallRatingDoc = async function (data) {
+    try {
+
+        let dueDate = data.taskDetails.dueDate;
+
+        const dateObj = new Date(dueDate);
+        const year = dateObj.getFullYear();
+        const month = dateObj.getMonth() + 1; // getMonth() returns 0-11, add 1 to get 1-12
+        const date = dateObj.getDate();
+
+        let findData = {
+            userId: data.taskDetails.assignedTo,
+            date: date,
+            month: month,
+            year: year
+        }
+
+        let allRatedTasks = data.allTasksWithSameDueDate.filter(task => task.isRated);
+        let sumOfRating = allRatedTasks.reduce((sum, task) => {
+            return sum + task.rating
+        }, 0);
+        let averageRating = sumOfRating / allRatedTasks.length;
+        let updateData = {
+            rating: averageRating,
+            $addToSet: { taskIds: data.taskId }
+        };
+        let options = {
+            new: true,
+            upsert: true
+        }
+        console.log("Get corrosponding rating doc => ", findData, " UpdateData => ", updateData)
+        let averageUpdatedRating = await Rating.ratingFindOneAndUpdate(findData, updateData, options);
+        console.log("Average Rating document updated Successfully => ", averageUpdatedRating);
+        return { data: averageUpdatedRating, error: false }
+
+    } catch (err) {
+        console.log("Error => ", err);
+        return { data: err, error: true }
+    }
+}
+
+/**Controller for getting all tasks of a project id */
+const getTasksByProjectId = async (req, res, next) => {
+
+    let data = req.data;
+
+    if (!data.projectId) {
+        return res.status(400).send(sendResponse(400, "Please send all required Data fields", 'rateUserTask', null, req.data.signature))
+    }
+
+    let projectTasks = await getProjectSpecificTasks(data);
+    if (projectTasks.error) {
+        return res.status(500).send(sendResponse(500, 'Project Not found..', 'rateUserTask', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'Task fetched', 'rateUserTask', projectTasks.data, req.data.signature));
+}
+exports.getTasksByProjectId = getTasksByProjectId;
+
+const getProjectSpecificTasks = async function (data) {
+
+    try {
+        let findData = {
+            projectId: data.projectId
+        }
+        let populate = "lead projectId createdBy"
+        let tasks = await Task.taskFindQuery(findData, {}, populate);
+        console.log("Task fetched Successfully, length => ", tasks.length);
+        return { data: tasks, error: false }
+    } catch (err) {
+        console.log("Error => ", err);
+        return { data: err, error: true }
+    }
+}

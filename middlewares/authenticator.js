@@ -13,7 +13,7 @@ let usersClient = {
 
 module.exports = function (clients, data) {
     return function (req, res, next) {
-        console.log(req.headers)
+        // console.log(req.headers)
 
         // import user client
         var users = usersClient.create(clients.users);

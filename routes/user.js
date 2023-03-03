@@ -8,17 +8,21 @@ const clients = {
 };
 const data = {}
 const authenticator = require('../middlewares/authenticator')(clients, data);
+const authenticateRole = require("../middlewares/authenticateRole");
 
-const { getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId } = require('../controllers/user');
+const { getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getAllLeadsLisitng, getAllUsersNonPaginated } = require('../controllers/user');
 
 // router.get("/v1/user/", [], getUserRatingComment);
 
-router.get("/v1/all/", [authenticator], getAllUsers);
-router.patch("/v1/edit/", [authenticator], editUserDetails);
-router.post("/v1/add/", [authenticator], addNewUser);
+router.get("/v1/all/pagination", [authenticator], getAllUsers);
+
+router.patch("/v1/edit", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "USER", "INTERN",])], editUserDetails);
+router.post("/v1/add", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], addNewUser);
 router.get("/v1/userId", [authenticator], getUserDetailsByUserId);
 
+router.get("/v1/leads/list", [], getAllLeadsLisitng);
 
+router.get("/v1/list", [authenticator], getAllUsersNonPaginated);
 
 
 
