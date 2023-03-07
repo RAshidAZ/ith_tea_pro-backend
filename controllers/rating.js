@@ -13,9 +13,6 @@ const getUserRating = async (req, res, next) => {
     if (!data.userId || !data.date || !data.month || !data.year) {
         return res.status(400).send(sendResponse(400, "Params Missing", 'getUserRating', null, req.data.signature))
     }
-    //TODO: Change after auth is updated
-    data.givenBy = data.auth.id 
-    // data.givenBy = "601e3c6ef5eb242d4408dcc8"
 
     let userRating = await findUserRatingGivenDate(data)
     if (userRating.error) {

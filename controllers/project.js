@@ -2,6 +2,8 @@ const { sendResponse } = require('../helpers/sendResponse');
 const queryController = require('../query')
 const { Project } = queryController;
 
+const mongoose = require("mongoose");
+
 const ratingController = require('./rating')
 const { addCommnetIdInRatingById } = ratingController;
 
@@ -24,14 +26,14 @@ const getProjectsAllUser = async (req, res, next) => {
     }
 
     let projectRes = await createPayloadAndGetProjectsAllUser(data)
-    console.log('projectRes : ', projectRes)
     if (projectRes.error || !projectRes.data) {
         return res.status(500).send(sendResponse(500, '', 'getProjectsAllUser', null, req.data.signature))
     }
-    let projectUsers = projectRes.data.length ? projectRes.data[0].accessibleBy : []
+    let projectUsers = projectRes.data.length ? projectRes.data[0].accessibleBy : [];
+    projectUsers = projectUsers.filter(e => !e.isBlocked);
     return res.status(200).send(sendResponse(200, "Project's User Fetched", 'getProjectsAllUser', projectUsers, req.data.signature))
 }
-exports.getProjectsAllUser = getProjectsAllUser
+exports.getProjectsAllUser = getProjectsAllUser;
 
 
 const createPayloadAndGetProjectsAllUser = async function (data) {
@@ -89,7 +91,6 @@ const addNewProject = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, "", 'addNewProject', null, req.data.signature))
     }
 
-    console.log("------", data.auth)
     let projectRes = await createPayloadAndAddProject(data)
     console.log('projectRes : ', projectRes)
     if (projectRes.error || !projectRes.data) {
@@ -106,7 +107,7 @@ const createPayloadAndAddProject = async function (data) {
             name: data.name,
             categories: data.projectCategories,
             managedBy: data.selectedManagers,
-            accessibleBy: data.selectAccessibleBy,
+            accessibleBy: data.selectAccessibleBy || [],
             description: data.description,
             // image : data.imagePath
         }
@@ -122,7 +123,7 @@ exports.createPayloadAndAddProject = createPayloadAndAddProject
 
 const editProject = async (req, res, next) => {
     let data = req.data;
-    if (!data.projectId || !data.name || !data.categories || !data.description) {
+    if (!data.projectId || !data.name || !data.description) {
         return res.status(400).send(sendResponse(400, "", 'editProject', null, req.data.signature))
     }
 
@@ -143,8 +144,14 @@ const createPayloadAndEditProject = async function (data) {
         }
         let updatePayload = {
             name: data.name,
-            categories: data.categories,
+            // categories: data.categories,
             description: data.description,
+        }
+        if (data.selectedManagers) {
+            updatePayload.managedBy = data.selectedManagers
+        }
+        if (data.selectAccessibleBy) {
+            updatePayload.accessibleBy = data.selectAccessibleBy
         }
         let projectRes = await Project.editProjectDetails(payload, updatePayload)
         return { data: projectRes, error: false }
@@ -180,6 +187,11 @@ const createPayloadAndAssignProjectToUser = async function (data) {
         let updatePayload = {
             $addToSet: { accessibleBy: { $each: data.userIds } }
         }
+        if (data.assignLead) {
+            updatePayload = {
+                $addToSet: { managedBy: { $each: data.userIds } }
+            }
+        }
         let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
         return { data: projectRes, error: false }
     } catch (err) {
@@ -188,6 +200,22 @@ const createPayloadAndAssignProjectToUser = async function (data) {
     }
 }
 exports.createPayloadAndAssignProjectToUser = createPayloadAndAssignProjectToUser
+
+const assignLeadToProject = async (req, res, next) => {
+    let data = req.data;
+    if (!data.projectId || !data.userIds) {
+        return res.status(400).send(sendResponse(400, "Missing Params", 'assignLeadToProject', null, req.data.signature))
+    }
+
+    data.assignLead = true;
+    let projectRes = await createPayloadAndAssignProjectToUser(data)
+    console.log('projectRes : ', projectRes)
+    if (projectRes.error || !projectRes.data) {
+        return res.status(500).send(sendResponse(500, '', 'assignUserToProject', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, "Project's Lead Assigned Successfully", 'assignUserToProject', null, req.data.signature))
+}
+exports.assignLeadToProject = assignLeadToProject
 
 const removeUserFromProject = async (req, res, next) => {
     let data = req.data;
@@ -204,6 +232,22 @@ const removeUserFromProject = async (req, res, next) => {
 }
 exports.removeUserFromProject = removeUserFromProject
 
+const removeLeadFromProject = async (req, res, next) => {
+    let data = req.data;
+    if (!data.projectId || !data.userId) {
+        return res.status(400).send(sendResponse(400, "", 'removeUserFromProject', null, req.data.signature))
+    }
+
+    data.removeLead = true;
+
+    let projectRes = await createPayloadAndUnAssignUser(data)
+    console.log('projectRes : ', projectRes)
+    if (projectRes.error || !projectRes.data) {
+        return res.status(500).send(sendResponse(500, '', 'removeUserFromProject', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, "Project's Lead Removed Successfully", 'removeUserFromProject', null, req.data.signature))
+}
+exports.removeLeadFromProject = removeLeadFromProject
 
 const createPayloadAndUnAssignUser = async function (data) {
     try {
@@ -212,6 +256,11 @@ const createPayloadAndUnAssignUser = async function (data) {
         }
         let updatePayload = {
             $pull: { accessibleBy: data.userId }
+        }
+        if (data.removeLead) {
+            updatePayload = {
+                $pull: { managedBy: data.userId }
+            }
         }
         let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
         return { data: projectRes, error: false }
@@ -265,11 +314,14 @@ const createPayloadAndgetAllProjects = async function (data) {
 
         let projectAccess = {};
 
-        if (data.auth.role !== 'SUPER_ADMIN') {
-            projectAccess["$or"] = [
-                { accessibleBy: mongoose.types.ObjectId(data.auth.id) },
-                { managedBy: mongoose.types.ObjectId(data.auth.id) },
-            ]
+        if (!['SUPER_ADMIN','ADMIN'].includes(data.auth.role)) {
+            projectAccess["$match"] =
+            {
+                "$or": [
+                    { accessibleBy: mongoose.Types.ObjectId(data.auth.id) },
+                    { managedBy: mongoose.Types.ObjectId(data.auth.id) },
+                ]
+            }
             pipeline.push(projectAccess);
         }
 
@@ -289,7 +341,7 @@ const createPayloadAndgetAllProjects = async function (data) {
                             $match: {
                                 "$expr": {
                                     $and: [
-                                        { $ne: ["$status", "COMPLETED"] },
+                                        // { $ne: ["$status", "COMPLETED"] },
                                         { $eq: ["$projectId", "$$projectId"] }
                                     ]
                                 }
@@ -309,6 +361,17 @@ const createPayloadAndgetAllProjects = async function (data) {
                 }
             }
         )
+        pipeline.push(
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "managedBy",
+                    foreignField: "_id",
+                    as: "managedBy"
+                }
+            }
+        )
+        console.log("Pipline formed => ", pipeline)
         let projectRes = await Project.projectAggregate(pipeline)
         console.log("ProjectRes=>", projectRes.length)
         return { data: projectRes, error: false }
@@ -336,14 +399,20 @@ const createPayloadAndgetAllProjectsList = async function (data) {
         let payload = {
             isActive: true
         }
-        if (data.auth.role !== 'SUPER_ADMIN') {
+        if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+            console.log("Role other than SA/A...", data.auth.role)
             payload["$or"] = [
                 { accessibleBy: data.auth.id },
                 { managedBy: data.auth.id },
             ]
         }
-        let projection = {}
-        let projectRes = await Project.getAllProjects(payload, projection)
+        let projection = {};
+
+        let sortCriteria = {};
+        if (data.alphabetical) {
+            sortCriteria.name = -1
+        }
+        let projectRes = await Project.getAllProjects(payload, projection, sortCriteria)
         return { data: projectRes, error: false }
     } catch (err) {
         console.log("createPayloadAndgetAllProjects Error : ", err)

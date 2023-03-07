@@ -1,9 +1,12 @@
-const { sendResponse } = require('../helpers/sendResponse');
 const queryController = require('../query')
 const { User, Auth, Credentials, Project } = queryController;
-const utilities = require('../helpers/security');
 
+const mongoose = require("mongoose");
+const { sendResponse } = require('../helpers/sendResponse');
+const utilities = require('../helpers/security');
 const emailUtitlities = require("../helpers/email");
+
+const actionLogController = require("../controllers/actionLogs");
 
 /**Get all users with Custom Pagination */
 const getAllUsers = async (req, res, next) => {
@@ -23,6 +26,12 @@ const findAllUser = async function (data) {
     try {
         let payload = {
             role: 'USER'
+        }
+        if (data.search) {
+            payload["$or"] = [
+                { "name": { "$regex": data.search, "$options": "i" } },
+                { "email": { "$regex": data.search, "$options": "i" } },
+            ]
         }
         let projection = {};
 
@@ -61,16 +70,22 @@ exports.findAllUser = findAllUser
 const editUserDetails = async (req, res, next) => {
     let data = req.data;
 
+    if (['USER', 'INTERN'].includes(data.auth.role)) {
+        data.userId = data.auth.id;
+    }
+    if (['LEAD', 'SUPER_ADMIN', 'ADMIN'].includes(data.auth.role) && !data.userId) {
+        data.userId = data.auth.id;
+    }
     if (!data.userId) {
-        return res.status(400).send(sendResponse(400, "", 'editUserDetails', null, req.data.signature))
+        return res.status(400).send(sendResponse(400, "Missing Params", 'editUserDetails', null, req.data.signature))
     }
     let userRes = await createPayloadAndEditUserDetails(data)
     console.log('userRes : ', userRes)
     if (userRes.error) {
-        return res.status(500).send(sendResponse(500, '', 'editUserDetails', null, req.data.signature))
+        return res.status(500).send(sendResponse(500, 'Something Went Wrong', 'editUserDetails', null, req.data.signature))
     }
 
-    return res.status(200).send(sendResponse(200, 'Users Fetched', 'editUserDetails', userRes.data, req.data.signature))
+    return res.status(200).send(sendResponse(200, 'User Edited', 'editUserDetails', userRes.data, req.data.signature))
 }
 exports.editUserDetails = editUserDetails
 
@@ -80,9 +95,28 @@ const createPayloadAndEditUserDetails = async function (data) {
         let payload = {
             _id: data.userId,
         }
-        let updatePayload = {
-            name: data.name,
-            email: data.email,
+        let updatePayload = {}
+        if (data.name) {
+            updatePayload.name = data.name
+        }
+        if (data.department) {
+            updatePayload.department = data.department
+        }
+        if (data.wings) {
+            updatePayload.wings = data.wings
+        }
+        if (data.designation) {
+            updatePayload.designation = data.designation
+        }
+        if (data.linkedInLink) {
+            updatePayload.linkedInLink = data.linkedInLink
+        }
+        if (data.githubLink) {
+            updatePayload.githubLink = data.githubLink
+        }
+
+        if (JSON.stringify(data.isBlocked)) {
+            updatePayload.isBlocked = data.isBlocked;
         }
         let userRes = await User.editUserDetails(payload, updatePayload)
         return { data: userRes, error: false }
@@ -97,6 +131,9 @@ const addNewUser = async (req, res, next) => {
     let data = req.data;
     if (!data.name || !data.email || !data.employeeId || !data.department || !data.wings || !data.designation || !data.role || !data.password) {
         return res.status(400).send(sendResponse(400, "", 'addNewUser', null, req.data.signature))
+    }
+    if (["SUPER_ADMIN", "ADMIN"].includes(data.role)) {
+        return res.status(400).send(sendResponse(400, "Not allowed to add this role", 'addNewUser', null, req.data.signature))
     }
     let emailRes = await checkEmailExists(data);
     console.log('emailRes : ', emailRes)
@@ -122,6 +159,7 @@ const addNewUser = async (req, res, next) => {
 
     let registerUser = await createPayloadAndRegisterUser(data);
     data.registerUser = registerUser.data;
+    data.registerUserId = registerUser.data._id;
     console.log('registerUser ---------------: ', registerUser)
     let insertUserCredentials = await createPayloadAndInsertCredentials(data);
     console.log('insertUserCredentials : ', insertUserCredentials)
@@ -130,11 +168,31 @@ const addNewUser = async (req, res, next) => {
         return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
     }
 
+    if (data.projectIds && data.projectIds.length) {
+        let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
+        if (assignProjectsToUserRes.error) {
+            return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+        }
+        console.log("Assign Projects assignProjectsToUserRes => ", assignProjectsToUserRes.data)
+    }
+    let actionLogData = {
+        actionType: "TEAM_MEMBER",
+        actionTaken: "TEAM_MEMBER_ADDED",
+        actionBy: data.auth.id,
+        addedUserId: registerUser.data?._id
+    }
+    data.actionLogData = actionLogData;
+    let addActionLogRes = await actionLogController.addActionLog(data);
+
+    if (addActionLogRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+    }
+
     let sendWelcomeEmailRes = await emailUtitlities.sendWelcomeEmail(data);
     console.log("sendWelcomeEmailRes ======> ", sendWelcomeEmailRes);
     return res.status(200).send(sendResponse(200, 'Users Created', 'addNewUser', null, req.data.signature))
 }
-exports.addNewUser = addNewUser
+exports.addNewUser = addNewUser;
 
 const checkEmailExists = async (data) => {
     try {
@@ -182,9 +240,9 @@ const createPayloadAndRegisterUser = async function (data) {
         role: data.role,
         wings: data.wings,
         employeeId: data.employeeId,
-        isActive:true,
-        isBlocked:false,
-        emailVerified:true
+        isActive: true,
+        isBlocked: false,
+        emailVerified: true
     }
     let options = {
         upsert: true,
@@ -219,7 +277,10 @@ const createPayloadAndInsertCredentials = async function (data) {
         userId: data.registerUser._id,
         password: hash,
         salt: salt,
-        accountId: data.accountId
+        accountId: data.accountId,
+        isActive: true,
+        isBlocked: false,
+        emailVerified: true
     }
     // if (data.employeeId) {
     //     updateData.employeeId = data.employeeId
@@ -243,6 +304,32 @@ const createPayloadAndInsertCredentials = async function (data) {
             data: error,
             error: true
         }
+    }
+}
+
+const createPayloadAndAssignProjectToAddedUser = async function (data) {
+    try {
+
+        let payload = {
+            _id: { $in: data.projectIds }
+        }
+
+        let updatePayload = {};
+        if (data.role == "LEAD") {
+            updatePayload = {
+                $addToSet: { managedBy: mongoose.Types.ObjectId(data.registerUserId) }
+            }
+        }
+        if (["USER", "INTERN"].includes(data.role)) {
+            updatePayload = {
+                $addToSet: { accessibleBy: mongoose.Types.ObjectId(data.registerUserId) }
+            }
+        }
+        let projectAssignRes = await Project.updateMany(payload, updatePayload)
+        return { data: projectAssignRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndEditProject Error : ", err)
+        return { data: err, error: true }
     }
 }
 
@@ -286,9 +373,9 @@ const getAllLeadsLisitng = async (req, res, next) => {
 
     let leadsRes;
     if (data.projectId) {
-        leadsRes = await getLeadsOfSpecificProject(data);
+        leadsRes = await createPayloadAndGetLeadsOfSpecificProject(data);
     } else {
-        leadsRes = await findAllLeadsList(data)
+        leadsRes = await createPayloadAndfindAllLeadsList(data)
     }
 
     if (leadsRes.error) {
@@ -299,7 +386,7 @@ const getAllLeadsLisitng = async (req, res, next) => {
 }
 exports.getAllLeadsLisitng = getAllLeadsLisitng
 
-const getLeadsOfSpecificProject = async function (data) {
+const createPayloadAndGetLeadsOfSpecificProject = async function (data) {
     try {
 
         let payload = {
@@ -322,14 +409,14 @@ const getLeadsOfSpecificProject = async function (data) {
     }
 }
 
-const findAllLeadsList = async function (data) {
+const createPayloadAndfindAllLeadsList = async function (data) {
     try {
 
         let findData = {
             role: "LEAD",
-            isActive:true,
-            isBlocked:false,
-            emailVerified:true
+            isActive: true,
+            isBlocked: false,
+            emailVerified: true
         }
         let projection = {};
 
@@ -348,12 +435,18 @@ const getAllUsersNonPaginated = async (req, res, next) => {
 
     let findData = {
         role: 'USER',
-        // isActive:true,
-        // isBlocked:false,
-        // emailVerified:true
+        isActive: true,
+        isBlocked: false,
+        emailVerified: true
+    }
+    if (data.search) {
+        findData["$or"] = [
+            { "name": { "$regex": data.search, "$options": "i" } },
+            { "email": { "$regex": data.search, "$options": "i" } },
+        ]
     }
     data.findData = findData;
-    let userRes = await findAllUsersList(data)
+    let userRes = await createPayloadAndfindAllUsersList(data)
 
     if (userRes.error) {
         return res.status(500).send(sendResponse(500, '', 'getAllUsers', null, req.data.signature))
@@ -363,15 +456,62 @@ const getAllUsersNonPaginated = async (req, res, next) => {
 }
 exports.getAllUsersNonPaginated = getAllUsersNonPaginated;
 
-const findAllUsersList = async function (data) {
+const createPayloadAndfindAllUsersList = async function (data) {
     try {
 
         let projection = {};
         let payload = data.findData;
-        let userRes = await User.getAllUsers(payload, projection);
+        let sortCriteria = { createdAt: -1 }
+        let userRes = await User.getAllUsers(payload, projection, sortCriteria);
         return { data: userRes, error: false }
     } catch (err) {
         console.log("findAllUser Error : ", err)
+        return { data: err, error: true }
+    }
+}
+
+
+// Non Pagination Leads List
+const updateUserBlockStatus = async (req, res, next) => {
+    let data = req.data;
+
+    if (!data.userId) {
+        return res.status(400).send(sendResponse(400, 'Missing Params', 'updateUserBlockStatus', null, req.data.signature))
+    }
+
+    let updateStatusRes = await createPayloadAndEditUserDetails(data);
+    if (updateStatusRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getAllLeadsLisitng', null, req.data.signature))
+    }
+
+    console.log("updateStatusRes",updateStatusRes)
+    //this will change when schema of credentials and authenticator is modified
+    let updateUserInCredentials = await createPayloadAndEditUserCredentialsDetails(data);
+    if (updateUserInCredentials.error) {
+        return res.status(500).send(sendResponse(500, '', 'getAllLeadsLisitng', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, 'User block status updated', 'getAllLeadsLisitng', null, req.data.signature))
+}
+exports.updateUserBlockStatus = updateUserBlockStatus
+
+
+const createPayloadAndEditUserCredentialsDetails = async function (data) {
+    try {
+        let payload = {
+            userId: data.userId,
+        }
+        let updatePayload = {}
+
+        if (JSON.stringify(data.isBlocked)) {
+            updatePayload.isBlocked = data.isBlocked;
+        }
+        let options = {
+            new: true
+        }
+        let userRes = await Credentials.createCredentials(payload, updatePayload, options)
+        return { data: userRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndEditUserDetails Error : ", err)
         return { data: err, error: true }
     }
 }

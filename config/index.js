@@ -12,7 +12,9 @@ const commonVariables = {
     TASK_PRIORITY: ["LOW", "REPEATED", "MEDIUM", "HIGH", "None"],
     ALLOWED_GROUP_BY: ['category', 'status', "projectId", "createdBy", "assignedTo", "priority"],
     PAGE_LIMIT:10,
-    ENCRYPT_SALT_STATIC: 'dSDFeFenyL2jaSDasdaeFenyL2jas@766sar7^^#&W^FSDBGxg7dgBGxg7dgqw3FSQ'
+    ENCRYPT_SALT_STATIC: 'dSDFeFenyL2jaSDasdaeFenyL2jas@766sar7^^#&W^FSDBGxg7dgBGxg7dgqw3FSQ',
+    ACTION_TYPE : ["TASK", "TASK_RATING", "PROJECTS","TEAM_MEMBER"],
+    ACTION_TAKEN : ["TASK_RATING", "TASK_STATUS_CHANGE","TASK_DUE_DATE_CHANGE","PROJECT_NAME_CHANGED", "PROJECT_CATEGORY_CHANGED", "TEAM_MEMBER_ADDED"]
 }
 
 //setting the common variables

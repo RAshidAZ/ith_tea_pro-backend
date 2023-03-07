@@ -78,7 +78,17 @@ let tasksSchema = new Schema({
             values: process.env.TASK_PRIORITY.split(","),  // ["LOW", "REPEATED", "MEDIUM", "HIGH"]
             message: "Priority ENUM FAILED",
         }
-    }
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false
+    },
+    ratingComments: [
+        {
+            type: mongoose.Types.ObjectId,
+            ref: "comments"
+        }
+    ],
 }, {
     timestamps: true
 });

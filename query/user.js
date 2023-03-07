@@ -4,8 +4,12 @@ exports.insertUser = function (payload) {
     return Users.create(payload)
 }
 
-exports.getAllUsers = function (findPayload, projection) {
-    return Users.find(findPayload, projection)
+exports.getAllUsers = function (findPayload, projection, sortCriteria) {
+    if (sortCriteria) {
+        return Users.find(findPayload, projection).sort(sortCriteria)
+    } else {
+        return Users.find(findPayload, projection)
+    }
 }
 
 exports.editUserDetails = function (findPayload, updatePayload) {
@@ -17,7 +21,7 @@ exports.userfindOneQuery = function (findPayload, projection) {
 }
 
 exports.getAllUsersPagination = function (findPayload, projection, sort, skip, limit) {
-    console.log("----",skip, limit)
+    console.log("----", skip, limit)
     return Users.find(findPayload, projection)
         .sort(sort)
         .skip(skip)

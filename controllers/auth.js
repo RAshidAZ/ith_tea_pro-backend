@@ -164,6 +164,13 @@ const userLogin = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, "User not found", 'userLogin', null, req.data.signature))
     }
 
+    if (user && user.data && !user.data.emailVerified) {
+        return res.status(400).send(sendResponse(400, "User email is not verified", 'userLogin', null, req.data.signature))
+    }
+    if (user && user.data && user.data.isBlocked) {
+        return res.status(400).send(sendResponse(400, "User is Blocked", 'userLogin', null, req.data.signature))
+    }
+
     data.user = user.data;
     console.log("User ", data.user)
     data.userId = user.data._id;

@@ -5,9 +5,12 @@ exports.findInProjects = async function (payload, projection) {
     console.log("------------------------", payload)
     return Projects.find(payload, projection)
 }
-exports.getAllProjects = async function (payload, projection) {
-    console.log("------------------------", payload)
-    return Projects.find(payload, projection).populate('accessibleBy managedBy')
+exports.getAllProjects = async function (payload, projection, sortCriteria) {
+    if (!sortCriteria) {
+        sortCriteria = { createdAt: -1 }
+    }
+    console.log("------------------------", payload, sortCriteria)
+    return Projects.find(payload, projection).populate('accessibleBy managedBy').sort(sortCriteria)
 }
 
 exports.getProjectsAllUser = async function (payload, projection) {
@@ -34,8 +37,16 @@ exports.projectAggregate = async function (pipeline) {
 }
 
 exports.findSpecificProject = async function (payload, projection, populate) {
-    if(!projection){
+    if (!projection) {
         projection = {}
     }
+    if (!populate) {
+        populate = ""
+    }
     return Projects.findOne(payload, projection).populate(populate);
+}
+
+exports.updateMany = async function (payload, updatePayload) {
+    console.log("assignProjectToMultipleUsers------------------------", payload, updatePayload)
+    return Projects.updateMany(payload, updatePayload)
 }

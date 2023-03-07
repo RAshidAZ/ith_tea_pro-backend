@@ -10,19 +10,30 @@ const data = {}
 const authenticator = require('../middlewares/authenticator')(clients, data);
 const authenticateRole = require("../middlewares/authenticateRole");
 
-const { getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getAllLeadsLisitng, getAllUsersNonPaginated } = require('../controllers/user');
+const { getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getAllLeadsLisitng, getAllUsersNonPaginated , updateUserBlockStatus } = require('../controllers/user');
 
-// router.get("/v1/user/", [], getUserRatingComment);
-
-router.get("/v1/all/pagination", [authenticator], getAllUsers);
-
-router.patch("/v1/edit", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "USER", "INTERN",])], editUserDetails);
+// Superadmin, Admin Add New Team Member
 router.post("/v1/add", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], addNewUser);
+
+//Superadmin, admin edit any user details ( provide userId )
+// Lead edit either self or any user details ( provide userId )
+// User, intern can edit only themself
+router.patch("/v1/edit", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "USER", "INTERN",])], editUserDetails);
+
+//get userby userId
 router.get("/v1/userId", [authenticator], getUserDetailsByUserId);
 
+// Get all users - Pagination
+router.get("/v1/all/pagination", [authenticator], getAllUsers);
+
+//Users listing - Non Paginated ( for dropdown )
+router.get("/v1/list", [authenticator], getAllUsersNonPaginated);
+
+// Get list of leads role - Non Paginated( for dropdown )
 router.get("/v1/leads/list", [], getAllLeadsLisitng);
 
-router.get("/v1/list", [authenticator], getAllUsersNonPaginated);
+//Update User Status
+router.patch("/v1/edit/block/status", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], updateUserBlockStatus);
 
 
 
