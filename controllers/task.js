@@ -220,15 +220,16 @@ const getGroupByTasks = async (req, res, next) => {
     let data = req.data;
     // console.log('getGroupByTasks data : ', req.data);
 
-    if(data.groupBy && data.groupBy.length){
-        let allowedTaskGroup = process.env.ALLOWED_GROUP_BY.split(',')
-        data.groupByOj = {};
-        for(let i in  groupBy){
-            if (!allowedTaskGroup.includes(data.groupBy[i])) {
-                return res.status(400).send(sendResponse(400, `${data.groupBy[i]} Group By Not Supported`, 'getGroupByTasks', null, req.data.signature))
-            }
-            data.groupByOj[data.groupBy[i]] = `$${data.groupBy[i]}`
-        }
+    let allowedTaskGroup = process.env.ALLOWED_GROUP_BY.split(',')
+
+    if (!allowedTaskGroup.includes(data.groupBy)) {
+        return res.status(400).send(sendResponse(400, `${data.groupBy} Group By Not Supported`, 'getGroupByTasks', null, req.data.signature))
+    }else{
+        data.groupBy = `$${data.groupBy}`
+    }
+
+    if(data.groupBy === 'default'){
+        data.groupBy = { category: "$category", projectId: "$projectId" }
     }
 
     let taskRes = await createPayloadAndGetGroupByTask(data)
@@ -244,21 +245,19 @@ const createPayloadAndGetGroupByTask = async function (data) {
     try {
         let findData = {
         }
-        
         data.projectId ? findData["projectId"] = mongoose.Types.ObjectId(data.projectId) : ''
         data.assignedTo ? findData["assignedTo"] = mongoose.Types.ObjectId(data.assignedTo) : ''
         data.createdBy ? findData["createdBy"] = mongoose.Types.ObjectId(data.createdBy) : ''
         data.category ? findData["category"] = data.category : ''
         data.priority ? findData["priority"] = data.priority : ''
         data.status ? findData["status"] = data.status : ''
-
         let aggregate = [
             {
                 $match: findData
             },
             {
                 $group: {
-                    _id: data.groupByOj,
+                    _id: data.groupBy,
                     tasks: { $push: "$$ROOT" }
                 }
             },
@@ -267,6 +266,11 @@ const createPayloadAndGetGroupByTask = async function (data) {
         let taskRes = await Task.taskAggregate(aggregate)
         console.log(taskRes)
         let populate = []
+        if (data.groupBy == 'default') {
+            populate.push({ path: '_id.projectId', model: 'projects', select: 'name' })
+            populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
+            populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name' })
+        }
         if (data.groupBy == 'projectId') {
             populate.push({ path: '_id', model: 'projects', select: 'name' })
             populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
@@ -279,8 +283,8 @@ const createPayloadAndGetGroupByTask = async function (data) {
         }
         if (data.groupBy == 'assignedTo') {
             populate.push({ path: '_id', model: 'users', select: 'name' })
-            populate.push({ path: 'tasks.projectId', model: 'projects', select: 'name' })
             populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
+            populate.push({ path: 'tasks.projectId', model: 'projects', select: 'name' })
 
         }
         if (data.groupBy == 'status' || data.groupBy == 'category') {
