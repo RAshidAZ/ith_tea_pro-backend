@@ -225,11 +225,11 @@ const getGroupByTasks = async (req, res, next) => {
     if (!allowedTaskGroup.includes(data.groupBy)) {
         return res.status(400).send(sendResponse(400, `${data.groupBy} Group By Not Supported`, 'getGroupByTasks', null, req.data.signature))
     }else{
-        data.groupBy = `$${data.groupBy}`
+        data.aggregateGroupBy = `$${data.groupBy}`
     }
 
     if(data.groupBy === 'default'){
-        data.groupBy = { projectId: "$projectId", category: "$category" }
+        data.aggregateGroupBy = { projectId: "$projectId", category: "$category" }
     }
 
     let taskRes = await createPayloadAndGetGroupByTask(data)
@@ -258,7 +258,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
             },
             {
                 $group: {
-                    _id: data.groupBy,
+                    _id: data.aggregateGroupBy,
                     tasks: { $push: "$$ROOT" }
                 }
             },
