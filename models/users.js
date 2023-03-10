@@ -25,10 +25,6 @@ let userSchema = new Schema(
         },
         githubLink: String,
         linkedInLink: String,
-
-        emailVerified: { type: Boolean, default: false },
-        isActive: { type: Boolean, default: false },
-        isBlocked: { type: Boolean, default: false },
     },
     { timestamps: true }
 );
