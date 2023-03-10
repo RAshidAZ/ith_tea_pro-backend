@@ -218,7 +218,7 @@ exports.createPayloadAndEditTask = createPayloadAndEditTask
 //Task Lisiting Main API
 const getGroupByTasks = async (req, res, next) => {
     let data = req.data;
-    // console.log('getGroupByTasks data : ', req.data);
+    console.log('getGroupByTasks data : ', req.data);
 
     let allowedTaskGroup = process.env.ALLOWED_GROUP_BY.split(',')
 
@@ -243,8 +243,8 @@ exports.getGroupByTasks = getGroupByTasks;
 
 const createPayloadAndGetGroupByTask = async function (data) {
     try {
-        let findData = {
-        }
+        let findData = {}
+
         data.projectId ? findData["projectId"] = mongoose.Types.ObjectId(data.projectId) : ''
         data.assignedTo ? findData["assignedTo"] = mongoose.Types.ObjectId(data.assignedTo) : ''
         data.createdBy ? findData["createdBy"] = mongoose.Types.ObjectId(data.createdBy) : ''
@@ -264,6 +264,8 @@ const createPayloadAndGetGroupByTask = async function (data) {
             },
             { $sort: { _id: 1 } }
         ]
+
+        console.log("qwertyuiop1234567890-", aggregate)
 
         let taskRes = await Task.taskAggregate(aggregate)
 
