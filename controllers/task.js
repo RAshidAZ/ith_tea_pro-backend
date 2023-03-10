@@ -229,7 +229,7 @@ const getGroupByTasks = async (req, res, next) => {
     }
 
     if(data.groupBy === 'default'){
-        data.groupBy = { category: "$category", projectId: "$projectId" }
+        data.groupBy = { projectId: "$projectId", category: "$category" }
     }
 
     let taskRes = await createPayloadAndGetGroupByTask(data)
@@ -251,6 +251,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
         data.category ? findData["category"] = data.category : ''
         data.priority ? findData["priority"] = data.priority : ''
         data.status ? findData["status"] = data.status : ''
+
         let aggregate = [
             {
                 $match: findData
@@ -263,8 +264,10 @@ const createPayloadAndGetGroupByTask = async function (data) {
             },
             { $sort: { _id: 1 } }
         ]
+
         let taskRes = await Task.taskAggregate(aggregate)
-        console.log(taskRes)
+
+        // console.log(taskRes)
         let populate = []
         if (data.groupBy == 'default') {
             populate.push({ path: '_id.projectId', model: 'projects', select: 'name' })
@@ -294,7 +297,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
         }
 
         let populatedRes = await Task.taskPopulate(taskRes, populate)
-        console.log("0000000", populatedRes)
+        // console.log("0000000", populatedRes)
         return { data: taskRes, error: false }
     } catch (err) {
         console.log("createPayloadAndGetGroupByTask Error : ", err)
