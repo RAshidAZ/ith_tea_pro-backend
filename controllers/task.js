@@ -218,7 +218,7 @@ exports.createPayloadAndEditTask = createPayloadAndEditTask
 //Task Lisiting Main API
 const getGroupByTasks = async (req, res, next) => {
     let data = req.data;
-    console.log('getGroupByTasks data : ', req.data);
+    // console.log('getGroupByTasks data : ', req.data);
 
     let allowedTaskGroup = process.env.ALLOWED_GROUP_BY.split(',')
 
@@ -265,7 +265,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
             { $sort: { _id: 1 } }
         ]
 
-        console.log("qwertyuiop1234567890-", aggregate)
+        // console.log("qwertyuiop1234567890-", aggregate)
 
         let taskRes = await Task.taskAggregate(aggregate)
 
@@ -317,7 +317,7 @@ const getTaskDetailsByTaskId = async (req, res, next) => {
     }
 
     let taskRes = await createPayloadAndGetTask(data)
-    console.log('taskRes : ', taskRes)
+    // console.log('taskRes : ', taskRes)
     if (taskRes.error) {
         return res.status(500).send(sendResponse(500, '', 'getTaskDetailsByTaskId', null, req.data.signature))
     }
