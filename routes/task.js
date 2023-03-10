@@ -32,6 +32,7 @@ router.get("/v1/groupby",
     getGroupByTasks);
 
 router.get("/v1/by/taskId", [authenticator], getTaskDetailsByTaskId);
+
 router.get("/v1/status/analytics", [authenticator], getTaskStatusAnalytics);
 
 
@@ -67,6 +68,17 @@ router.patch("/v1/delete",
 router.get("/v1/all/of/project",
     [authenticator, filterProjects],
     getTasksByProjectId);
+
+
+/* Get task list for task listing
+- According to role : 
+    - SA/A(All tasks), 
+    - User( Task assigned,createdby and Of Its assigned Project)
+    - Lead (Assigned Projects) 
+*/
+router.get("/v1/list/project",
+    [authenticator, filterProjects],
+    getTaskList)
 
 module.exports = router;
 

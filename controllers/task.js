@@ -220,10 +220,15 @@ const getGroupByTasks = async (req, res, next) => {
     let data = req.data;
     // console.log('getGroupByTasks data : ', req.data);
 
-    let allowedTaskGroup = process.env.ALLOWED_GROUP_BY.split(',')
-
-    if (!allowedTaskGroup.includes(data.groupBy)) {
-        return res.status(400).send(sendResponse(400, `${data.groupBy} Group By Not Supported`, 'getGroupByTasks', null, req.data.signature))
+    if(data.groupBy && data.groupBy.length){
+        let allowedTaskGroup = process.env.ALLOWED_GROUP_BY.split(',')
+        data.groupByOj = {};
+        for(let i in  groupBy){
+            if (!allowedTaskGroup.includes(data.groupBy[i])) {
+                return res.status(400).send(sendResponse(400, `${data.groupBy[i]} Group By Not Supported`, 'getGroupByTasks', null, req.data.signature))
+            }
+            data.groupByOj[data.groupBy[i]] = `$${data.groupBy[i]}`
+        }
     }
 
     let taskRes = await createPayloadAndGetGroupByTask(data)
@@ -239,19 +244,21 @@ const createPayloadAndGetGroupByTask = async function (data) {
     try {
         let findData = {
         }
+        
         data.projectId ? findData["projectId"] = mongoose.Types.ObjectId(data.projectId) : ''
         data.assignedTo ? findData["assignedTo"] = mongoose.Types.ObjectId(data.assignedTo) : ''
         data.createdBy ? findData["createdBy"] = mongoose.Types.ObjectId(data.createdBy) : ''
         data.category ? findData["category"] = data.category : ''
         data.priority ? findData["priority"] = data.priority : ''
         data.status ? findData["status"] = data.status : ''
+
         let aggregate = [
             {
                 $match: findData
             },
             {
                 $group: {
-                    _id: `$${data.groupBy}`,
+                    _id: data.groupByOj,
                     tasks: { $push: "$$ROOT" }
                 }
             },
