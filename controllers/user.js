@@ -434,10 +434,7 @@ const getAllUsersNonPaginated = async (req, res, next) => {
     let data = req.data;
 
     let findData = {
-        role: 'USER',
-        isActive: true,
-        isBlocked: false,
-        emailVerified: true
+        role: 'USER'
     }
     if (data.search) {
         findData["$or"] = [
