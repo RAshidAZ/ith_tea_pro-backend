@@ -25,7 +25,7 @@ exports.getAllUsers = getAllUsers;
 const findAllUser = async function (data) {
     try {
         let payload = {
-            role: 'USER'
+            role: { $nin: ["ADMIN", "SUPER_ADMIN"]}
         }
         if (data.search) {
             payload["$or"] = [
