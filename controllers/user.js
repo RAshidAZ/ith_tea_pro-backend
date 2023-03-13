@@ -12,7 +12,7 @@ const actionLogController = require("../controllers/actionLogs");
 const getAllUsers = async (req, res, next) => {
     let data = req.data;
 
-    let userRes = await findAllUser(data)
+    let userRes = await findAllUserWithPagination(data)
 
     if (userRes.error) {
         return res.status(500).send(sendResponse(500, '', 'getAllUsers', null, req.data.signature))
@@ -22,7 +22,7 @@ const getAllUsers = async (req, res, next) => {
 }
 exports.getAllUsers = getAllUsers;
 
-const findAllUser = async function (data) {
+const findAllUserWithPagination = async function (data) {
     try {
         let payload = {
             role: { $nin: ["ADMIN", "SUPER_ADMIN"]}
@@ -60,11 +60,55 @@ const findAllUser = async function (data) {
         }
         return { data: sendData, error: false }
     } catch (err) {
-        console.log("findAllUser Error : ", err)
+        console.log("findAllUserWithPagination Error : ", err)
         return { data: err, error: true }
     }
 }
-exports.findAllUser = findAllUser
+exports.findAllUserWithPagination = findAllUserWithPagination
+
+
+const getAllUsersListingNonPaginated = async (req, res, next) => {
+    let data = req.data;
+
+    let userRes = await findAllUserNonPagination(data)
+
+    if (userRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getAllUsersListingNonPaginated', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'Users Fetched', 'getAllUsersListingNonPaginated', userRes.data, req.data.signature))
+}
+exports.getAllUsersListingNonPaginated = getAllUsersListingNonPaginated;
+
+const findAllUserNonPagination = async function (data) {
+    try {
+        let payload = {
+            role: { $nin: ["ADMIN", "SUPER_ADMIN"]}
+        }
+        if (data.search) {
+            payload["$or"] = [
+                { "name": { "$regex": data.search, "$options": "i" } },
+                { "email": { "$regex": data.search, "$options": "i" } },
+            ]
+        }
+        let projection = {};
+
+        let sortCriteria = {
+            createdAt: -1
+        }
+
+        let userRes = await User.getAllUsers(payload, projection, sortCriteria);
+
+        let sendData = {
+            users: userRes,
+        }
+        return { data: sendData, error: false }
+    } catch (err) {
+        console.log("findAllUserNonPagination Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.findAllUserNonPagination = findAllUserNonPagination
 
 
 const editUserDetails = async (req, res, next) => {
@@ -443,10 +487,10 @@ const getAllUsersNonPaginated = async (req, res, next) => {
     let userRes = await createPayloadAndfindAllUsersList(data)
 
     if (userRes.error) {
-        return res.status(500).send(sendResponse(500, '', 'getAllUsers', null, req.data.signature))
+        return res.status(500).send(sendResponse(500, '', 'getAllUsersNonPaginated', null, req.data.signature))
     }
 
-    return res.status(200).send(sendResponse(200, 'Users Fetched', 'getAllUsers', userRes.data, req.data.signature))
+    return res.status(200).send(sendResponse(200, 'Users Fetched', 'getAllUsersNonPaginated', userRes.data, req.data.signature))
 }
 exports.getAllUsersNonPaginated = getAllUsersNonPaginated;
 
@@ -459,7 +503,7 @@ const createPayloadAndfindAllUsersList = async function (data) {
         let userRes = await User.getAllUsers(payload, projection, sortCriteria);
         return { data: userRes, error: false }
     } catch (err) {
-        console.log("findAllUser Error : ", err)
+        console.log("createPayloadAndfindAllUsersList Error : ", err)
         return { data: err, error: true }
     }
 }
