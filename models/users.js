@@ -25,6 +25,8 @@ let userSchema = new Schema(
         },
         githubLink: String,
         linkedInLink: String,
+        facebookLink: String,
+        twitterLink: String,
     },
     { timestamps: true }
 );
