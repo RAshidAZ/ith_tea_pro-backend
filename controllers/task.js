@@ -245,12 +245,30 @@ const createPayloadAndGetGroupByTask = async function (data) {
     try {
         let findData = {}
 
-        data.projectIds ? findData["projectId"] = { $in : data.projectIds.map(el => mongoose.Types.ObjectId(el)) } : ''
-        data.assignedTo ? findData["assignedTo"] = { $in : data.assignedTo.map(el => mongoose.Types.ObjectId(el)) } : ''
-        data.createdBy ? findData["createdBy"] = { $in : data.createdBy.map(el => mongoose.Types.ObjectId(el)) } : ''
-        data.category ? findData["category"] = { $in : data.category } : ''
-        data.priority ? findData["priority"] = { $in : data.priority } : ''
-        data.status ? findData["status"] = { $in : data.status } : ''
+        if(data.projectIds) {
+            let projectIds = JSON.parse(data.projectIds)
+            findData["projectId"] = { $in : projectIds.map(el => mongoose.Types.ObjectId(el)) }
+        }
+        if(data.assignedTo) {
+            let assignTo = JSON.parse(data.assignedTo)
+            findData["assignedTo"] = { $in : assignTo.map(el => mongoose.Types.ObjectId(el)) }
+        }
+        if(data.createdBy) {
+            let createdBy = JSON.parse(data.createdBy)
+            findData["createdBy"] = { $in : createdBy.map(el => mongoose.Types.ObjectId(el)) }
+        }
+        if(data.category) {
+            let categories = JSON.parse(data.category)
+            findData["category"] = { $in : categories }
+        }
+        if(data.priority) {
+            let priorities = JSON.parse(data.priority)
+            findData["priority"] = { $in : priorities }
+        }
+        if(data.status) {
+            let status = JSON.parse(data.status)
+            findData["status"] = { $in : status }
+        }
 
         let aggregate = [
             {
