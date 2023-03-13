@@ -23,11 +23,11 @@ router.patch("/v1/edit", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN
 //get userby userId
 router.get("/v1/userId", [authenticator], getUserDetailsByUserId);
 
+// Get all users (except SA & A) - Non Paginated ( for dropdown )
+router.get("/v1/all", [authenticator], getAllUsersListingNonPaginated);
+
 // Get all users (except SA & A) - Pagination
 router.get("/v1/all/pagination", [authenticator], getAllUsers);
-
-// Get all users (except SA & A) - Non Paginated ( for dropdown )
-router.get("/v1/all/pagination", [authenticator], getAllUsersListingNonPaginated);
 
 //Users listing - Non Paginated ( for dropdown ) - Only User
 router.get("/v1/list", [authenticator], getAllUsersNonPaginated);
