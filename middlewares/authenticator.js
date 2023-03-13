@@ -69,7 +69,7 @@ module.exports = function (clients, data) {
                         message: err.message.data || 'Not Authorized!!'
                     };
 
-                    return res.status(403).send(response);
+                    return res.status(401).send(response);
                 } else {
                     if (response) {
                         res.set('Refresh-Token', payload.token);
