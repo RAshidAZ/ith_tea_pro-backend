@@ -413,10 +413,7 @@ const createPayloadAndfindAllLeadsList = async function (data) {
     try {
 
         let findData = {
-            role: "LEAD",
-            isActive: true,
-            isBlocked: false,
-            emailVerified: true
+            role: "LEAD"
         }
         let projection = {};
 
