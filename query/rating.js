@@ -35,3 +35,13 @@ exports.ratingFindOneAndUpdate = async function (payload, updatePayload, options
     }
     return Rating.findOneAndUpdate(payload, updatePayload, options)
 }
+exports.getUserRating = async function (payload, projection, sortCriteria) {
+	if (!sortCriteria) {
+        sortCriteria = { createdAt: -1 }
+    }
+	if (!projection) {
+        projection = {}
+    }
+    console.log("getAllUsersRatingForMonth------------------------", payload)
+    return Rating.find(payload, projection).sort(sortCriteria)
+}

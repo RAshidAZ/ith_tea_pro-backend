@@ -469,13 +469,12 @@ const createPayloadAndfindAllLeadsList = async function (data) {
         return { data: err, error: true }
     }
 }
-
 // Non Pagination Users List
 const getAllUsersNonPaginated = async (req, res, next) => {
     let data = req.data;
 
     let findData = {
-        role: 'USER'
+        role: {$in : ['USER']}
     }
     if (data.search) {
         findData["$or"] = [

@@ -1,5 +1,6 @@
 
 const mongoose = require('mongoose');
+const moment = require('moment');
 const { sendResponse } = require('../helpers/sendResponse')
 const queryController = require('../query')
 const { Rating } = queryController;
@@ -259,3 +260,55 @@ const createPayloadAndGetComments = async function (data) {
 }
 exports.createPayloadAndGetComments = createPayloadAndGetComments
 
+const getWeekRating = async (req, res, next) => {
+    let data = req.data;
+    // console.log('getMonthAllUserRating data : ', req.data);
+
+    let ratingRes = await createPayloadAndGetWeekRating(data)
+    if (ratingRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getMonthAllUserRating', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, 'Weekly Ratings Fetched', 'getMonthAllUserRating', ratingRes.data, req.data.signature))
+}
+exports.getWeekRating = getWeekRating
+
+const createPayloadAndGetWeekRating = async function (data) {
+    try {
+        let payload = {
+            userId: data.auth.id,
+        }
+        let sortCriteria = {
+           date : 1
+        }
+
+		const currentDate = moment();
+		let startOfWeek;
+		let endOfWeek;
+		const month = currentDate.month();
+		const year = currentDate.year();
+		
+		if(!data.previousWeek){
+			startOfWeek = currentDate.clone().startOf('week');
+			endOfWeek = currentDate.clone().endOf('week');
+		}else{
+			startOfWeek = currentDate.clone().subtract(1, 'week').startOf('week');
+			endOfWeek = currentDate.clone().subtract(1, 'week').endOf('week');
+		}
+		
+		// Format the dates
+		const firstDayOfWeek = startOfWeek.format('DD');
+		const lastDayOfWeek = endOfWeek.format('DD');
+		
+		payload.month = parseInt(month) + 1;
+		payload.year = parseInt(year);
+		payload.date = { $gte : parseInt(firstDayOfWeek), $lte : parseInt(lastDayOfWeek) }
+
+
+        let weeklyRating = await Rating.getUserRating(payload, {},sortCriteria)
+        return { data: weeklyRating, error: false }
+    } catch (error) {
+        console.log("createPayloadAndGetWeekRating Error : ", error)
+        return { data: error, error: true }
+    }
+}
+exports.createPayloadAndGetWeekRating = createPayloadAndGetWeekRating;

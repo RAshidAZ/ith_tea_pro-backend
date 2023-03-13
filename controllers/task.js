@@ -739,6 +739,7 @@ const getTaskList = async function (req, res, next) {
 
     let data = req.data;
 
+	data.homePageTaskList = true
     let tasksLists = await createPayloadAndGetTaskLists(data);
     if (tasksLists.error) {
         return res.status(500).send(sendResponse(500, '', 'getTaskListForHomePage', null, req.data.signature))
@@ -837,6 +838,9 @@ const createPayloadAndGetTaskLists = async function (data) {
         if (JSON.stringify(data.pendingRatingTasks)) {
             findData.status = "COMPLETED";
             findData.isRated = false
+        }
+		if (JSON.stringify(data.homePageTaskList)) {
+            findData.status = { $ne : "COMPLETED"};
         }
         console.log("Find Data for tasks => ", findData);
         let taskList = await Task.taskFindQuery(findData, {}, "");
