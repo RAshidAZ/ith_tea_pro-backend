@@ -87,7 +87,7 @@ exports.createPayloadAndGetUserAssignedProjects = createPayloadAndGetUserAssigne
 
 const addNewProject = async (req, res, next) => {
     let data = req.data;
-    if (!data.name || !data.projectCategories || !data.selectedManagers || !data.description) {
+    if (!data.name || !data.projectCategories || !data.selectedManagers || !data.description || !data.shortDescription) {
         return res.status(400).send(sendResponse(400, "", 'addNewProject', null, req.data.signature))
     }
 

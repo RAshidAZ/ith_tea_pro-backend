@@ -12,6 +12,7 @@ let projectsSchema = new Schema({
     },
     image: String,
     description: String,
+    shortDescription: String,
     categories: [{
         type: String
     }],
