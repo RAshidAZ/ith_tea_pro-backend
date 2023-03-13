@@ -39,6 +39,13 @@ let tasksSchema = new Schema({
             ref: "users"
         }
     ],
+    priority: {
+        type: String,
+        enum: {
+            values: process.env.TASK_PRIORITY.split(","),  // ["LOW", "REPEATED", "MEDIUM", "HIGH"]
+            message: "Priority ENUM FAILED",
+        }
+    },
     dueDate: Date,
     completedDate: Date,
 
@@ -68,16 +75,9 @@ let tasksSchema = new Schema({
         default: 0
     },
 
-    createdBy: {
+    givenBy: {
         type: mongoose.Types.ObjectId,
         ref: "users"
-    },
-    priority: {
-        type: String,
-        enum: {
-            values: process.env.TASK_PRIORITY.split(","),  // ["LOW", "REPEATED", "MEDIUM", "HIGH"]
-            message: "Priority ENUM FAILED",
-        }
     },
     isDeleted: {
         type: Boolean,
@@ -89,6 +89,7 @@ let tasksSchema = new Schema({
             ref: "comments"
         }
     ],
+
 }, {
     timestamps: true
 });

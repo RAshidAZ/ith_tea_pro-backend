@@ -245,7 +245,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
     try {
         let findData = {}
 
-        data.projectId ? findData["projectId"] = mongoose.Types.ObjectId(data.projectId) : ''
+        data.projectIds ? findData["projectId"] = { $in : data.projectIds.map(el => mongoose.Types.ObjectId(el)) } : ''
         data.assignedTo ? findData["assignedTo"] = mongoose.Types.ObjectId(data.assignedTo) : ''
         data.createdBy ? findData["createdBy"] = mongoose.Types.ObjectId(data.createdBy) : ''
         data.category ? findData["category"] = data.category : ''
