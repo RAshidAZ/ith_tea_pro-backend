@@ -50,3 +50,8 @@ exports.updateMany = async function (payload, updatePayload) {
     console.log("assignProjectToMultipleUsers------------------------", payload, updatePayload)
     return Projects.updateMany(payload, updatePayload)
 }
+
+exports.distinctProjects = async function (field, payload) {
+    console.log("distinctProjects------------------------", payload, field)
+    return Projects.distinct(field, payload)
+}

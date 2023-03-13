@@ -12,7 +12,7 @@ const authenticator = require('../middlewares/authenticator')(clients, data);
 const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
-const { getProjectsAllUser, getAllProjects, addNewProject, editProject, deleteProject, assignUserToProject, getUserAssignedProjects, removeUserFromProject, getAllProjectsList, assignLeadToProject, removeLeadFromProject } = require('../controllers/project');
+const { getProjectsAllUser, getAllProjects, addNewProject, editProject, deleteProject, assignUserToProject, getUserAssignedProjects, removeUserFromProject, getAllProjectsList, assignLeadToProject, removeLeadFromProject, getAllProjectCategories } = require('../controllers/project');
 
 //Add new Project
 router.post("/v1/add/new",
@@ -66,6 +66,10 @@ router.get("/v1/list/assigned",
     [authenticator, filterProjects],
     getAllProjectsList);
 
+//get all project categories	
+router.get("/v1/categories",
+    [authenticator, filterProjects],
+	getAllProjectCategories);
 
 
 module.exports = router;

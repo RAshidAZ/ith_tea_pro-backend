@@ -419,3 +419,42 @@ const createPayloadAndgetAllProjectsList = async function (data) {
         return { data: err, error: true }
     }
 }
+
+//get all project categories
+const getAllProjectCategories = async (req, res, next) => {
+    let data = req.data;
+
+    let projectRes = await createPayloadAndgetAllProjectCategories(data)
+
+    if (projectRes.error || !projectRes.data) {
+        return res.status(500).send(sendResponse(500, '', 'getAllProjectCategories', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, 'Projects categories Fetched', 'getAllProjectCategories', projectRes.data, req.data.signature))
+}
+exports.getAllProjectCategories = getAllProjectCategories;
+
+//create payload for getting categories of project
+const createPayloadAndgetAllProjectCategories = async function (data) {
+    try {
+        let payload = {
+            isActive: true
+        }
+		let field = "categories"
+		if(data.projectId){
+			payload._id = data.projectId
+		}
+        if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+            console.log("Role other than SA/A...", data.auth.role)
+            payload["$or"] = [
+                { accessibleBy: data.auth.id },
+                { managedBy: data.auth.id },
+            ]
+        }
+        
+        let projectRes = await Project.distinctProjects(field,payload)
+        return { data: projectRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndgetAllProjectCategories Error : ", err)
+        return { data: err, error: true }
+    }
+}
