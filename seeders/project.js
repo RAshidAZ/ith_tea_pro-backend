@@ -5,7 +5,7 @@ let insertProjects = [
         _id: "601e3c6ef5eb242d4408dcd5",
         name: "CEX-MM",
         isActive: true,
-        categories: ["Adhoc", "Backend", "Frontend", "Strategy"],
+        categories: ["Ad Hoc", "Backend", "Frontend", "Strategy"],
         managedBy: ["601e3c6ef5eb242d4408dcc5", "601e3c6ef5eb242d4408dcc8"],
         accessibleBy: ["601e3c6ef5eb242d4408dcc7", "601e3c6ef5eb242d4408dcc6"]
     },
@@ -13,7 +13,7 @@ let insertProjects = [
         _id: "601e3c6ef5eb242d4408dcd7",
         name: "OSHODHARA",
         isActive: true,
-        categories: ["Adhoc", "Backend", "Frontend"],
+        categories: ["Ad Hoc", "Backend", "Frontend"],
         managedBy: ["601e3c6ef5eb242d4408dcc5", "601e3c6ef5eb242d4408dcc8"],
         accessibleBy: ["601e3c6ef5eb242d4408dcc7", "601e3c6ef5eb242d4408dcc6"]
     },

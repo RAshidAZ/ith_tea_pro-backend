@@ -20,7 +20,7 @@ let insertUser = [
         emailVerified: true,
         isActive: true,
         "department": "TECH",
-        "designation": "Software Engineer",
+        "designation": "TEA PRO SUPERADMIN",
         employeeId: "ITH2022181",
         "wings": "Backend"
     },
@@ -39,7 +39,7 @@ let insertUser = [
         emailVerified: true,
         isActive: true,
         "department": "TECH",
-        "designation": "Software Engineer",
+        "designation": "TEA PRO ADMIN",
         employeeId: "ITH2022182",
         "wings": "Backend"
     },
@@ -58,7 +58,7 @@ let insertUser = [
         emailVerified: true,
         isActive: true,
         "department": "TECH",
-        "designation": "Software Engineer",
+        "designation": "TEA PRO USER",
         employeeId: "ITH2022183",
         "wings": "Backend"
     },
@@ -78,7 +78,7 @@ let insertUser = [
         employeeId: "ITH2022184",
         isActive: true,
         "department": "TECH",
-        "designation": "Software Engineer",
+        "designation": "TEA PRO LEAD",
         "wings": "Backend"
     },
 ];
