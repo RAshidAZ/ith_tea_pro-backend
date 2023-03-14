@@ -35,7 +35,7 @@ const insertUserRating = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, "Params Missing", 'insertUserRating', null, req.data.signature))
     }
     //TODO: Change after auth is updated
-    data.givenBy = data.auth.id 
+    data.givenBy = data.auth.id
     // data.givenBy = "601e3c6ef5eb242d4408dcc8"
 
     let checkRes = await findUserRatingGivenDate(data)
@@ -66,7 +66,7 @@ exports.insertUserRating = insertUserRating
 
 const updateUserRating = async (req, res, next) => {
     let data = req.data;
-    console.log('updateUserRating data : ', req.data , data.hasOwnProperty('rating'));
+    console.log('updateUserRating data : ', req.data, data.hasOwnProperty('rating'));
 
     if (!data.hasOwnProperty('rating') || !data.ratingId) {
         return res.status(400).send(sendResponse(400, "Params Missing", 'updateUserRating', null, req.data.signature))
@@ -278,33 +278,32 @@ const createPayloadAndGetWeekRating = async function (data) {
             userId: data.auth.id,
         }
         let sortCriteria = {
-           date : 1
+            date: 1
         }
 
-		const currentDate = moment();
-		let startOfWeek;
-		let endOfWeek;
-		const month = currentDate.month();
-		const year = currentDate.year();
-		
-		if(!data.previousWeek){
-			startOfWeek = currentDate.clone().startOf('week');
-			endOfWeek = currentDate.clone().endOf('week');
-		}else{
-			startOfWeek = currentDate.clone().subtract(1, 'week').startOf('week');
-			endOfWeek = currentDate.clone().subtract(1, 'week').endOf('week');
-		}
-		
-		// Format the dates
-		const firstDayOfWeek = startOfWeek.format('DD');
-		const lastDayOfWeek = endOfWeek.format('DD');
-		
-		payload.month = parseInt(month) + 1;
-		payload.year = parseInt(year);
-		payload.date = { $gte : parseInt(firstDayOfWeek), $lte : parseInt(lastDayOfWeek) }
+        const currentDate = moment();
 
+        let weekCount = (data.previousWeek && data.weekCount) ? parseInt(data.weekCount) : 0;
+
+        const monday = currentDate.clone().startOf('week').subtract(weekCount, 'weeks')
+
+        const startDate = monday.format('DD');
+        const startMonth = monday.format('MM');
+        const startYear = monday.format('YY');
+
+        const endDate = monday.clone().add(6, 'days').format('DD');
+        const endMonth = monday.clone().add(6, 'days').format('MM');
+        const endYear = monday.clone().add(6, 'days').format('YY');
+
+        console.log("Start date of the week: ", startDate, startMonth, startYear);
+        console.log("End date of the week: ", endDate, endMonth, endYear);
+
+        payload.date = { $gte: parseInt(startDate), $lte: parseInt(endDate) }
+        payload.month = { $gte: parseInt(startMonth), $lte: parseInt(endMonth) }
+        payload.year = { $gte: parseInt(startYear), $lte: parseInt(endYear) }
 
         let weeklyRating = await Rating.getUserRating(payload, {}, sortCriteria)
+        
         return { data: weeklyRating, error: false }
     } catch (error) {
         console.log("createPayloadAndGetWeekRating Error : ", error)
