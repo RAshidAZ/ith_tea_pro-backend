@@ -304,7 +304,7 @@ const createPayloadAndGetWeekRating = async function (data) {
 		payload.date = { $gte : parseInt(firstDayOfWeek), $lte : parseInt(lastDayOfWeek) }
 
 
-        let weeklyRating = await Rating.getUserRating(payload, {},sortCriteria)
+        let weeklyRating = await Rating.getUserRating(payload, {}, sortCriteria)
         return { data: weeklyRating, error: false }
     } catch (error) {
         console.log("createPayloadAndGetWeekRating Error : ", error)
