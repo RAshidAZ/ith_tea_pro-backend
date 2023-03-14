@@ -90,7 +90,7 @@ const createPayloadAndInsertTask = async function (data) {
             dueDate: data.dueDate || new Date(new Date().setUTCHours(23, 59, 59, 0)),
             completedDate: data.completedDate,
             priority: data.priority,
-            lead: [data.tasklead]
+            lead: data.tasklead
         }
         let taskRes = await Task.insertUserTask(payload)
         return { data: taskRes, error: false }
