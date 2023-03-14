@@ -197,7 +197,7 @@ const createPayloadAndEditTask = async function (data) {
             updatePayload.assignedTo = data.assignedTo
         }
         if (data.dueDate) {
-            updatePayload.dueDate = data.dueDate
+            updatePayload.dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 0))
         }
         if (data.completedDate) {
             updatePayload.completedDate = data.completedDate
