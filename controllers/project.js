@@ -150,6 +150,9 @@ const createPayloadAndEditProject = async function (data) {
         if (data.selectedManagers) {
             updatePayload.managedBy = data.selectedManagers
         }
+		if (data.shortDescription) {
+            updatePayload.shortDescription = data.shortDescription
+        }
         if (data.selectAccessibleBy) {
             updatePayload.accessibleBy = data.selectAccessibleBy
         }
