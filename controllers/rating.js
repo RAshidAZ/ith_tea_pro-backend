@@ -291,6 +291,7 @@ const createPayloadAndGetWeekRating = async function (data) {
         const startMonth = monday.format('MM');
         const startYear = monday.format('YY');
 
+		const fullEndDate = monday.clone().add(6, 'days')
         const endDate = monday.clone().add(6, 'days').format('DD');
         const endMonth = monday.clone().add(6, 'days').format('MM');
         const endYear = monday.clone().add(6, 'days').format('YY');
@@ -298,7 +299,18 @@ const createPayloadAndGetWeekRating = async function (data) {
         console.log("Start date of the week: ", startDate, startMonth, startYear);
         console.log("End date of the week: ", endDate, endMonth, endYear);
 
-        payload.date = { $gte: parseInt(startDate), $lte: parseInt(endDate) }
+		const datesBetween = []
+		if(parseInt(endDate)<parseInt(startDate)){
+			while(monday.isSameOrBefore(fullEndDate)) {
+				
+				datesBetween.push(parseInt(monday.format('DD')));
+				monday.add(1, 'days');
+			  }
+			  payload.date = { $in: datesBetween }
+		}else{
+
+			payload.date = { $gte: parseInt(startDate), $lte: parseInt(endDate) }
+		}
         payload.month = { $gte: parseInt(startMonth), $lte: parseInt(endMonth) }
         payload.year = { $gte: parseInt(startYear), $lte: parseInt(endYear) }
 
