@@ -307,11 +307,12 @@ const createPayloadAndGetWeekRating = async function (data) {
 				monday.add(1, 'days');
 			  }
 			  payload.date = { $in: datesBetween }
+			  payload.month = { $in: [parseInt(startMonth),parseInt(endMonth) ] }
 		}else{
 
 			payload.date = { $gte: parseInt(startDate), $lte: parseInt(endDate) }
+			payload.month = { $gte: parseInt(startMonth), $lte: parseInt(endMonth) }
 		}
-        payload.month = { $gte: parseInt(startMonth), $lte: parseInt(endMonth) }
         payload.year = { $gte: parseInt(startYear), $lte: parseInt(endYear) }
 
         let weeklyRating = await Rating.getUserRating(payload, {}, sortCriteria)
