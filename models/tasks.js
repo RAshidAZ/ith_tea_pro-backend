@@ -9,11 +9,11 @@ let tasksSchema = new Schema({
         enum: {
             values: process.env.TASK_STATUS.split(","),  // ["NO_PROGRESS", "ONGOING", "COMPLETED", "ONHOLD"]
             message: "Status ENUM FAILED",
-        }
+        },
+        default: "NO_PROGRESS"
     },
     category: {
         type: String,
-
     },
     projectId: {
         type: mongoose.Types.ObjectId,
@@ -33,10 +33,20 @@ let tasksSchema = new Schema({
             ref: "comments"
         }
     ],
-
+    lead: [
+        {
+            type: mongoose.Types.ObjectId,
+            ref: "users"
+        }
+    ],
+    priority: {
+        type: String,
+        enum: {
+            values: process.env.TASK_PRIORITY.split(","),  // ["LOW", "REPEATED", "MEDIUM", "HIGH"]
+            message: "Priority ENUM FAILED",
+        }
+    },
     dueDate: Date,
-
-
     completedDate: Date,
 
     // isCompleted: {
@@ -54,13 +64,32 @@ let tasksSchema = new Schema({
     //     default: false
     // },
 
-    priority: {
-        type: String,
-        enum: {
-            values: process.env.TASK_PRIORITY.split(","),  // ["LOW", "REPEATED", "MEDIUM", "HIGH"]
-            message: "Priority ENUM FAILED",
+    isRated: {
+        type: Boolean,
+        default: false
+    },
+    rating: {
+        type: Number,
+        min: 0,
+        max: 5,
+        default: 0
+    },
+
+    givenBy: {
+        type: mongoose.Types.ObjectId,
+        ref: "users"
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false
+    },
+    ratingComments: [
+        {
+            type: mongoose.Types.ObjectId,
+            ref: "comments"
         }
-    }
+    ],
+
 }, {
     timestamps: true
 });

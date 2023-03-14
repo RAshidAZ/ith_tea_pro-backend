@@ -6,20 +6,21 @@ let ratingSchema = new Schema({
         type: mongoose.Types.ObjectId,
         ref: "users"
     },
-    givenBy: {
-        type: mongoose.Types.ObjectId,
-        ref: "users"
-    },
     rating: {
         type: Number,
         min: 0,
-        max: 5,
         default: -1
     },
     comments: [
         {
             type: mongoose.Types.ObjectId,
             ref: "comments"
+        }
+    ],
+    taskIds: [
+        {
+            type: mongoose.Types.ObjectId,
+            ref: "tasks"
         }
     ],
     date: Number,

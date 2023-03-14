@@ -20,6 +20,7 @@ router.patch("/v1/user/update", [authenticator], rating.updateUserRating);
 
 router.get("/v1/month/all/user", [authenticator], rating.getMonthAllUserRating);
 
+router.get("/v1/week/rating", [authenticator], rating.getWeekRating);
 
 
 

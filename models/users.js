@@ -18,13 +18,15 @@ let userSchema = new Schema(
         role: {
             type: String,
             enum: {
-                values: process.env.ROLE.split(","), // ["USER", "SUPER_ADMIN", "ADMIN", "LEAD"]
+                values: process.env.ROLE.split(","), // ["USER", "SUPER_ADMIN", "ADMIN", "LEAD", "INTERN"]
                 message: "ROLE ENUM FAILED",
             },
             default: "USER",
         },
         githubLink: String,
         linkedInLink: String,
+        facebookLink: String,
+        twitterLink: String,
     },
     { timestamps: true }
 );

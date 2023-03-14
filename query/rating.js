@@ -26,7 +26,22 @@ exports.getAllUsersRatingForMonth = async function (payload) {
     console.log("getAllUsersRatingForMonth------------------------", payload)
     return Rating.aggregate(payload)
 }
-exports.ratingFindOneAndUpdate = async function (payload, updatePayload) {
-    console.log("ratingFindOneAndUpdate------------------------", payload, updatePayload)
-    return Rating.findOneAndUpdate(payload, updatePayload)
+exports.ratingFindOneAndUpdate = async function (payload, updatePayload, options) {
+    // console.log("ratingFindOneAndUpdate------------------------", payload, updatePayload)
+    if(!options){
+        options = {
+            new:true
+        }
+    }
+    return Rating.findOneAndUpdate(payload, updatePayload, options)
+}
+exports.getUserRating = async function (payload, projection, sortCriteria) {
+	if (!sortCriteria) {
+        sortCriteria = { createdAt: -1 }
+    }
+	if (!projection) {
+        projection = {}
+    }
+    console.log("getAllUsersRatingForMonth------------------------", payload)
+    return Rating.find(payload, projection).sort(sortCriteria)
 }

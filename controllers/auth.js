@@ -6,7 +6,7 @@ const utilities = require('../helpers/security');
 
 const { sendResponse } = require('../helpers/sendResponse')
 const { Auth, Credentials } = require('../query');
-
+const emailUtitlites = require("../helpers/email");
 
 const userRegistry = async (req, res, next) => {
 
@@ -122,6 +122,8 @@ const createPayloadAndInsertCredentials = async function (data) {
         userId: data.registerUser._id,
         password: hash,
         salt: salt,
+        isActive:true,
+        emailVerified:true
     }
     if (data.employeeId) {
         updateData.employeeId = employeeId
@@ -161,6 +163,13 @@ const userLogin = async (req, res, next) => {
     if (!user || !user.data) {
         return res.status(400).send(sendResponse(400, "User not found", 'userLogin', null, req.data.signature))
     }
+
+    // if (user && user.data && !user.data.emailVerified) {
+    //     return res.status(400).send(sendResponse(400, "User email is not verified", 'userLogin', null, req.data.signature))
+    // }
+    // if (user && user.data && user.data.isBlocked) {
+    //     return res.status(400).send(sendResponse(400, "User is Blocked", 'userLogin', null, req.data.signature))
+    // }
 
     data.user = user.data;
     console.log("User ", data.user)

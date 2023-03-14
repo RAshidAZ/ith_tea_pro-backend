@@ -6,6 +6,7 @@ const User = require('./user')
 const Project = require('./project')
 const Auth = require("./auth");
 const Credentials = require("./credentials");
+const ActionLogs = require("./actionLog");
 
 module.exports = {
     Rating,
@@ -14,5 +15,6 @@ module.exports = {
     User,
     Project,
     Auth,
-    Credentials
+    Credentials,
+    ActionLogs
 }

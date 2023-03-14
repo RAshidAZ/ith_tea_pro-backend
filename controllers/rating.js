@@ -1,5 +1,6 @@
 
 const mongoose = require('mongoose');
+const moment = require('moment');
 const { sendResponse } = require('../helpers/sendResponse')
 const queryController = require('../query')
 const { Rating } = queryController;
@@ -13,9 +14,6 @@ const getUserRating = async (req, res, next) => {
     if (!data.userId || !data.date || !data.month || !data.year) {
         return res.status(400).send(sendResponse(400, "Params Missing", 'getUserRating', null, req.data.signature))
     }
-    //TODO: Change after auth is updated
-    data.givenBy = data.auth.id 
-    // data.givenBy = "601e3c6ef5eb242d4408dcc8"
 
     let userRating = await findUserRatingGivenDate(data)
     if (userRating.error) {
@@ -37,7 +35,7 @@ const insertUserRating = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, "Params Missing", 'insertUserRating', null, req.data.signature))
     }
     //TODO: Change after auth is updated
-    data.givenBy = data.auth.id 
+    data.givenBy = data.auth.id
     // data.givenBy = "601e3c6ef5eb242d4408dcc8"
 
     let checkRes = await findUserRatingGivenDate(data)
@@ -68,7 +66,7 @@ exports.insertUserRating = insertUserRating
 
 const updateUserRating = async (req, res, next) => {
     let data = req.data;
-    console.log('updateUserRating data : ', req.data , data.hasOwnProperty('rating'));
+    console.log('updateUserRating data : ', req.data, data.hasOwnProperty('rating'));
 
     if (!data.hasOwnProperty('rating') || !data.ratingId) {
         return res.status(400).send(sendResponse(400, "Params Missing", 'updateUserRating', null, req.data.signature))
@@ -84,7 +82,7 @@ exports.updateUserRating = updateUserRating
 
 const getMonthAllUserRating = async (req, res, next) => {
     let data = req.data;
-    console.log('getMonthAllUserRating data : ', req.data);
+    // console.log('getMonthAllUserRating data : ', req.data);
 
     if (!data.month || !data.year) {
         return res.status(400).send(sendResponse(400, "Params Missing", 'getMonthAllUserRating', null, req.data.signature))
@@ -262,3 +260,67 @@ const createPayloadAndGetComments = async function (data) {
 }
 exports.createPayloadAndGetComments = createPayloadAndGetComments
 
+const getWeekRating = async (req, res, next) => {
+    let data = req.data;
+    // console.log('getMonthAllUserRating data : ', req.data);
+
+    let ratingRes = await createPayloadAndGetWeekRating(data)
+    if (ratingRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getMonthAllUserRating', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, 'Weekly Ratings Fetched', 'getMonthAllUserRating', ratingRes.data, req.data.signature))
+}
+exports.getWeekRating = getWeekRating
+
+const createPayloadAndGetWeekRating = async function (data) {
+    try {
+        let payload = {
+            userId: data.auth.id,
+        }
+        let sortCriteria = {
+            date: 1
+        }
+
+        const currentDate = moment();
+
+        let weekCount = (data.previousWeek && data.weekCount) ? parseInt(data.weekCount) : 0;
+
+        const monday = currentDate.clone().startOf('week').subtract(weekCount, 'weeks')
+
+        const startDate = monday.format('DD');
+        const startMonth = monday.format('MM');
+        const startYear = monday.format('YY');
+
+		const fullEndDate = monday.clone().add(6, 'days')
+        const endDate = monday.clone().add(6, 'days').format('DD');
+        const endMonth = monday.clone().add(6, 'days').format('MM');
+        const endYear = monday.clone().add(6, 'days').format('YY');
+
+        console.log("Start date of the week: ", startDate, startMonth, startYear);
+        console.log("End date of the week: ", endDate, endMonth, endYear);
+
+		const datesBetween = []
+		if(parseInt(endDate)<parseInt(startDate)){
+			while(monday.isSameOrBefore(fullEndDate)) {
+				
+				datesBetween.push(parseInt(monday.format('DD')));
+				monday.add(1, 'days');
+			  }
+			  payload.date = { $in: datesBetween }
+			  payload.month = { $in: [parseInt(startMonth),parseInt(endMonth) ] }
+		}else{
+
+			payload.date = { $gte: parseInt(startDate), $lte: parseInt(endDate) }
+			payload.month = { $gte: parseInt(startMonth), $lte: parseInt(endMonth) }
+		}
+        payload.year = { $gte: parseInt(startYear), $lte: parseInt(endYear) }
+
+        let weeklyRating = await Rating.getUserRating(payload, {}, sortCriteria)
+        
+        return { data: weeklyRating, error: false }
+    } catch (error) {
+        console.log("createPayloadAndGetWeekRating Error : ", error)
+        return { data: error, error: true }
+    }
+}
+exports.createPayloadAndGetWeekRating = createPayloadAndGetWeekRating;

@@ -4,8 +4,8 @@ exports.insertUserTask = function (payload) {
     return Tasks.create(payload)
 }
 
-exports.findOneAndUpdate = function (findPayload, updatePayload) {
-    return Tasks.findOneAndUpdate(findPayload, updatePayload)
+exports.findOneAndUpdate = function (findPayload, updatePayload,options) {
+    return Tasks.findOneAndUpdate(findPayload, updatePayload, options)
 }
 exports.taskAggregate = function (aggregate) {
     return Tasks.aggregate(aggregate)

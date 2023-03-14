@@ -14,73 +14,16 @@ let insertUser = [
         role: "SUPER_ADMIN",
         userName: "super_admin_seed",
         password: crypto
-            .pbkdf2Sync("123456789", randomSalt, 10000, 64, "sha1")
+            .pbkdf2Sync("sa@ith", randomSalt, 10000, 64, "sha1")
             .toString("base64"),
         salt: salt,
         emailVerified: true,
         isActive: true,
         "department": "TECH",
-        "designation": "Software Engineer",
+        "designation": "TEA PRO SUPERADMIN",
         employeeId: "ITH2022181",
         "wings": "Backend"
-    },
-    {
-        _id: "601e3c6ef5eb242d4408dcc6",
-        name: "admin",
-        email: "admin@ith.tech",
-        accountId: "11223344",
-        provider: "email",
-        role: "ADMIN",
-        userName: "admin_seed",
-        password: crypto
-            .pbkdf2Sync("123456789", randomSalt, 10000, 64, "sha1")
-            .toString("base64"),
-        salt: salt,
-        emailVerified: true,
-        isActive: true,
-        "department": "TECH",
-        "designation": "Software Engineer",
-        employeeId: "ITH2022182",
-        "wings": "Backend"
-    },
-    {
-        _id: "601e3c6ef5eb242d4408dcc7",
-        name: "user",
-        email: "user@ith.tech",
-        accountId: "87654321",
-        provider: "email",
-        role: "USER",
-        userName: "user_seed",
-        password: crypto
-            .pbkdf2Sync("123456789", randomSalt, 10000, 64, "sha1")
-            .toString("base64"),
-        salt: salt,
-        emailVerified: true,
-        isActive: true,
-        "department": "TECH",
-        "designation": "Software Engineer",
-        employeeId: "ITH2022183",
-        "wings": "Backend"
-    },
-    {
-        _id: "601e3c6ef5eb242d4408dcc8",
-        name: "lead",
-        email: "lead@ith.tech",
-        accountId: "87654322",
-        provider: "email",
-        role: "LEAD",
-        userName: "lead_seed",
-        password: crypto
-            .pbkdf2Sync("123456789", randomSalt, 10000, 64, "sha1")
-            .toString("base64"),
-        salt: salt,
-        emailVerified: true,
-        employeeId: "ITH2022184",
-        isActive: true,
-        "department": "TECH",
-        "designation": "Software Engineer",
-        "wings": "Backend"
-    },
+    }
 ];
 
 let seedUsers = () => {
@@ -110,57 +53,13 @@ let insertCreds = [
         provider: "email",
         userName: "super_admin_seed",
         password: crypto
-            .pbkdf2Sync("123456789", randomSalt, 10000, 64, "sha1")
+            .pbkdf2Sync("sa@ith", randomSalt, 10000, 64, "sha1")
             .toString("base64"),
         salt: salt,
         emailVerified: true,
         isActive: true,
         isBlocked: false,
-    },
-    {
-        userId: "601e3c6ef5eb242d4408dcc6",
-        accountId: "11223344",
-        // employeeId: "ITH2022181",
-        userName: "admin_seed",
-        provider: "email",
-        password: crypto
-            .pbkdf2Sync("123456789", randomSalt, 10000, 64, "sha1")
-            .toString("base64"),
-        salt: salt,
-        emailVerified: true,
-        isActive: true,
-        isBlocked: false,
-
-    },
-    {
-        userId: "601e3c6ef5eb242d4408dcc7",
-        accountId: "87654321",
-        // employeeId: "ITH2022183",
-        userName: "user_seed",
-        provider: "email",
-        password: crypto
-            .pbkdf2Sync("123456789", randomSalt, 10000, 64, "sha1")
-            .toString("base64"),
-        salt: salt,
-        emailVerified: true,
-        isActive: true,
-        isBlocked: false,
-
-    },
-    {
-        userId: "601e3c6ef5eb242d4408dcc8",
-        // employeeId: "ITH2022185",
-        accountId: "87654322",
-        provider: "email",
-        userName: "lead_seed",
-        password: crypto
-            .pbkdf2Sync("123456789", randomSalt, 10000, 64, "sha1")
-            .toString("base64"),
-        salt: salt,
-        emailVerified: true,
-        isActive: true,
-        isBlocked: false,
-    },
+    }
 ];
 
 let seedCredential = () => {
