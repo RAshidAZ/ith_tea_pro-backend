@@ -616,7 +616,7 @@ const getUnAssignedUserLisitng = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, 'Missing Params', 'getUnAssignedUserLisitng', null, req.data.signature))
 	}
 
-	if(data.role && !['CONTRIBUTORS', 'LEADS'].includes(data.role)){
+	if(data.role && !['CONTRIBUTORS', 'LEAD'].includes(data.role)){
         return res.status(400).send(sendResponse(400, 'Invalid role passed', 'getUnAssignedUserLisitng', null, req.data.signature))
 	}
 	userRes = await createPayloadAndGetUnAssignedUserOfSpecificProject(data);
