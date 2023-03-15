@@ -5,8 +5,8 @@ const env = process.env.NODE_ENV || 'development';
 const commonVariables = {
     SERVICE_RPC_HOST: 'http://localhost',
     SERVICE_REST_PORT: 9000,
-	// CLIENT_URL: 'https://projects.ith.tech',
-	CLIENT_URL: 'http://localhost:3000',
+	CLIENT_URL: 'https://projects.ith.tech',
+	// CLIENT_URL: 'http://localhost:3000',
     SERVICE_RPC_PORT: '8500',
     STATUS: [200, 500, 400, 401],
     ROLE: ["CONTRIBUTOR", "SUPER_ADMIN", "ADMIN", "LEAD", "GUEST"],          //contributor/GUEST ADD
