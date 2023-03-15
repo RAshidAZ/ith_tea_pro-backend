@@ -219,6 +219,9 @@ const addNewUser = async (req, res, next) => {
     // console.log("Password accountId => ", data.accountId);
 
     let registerUser = await createPayloadAndRegisterUser(data);
+	if (registerUser.error) {
+		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewUser', null, req.data.signature))
+	}
     data.registerUser = registerUser.data;
     data.registerUserId = registerUser.data._id;
     console.log('registerUser ---------------: ', registerUser)
@@ -343,9 +346,10 @@ const createPayloadAndRegisterUser = async function (data) {
 
     try {
 		let registerUser = await Auth.findAndUpdateUser(findData, updateData, options);
-		let passwordToken = (registerUser._id).toString()
+		let passwordToken = btoa(registerUser._id).toString()
 		updateData.passwordToken = passwordToken;
-		data.signupToken = btoa(passwordToken)
+		data.signupToken = passwordToken
+		let updateUser = await Auth.findAndUpdateUser(findData, updateData);
         console.log("Register User Response => ", registerUser)
         return {
             data: registerUser,

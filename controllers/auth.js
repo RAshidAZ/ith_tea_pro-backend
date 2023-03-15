@@ -337,8 +337,9 @@ exports.verifyPasswordToken = verifyPasswordToken;
 const findUserByPasswordToken = async function (data) {
     try {
 
+		console.log("================token========",atob(data.token))
         let findData = {
-            passwordToken: atob(data.token)
+            passwordToken: data.token
         };
         let user = await Auth.findUser(findData);
         console.log("User Find => ", user);
