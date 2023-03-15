@@ -12,8 +12,7 @@ const authenticator = require('../middlewares/authenticator')(clients, data);
 const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
-const { getProjectsAllUser, getAllProjects, addNewProject, editProject, deleteProject, assignUserToProject, getUserAssignedProjects, removeUserFromProject, getAllProjectsList, assignLeadToProject, removeLeadFromProject, getAllProjectCategories } = require('../controllers/project');
-
+const { getProjectsAllUser, getAllProjects, addNewProject, editProject, deleteProject, assignUserToProject, getUserAssignedProjects, removeUserFromProject, getAllProjectsList, assignLeadToProject, removeLeadFromProject, getAllProjectSections, addProjectSection } = require('../controllers/project');
 //Add new Project
 router.post("/v1/add/new",
     [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])],
@@ -69,8 +68,12 @@ router.get("/v1/list/assigned",
 //get all project categories	
 router.get("/v1/categories",
     [authenticator, filterProjects],
-	getAllProjectCategories);
+	getAllProjectSections);
 
+//Add new Project section/category
+router.post("/v1/add/section",
+[authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "LEAD"])],
+addProjectSection);
 
 module.exports = router;
 

@@ -13,15 +13,21 @@ let userSchema = new Schema(
         },
         department: String,
         wings: { type: String },
+		dob : Date,
         designation: String,
         employeeId: String,
+		passwordToken: String,
+		profileCompleted : {
+			type: Boolean,
+			default: false
+		},
         role: {
             type: String,
             enum: {
-                values: process.env.ROLE.split(","), // ["USER", "SUPER_ADMIN", "ADMIN", "LEAD", "INTERN"]
+                values: process.env.ROLE.split(","), // ["CONTRIBUTOR", "SUPER_ADMIN", "ADMIN", "LEAD", "INTERN"]
                 message: "ROLE ENUM FAILED",
             },
-            default: "USER",
+            default: "CONTRIBUTOR",
         },
         githubLink: String,
         linkedInLink: String,

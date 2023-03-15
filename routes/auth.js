@@ -19,6 +19,11 @@ router.patch("/v1/edit/", [], editUserDetails);
 
 router.post("/v1/user/login", [], Auth.userLogin);
 
+//check setup password token
+router.get("/v1/verify/token", [], Auth.verifyPasswordToken);
+
+router.post("/v1/set/password", [], Auth.setPassword);
+
 
 module.exports = router;
 

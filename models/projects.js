@@ -12,9 +12,9 @@ let projectsSchema = new Schema({
     },
     image: String,
     description: String,
-    shortDescription: String,
-    categories: [{
-        type: String
+    sections: [{
+        type: mongoose.Types.ObjectId,
+        ref: "projectSections"
     }],
     managedBy: [{
         type: mongoose.Types.ObjectId,

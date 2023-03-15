@@ -18,17 +18,17 @@ const { editUserTask, insertUserTask, getGroupByTasks, getTaskDetailsByTaskId, g
 
 //Insert task
 router.post("/v1/user/insert",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "USER", "INTERN"]), filterProjects],
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
     insertUserTask);
 
 //edit task
 router.patch("/v1/edit",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "USER", "INTERN"]), filterProjects],
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
     editUserTask);
 
 // Task Listing Main API
 router.get("/v1/groupby",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "USER", "INTERN"])],
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"])],
     getGroupByTasks);
 
 router.get("/v1/by/taskId", [authenticator], getTaskDetailsByTaskId);
@@ -61,7 +61,7 @@ router.post("/v1/rate",
 
 //Delete task API
 router.patch("/v1/delete",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "USER", "INTERN"]), filterProjects],
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
     deleteTask);
 
 /**Get all Tasks by projectId */

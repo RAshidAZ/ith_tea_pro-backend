@@ -71,7 +71,7 @@ const checkIfAllowedToAddTask = async function (data) {
 
 const createPayloadAndInsertTask = async function (data) {
     try {
-        if (["USER", "INTERN"].includes(data.auth.role)) {
+        if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role)) {
             data.assignedTo = data.auth.id
         };
 
@@ -116,7 +116,7 @@ const editUserTask = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
     }
 
-    if (["USER", "INTERN"].includes(data.auth.role) && task.data.isRated) {
+    if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && task.data.isRated) {
         return res.status(400).send(sendResponse(400, 'You are not permitted to edit task once it is rated', 'rateUserTask', null, req.data.signature))
     }
 
@@ -149,7 +149,7 @@ const createPayloadAndEditTask = async function (data) {
         let findPayload = {
             _id: data.taskId
         }
-        if (["USER", "INTERN"].includes(data.auth.role)) {
+        if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role)) {
             console.log("user is trying to modify task....", data.auth.role)
             findPayload["$or"] = [
                 { createdBy: data.auth.id },
@@ -282,7 +282,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 					completedTasks : { $sum : {$cond: [{$eq:["$status","COMPLETED"]},1,0]}},
 					ongoingTasks : { $sum : {$cond: [{$eq:["$status","ONGOING"]},1,0]}},
 					onHoldTasks : { $sum : {$cond: [{$eq:["$status","ONHOLD"]},1,0]}},
-					noProgressTasks : { $sum : {$cond: [{$eq:["$status","NO_PROGRESS"]},1,0]}}
+					noProgressTasks : { $sum : {$cond: [{$eq:["$status","NOT_STARTED"]},1,0]}}
 				}
 				
             },
@@ -450,7 +450,7 @@ const payloadGetTaskStatusAnalytics = async function (data) {
                 COMPLETED: sendData[projectIds[i]]['COMPLETED'] * 100 / sendData[projectIds[i]]["totalTask"],
                 ONGOING: sendData[projectIds[i]]['ONGOING'] * 100 / sendData[projectIds[i]]["totalTask"],
                 ONHOLD: sendData[projectIds[i]]['ONHOLD'] * 100 / sendData[projectIds[i]]["totalTask"],
-                NO_PROGRESS: sendData[projectIds[i]]['NO_PROGRESS'] * 100 / sendData[projectIds[i]]["totalTask"],
+                NO_PROGRESS: sendData[projectIds[i]]['NOT_STARTED'] * 100 / sendData[projectIds[i]]["totalTask"],
                 totalTask: sendData[projectIds[i]]["totalTask"]
             })
         }
@@ -809,7 +809,7 @@ const createPayloadAndGetTaskLists = async function (data) {
             isDeleted:false
         };
 
-        //filter tasks of only those project which are assigned to LEAD, USER, INTERN
+        //filter tasks of only those project which are assigned to LEAD, CONTRIBUTOR, INTERN
         if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
             findData.projectId = { $in: data.filteredProjects }
         }
@@ -817,7 +817,7 @@ const createPayloadAndGetTaskLists = async function (data) {
         if (data.projectId) {
             findData.projectId = data.projectId
         }
-        if (["USER", "INTERN"].includes(data.auth.role)) {
+        if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role)) {
 
             findData["$or"] = [
                 { createdBy: data.auth.id },
@@ -878,7 +878,7 @@ const deleteTask = async (req, res, next) => {
         if (fetchTaskById.data.projectId && !data.filteredProjects.includes(fetchTaskById.data.projectId.toString())) {
             return res.status(400).send(sendResponse(400, 'The Project of this task is no longer assigned to you', 'deleteTask', null, req.data.signature))
         }
-        if (["USER", "INTERN"].includes(data.auth.role) && (data.auth.id.toString() != fetchTaskById.data.createdBy.toString())) {
+        if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && (data.auth.id.toString() != fetchTaskById.data.createdBy.toString())) {
             return res.status(400).send(sendResponse(400, 'You are not allowed to delete tasks created by others', 'deleteTask', null, req.data.signature))
         }
     }

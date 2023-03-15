@@ -5,10 +5,12 @@ const env = process.env.NODE_ENV || 'development';
 const commonVariables = {
     SERVICE_RPC_HOST: 'http://localhost',
     SERVICE_REST_PORT: 9000,
+	// CLIENT_URL: 'https://projects.ith.tech',
+	CLIENT_URL: 'http://localhost:3000',
     SERVICE_RPC_PORT: '8500',
     STATUS: [200, 500, 400, 401],
-    ROLE: ["USER", "SUPER_ADMIN", "ADMIN", "LEAD"],
-    TASK_STATUS: ["NO_PROGRESS", "ONGOING", "COMPLETED", "ONHOLD"],
+    ROLE: ["CONTRIBUTOR", "SUPER_ADMIN", "ADMIN", "LEAD", "GUEST"],          //contributor/GUEST ADD
+    TASK_STATUS: ["NOT_STARTED", "ONGOING", "COMPLETED", "ONHOLD"],
     TASK_PRIORITY: ["LOW", "REPEATED", "MEDIUM", "HIGH", "None"],
     ALLOWED_GROUP_BY: ['default', 'category', 'status', 'projectId', 'createdBy', 'assignedTo', 'priority'],
     PAGE_LIMIT:10,

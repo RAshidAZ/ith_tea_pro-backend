@@ -1,6 +1,7 @@
 const { sendResponse } = require('../helpers/sendResponse');
 const queryController = require('../query')
 const { Project } = queryController;
+const { ProjectSections } = queryController;
 
 const mongoose = require("mongoose");
 
@@ -87,7 +88,7 @@ exports.createPayloadAndGetUserAssignedProjects = createPayloadAndGetUserAssigne
 
 const addNewProject = async (req, res, next) => {
     let data = req.data;
-    if (!data.name || !data.projectCategories || !data.selectedManagers || !data.description || !data.shortDescription) {
+    if (!data.name || !data.selectedManagers) {
         return res.status(400).send(sendResponse(400, "", 'addNewProject', null, req.data.signature))
     }
 
@@ -105,12 +106,18 @@ const createPayloadAndAddProject = async function (data) {
     try {
         let payload = {
             name: data.name,
-            categories: data.projectCategories,
+            // sections: data.projectCategories,
             managedBy: data.selectedManagers,
             accessibleBy: data.selectAccessibleBy || [],
-            description: data.description,
             // image : data.imagePath
         }
+
+		if(data.sections){
+			payload.sections = data.sections
+		}
+		if(data.description){
+			payload.description = data.description
+		}
         let projectRes = await Project.addNewProject(payload)
         return { data: projectRes, error: false }
     } catch (err) {
@@ -150,12 +157,13 @@ const createPayloadAndEditProject = async function (data) {
         if (data.selectedManagers) {
             updatePayload.managedBy = data.selectedManagers
         }
-		if (data.shortDescription) {
-            updatePayload.shortDescription = data.shortDescription
-        }
         if (data.selectAccessibleBy) {
             updatePayload.accessibleBy = data.selectAccessibleBy
         }
+		if(data.sections){
+			updatePayload.sections = data.sections
+		}
+		// let projectSectionRes = await Project.editProjectDetails(payload, updatePayload)
         let projectRes = await Project.editProjectDetails(payload, updatePayload)
         return { data: projectRes, error: false }
     } catch (err) {
@@ -412,10 +420,11 @@ const createPayloadAndgetAllProjectsList = async function (data) {
         let projection = {};
 
         let sortCriteria = {};
+		let populate = 'accessibleBy managedBy sections'
         if (data.alphabetical) {
             sortCriteria.name = -1
         }
-        let projectRes = await Project.getAllProjects(payload, projection, sortCriteria)
+        let projectRes = await Project.getAllProjects(payload, projection, sortCriteria, populate)
         return { data: projectRes, error: false }
     } catch (err) {
         console.log("createPayloadAndgetAllProjects Error : ", err)
@@ -424,40 +433,97 @@ const createPayloadAndgetAllProjectsList = async function (data) {
 }
 
 //get all project categories
-const getAllProjectCategories = async (req, res, next) => {
+const getAllProjectSections = async (req, res, next) => {
     let data = req.data;
 
-    let projectRes = await createPayloadAndgetAllProjectCategories(data)
+    let projectRes = await createPayloadAndgetAllProjectSections(data)
 
     if (projectRes.error || !projectRes.data) {
-        return res.status(500).send(sendResponse(500, '', 'getAllProjectCategories', null, req.data.signature))
+        return res.status(500).send(sendResponse(500, '', 'getAllProjectSections', null, req.data.signature))
     }
-    return res.status(200).send(sendResponse(200, 'Projects categories Fetched', 'getAllProjectCategories', projectRes.data, req.data.signature))
+    return res.status(200).send(sendResponse(200, 'Projects section Fetched', 'getAllProjectSections', projectRes.data, req.data.signature))
 }
-exports.getAllProjectCategories = getAllProjectCategories;
+exports.getAllProjectSections = getAllProjectSections;
 
-//create payload for getting categories of project
-const createPayloadAndgetAllProjectCategories = async function (data) {
+//create payload for getting sections of project
+const createPayloadAndgetAllProjectSections = async function (data) {
     try {
         let payload = {
             isActive: true
         }
-		let field = "categories"
-		if(data.projectId){
-			payload._id = data.projectId
-		}
-        if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
-            console.log("Role other than SA/A...", data.auth.role)
-            payload["$or"] = [
-                { accessibleBy: data.auth.id },
-                { managedBy: data.auth.id },
-            ]
+
+		let sortCriteria = {
+            createdAt: 1
         }
         
-        let projectRes = await Project.distinctProjects(field,payload)
+        let projectRes = await ProjectSections.getProjectSections(payload,{}, sortCriteria)
         return { data: projectRes, error: false }
     } catch (err) {
         console.log("createPayloadAndgetAllProjectCategories Error : ", err)
         return { data: err, error: true }
     }
 }
+
+//add project section
+const addProjectSection = async (req, res, next) => {
+    let data = req.data;
+    if (!data.name || !data.projectId) {
+        return res.status(400).send(sendResponse(400, "", 'addNewProject', null, req.data.signature))
+    }
+
+    let projectSectionRes = await createPayloadAndAddProjectSection(data)
+    console.log('projectRes : ', projectSectionRes)
+    if (projectSectionRes.error || !projectSectionRes.data) {
+        return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
+    }
+	data.projectSections = [projectSectionRes.data._id]
+	let projectRes = await createPayloadAndUpdateProjectSection(data)
+    console.log('projectRes : ', projectRes)
+    if (projectRes.error || !projectRes.data) {
+        return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, "Project's section Added Successfully", 'addNewProject', null, req.data.signature))
+}
+exports.addProjectSection = addProjectSection
+
+
+const createPayloadAndAddProjectSection = async function (data) {
+    try {
+        let payload = {
+            name: data.name
+        }
+
+		let options = {
+			upsert: true,
+			new: true,
+			setDefaultsOnInsert: true
+		}
+
+		let updatePayload = {}
+        let projectSectionRes = await ProjectSections.projectSectionFindOneAndUpdate(payload, updatePayload, options)
+        return { data: projectSectionRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndAddProject Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.createPayloadAndAddProjectSection = createPayloadAndAddProjectSection
+
+const createPayloadAndUpdateProjectSection = async function (data) {
+    try {
+        let payload = {
+            _id: data.projectId
+        }
+
+		let updatePayload = {
+			$addToSet: { sections: { $each: data.projectSections || [] } }
+        }
+
+        let projectSectionRes = await Project.editProjectDetails(payload, updatePayload)
+        return { data: projectSectionRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndAddProject Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.createPayloadAndUpdateProjectSection = createPayloadAndUpdateProjectSection

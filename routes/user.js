@@ -10,7 +10,7 @@ const data = {}
 const authenticator = require('../middlewares/authenticator')(clients, data);
 const authenticateRole = require("../middlewares/authenticateRole");
 
-const { getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated } = require('../controllers/user');
+const { getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng} = require('../controllers/user');
 
 // Superadmin, Admin Add New Team Member
 router.post("/v1/add", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], addNewUser);
@@ -18,7 +18,7 @@ router.post("/v1/add", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"]
 //Superadmin, admin edit any user details ( provide userId )
 // Lead edit either self or any user details ( provide userId )
 // User, intern can edit only themself
-router.patch("/v1/edit", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "USER", "INTERN",])], editUserDetails);
+router.patch("/v1/edit", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "CONTRIBUTOR", "INTERN",])], editUserDetails);
 
 //get userby userId
 router.get("/v1/userId", [authenticator], getUserDetailsByUserId);
@@ -34,6 +34,9 @@ router.get("/v1/list", [authenticator], getAllUsersNonPaginated);
 
 // Get list of leads role - Non Paginated( for dropdown ) - Only Lead
 router.get("/v1/leads/list", [], getAllLeadsLisitng);
+
+// Get list of unassigned leads/user role - Non Paginated( for dropdown )
+router.get("/v1/unassigned/list", [], getUnAssignedUserLisitng);
 
 //Update User Status
 router.patch("/v1/edit/block/status", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], updateUserBlockStatus);

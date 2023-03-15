@@ -2,6 +2,7 @@ const queryController = require('../query')
 const { User, Auth, Credentials, Project } = queryController;
 
 const mongoose = require("mongoose");
+const btoa = require('btoa')
 const { sendResponse } = require('../helpers/sendResponse');
 const utilities = require('../helpers/security');
 const emailUtitlities = require("../helpers/email");
@@ -114,7 +115,7 @@ exports.findAllUserNonPagination = findAllUserNonPagination
 const editUserDetails = async (req, res, next) => {
     let data = req.data;
 
-    if (['USER', 'INTERN'].includes(data.auth.role)) {
+    if (['CONTRIBUTOR', 'INTERN'].includes(data.auth.role)) {
         data.userId = data.auth.id;
     }
     if (['LEAD', 'SUPER_ADMIN', 'ADMIN'].includes(data.auth.role) && !data.userId) {
@@ -149,6 +150,9 @@ const createPayloadAndEditUserDetails = async function (data) {
         if (data.wings) {
             updatePayload.wings = data.wings
         }
+		if (data.dob) {
+            updatePayload.dob = data.dob
+        }
         if (data.designation) {
             updatePayload.designation = data.designation
         }
@@ -158,6 +162,17 @@ const createPayloadAndEditUserDetails = async function (data) {
         if (data.githubLink) {
             updatePayload.githubLink = data.githubLink
         }
+		if (data.facebookLink) {
+            updatePayload.facebookLink = data.facebookLink
+        }
+        if (data.twitterLink) {
+            updatePayload.twitterLink = data.twitterLink
+        }
+		if (data.name && data.dob && data.department && data.designation && data.wings) {
+            updatePayload.profileCompleted = true
+        }else{
+			updatePayload.profileCompleted = false
+		}
 
         if (JSON.stringify(data.isBlocked)) {
             updatePayload.isBlocked = data.isBlocked;
@@ -173,7 +188,7 @@ exports.createPayloadAndEditUserDetails = createPayloadAndEditUserDetails
 
 const addNewUser = async (req, res, next) => {
     let data = req.data;
-    if (!data.name || !data.email || !data.employeeId || !data.department || !data.wings || !data.designation || !data.role || !data.password) {
+    if (!data.name || !data.email|| !data.role) {
         return res.status(400).send(sendResponse(400, "", 'addNewUser', null, req.data.signature))
     }
     if (["SUPER_ADMIN", "ADMIN"].includes(data.role)) {
@@ -187,30 +202,32 @@ const addNewUser = async (req, res, next) => {
     if (emailRes.data) {
         return res.status(400).send(sendResponse(400, 'Email Already Exists', 'addNewUser', null, req.data.signature))
     }
-    let employeeIdRes = await checkEmployeeIdExists(data);
-    console.log('employeeIdRes : ', employeeIdRes)
-    if (employeeIdRes.error) {
-        return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
-    }
-    if (employeeIdRes.data) {
-        return res.status(400).send(sendResponse(400, 'Employee Id Already Exists', 'addNewUser', null, req.data.signature))
-    }
-    let generatedHashSalt = utilities.generatePassword(data.password);
-    data.generatedHashSalt = generatedHashSalt;
-    let accountId = await utilities.generateAccountId();
-    data.accountId = accountId;
-    console.log("Password accountId => ", data.accountId);
+	if(data.employeeId){
+		let employeeIdRes = await checkEmployeeIdExists(data);
+		console.log('employeeIdRes : ', employeeIdRes)
+		if (employeeIdRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+		}
+		if (employeeIdRes.data) {
+			return res.status(400).send(sendResponse(400, 'Employee Id Already Exists', 'addNewUser', null, req.data.signature))
+		}
+	}
+    // let generatedHashSalt = utilities.generatePassword(data.password);
+    // data.generatedHashSalt = generatedHashSalt;
+    // let accountId = await utilities.generateAccountId();
+    // data.accountId = accountId;
+    // console.log("Password accountId => ", data.accountId);
 
     let registerUser = await createPayloadAndRegisterUser(data);
     data.registerUser = registerUser.data;
     data.registerUserId = registerUser.data._id;
     console.log('registerUser ---------------: ', registerUser)
-    let insertUserCredentials = await createPayloadAndInsertCredentials(data);
-    console.log('insertUserCredentials : ', insertUserCredentials)
+    // let insertUserCredentials = await createPayloadAndInsertCredentials(data);
+    // console.log('insertUserCredentials : ', insertUserCredentials)
 
-    if (insertUserCredentials.error) {
-        return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
-    }
+    // if (insertUserCredentials.error) {
+    //     return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+    // }
 
     if (data.projectIds && data.projectIds.length) {
         let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
@@ -266,35 +283,69 @@ const checkEmployeeIdExists = async (data) => {
 }
 
 const createPayloadAndRegisterUser = async function (data) {
-    let { hash, salt } = data.generatedHashSalt;
-    if (!hash || !salt) {
-        return cb(responseUtilities.responseStruct(500, "no hash/salt", "registerUser", null, data.req.signature));
-    }
+    // let { hash, salt } = data.generatedHashSalt;
+    // if (!hash || !salt) {
+    //     return cb(responseUtilities.responseStruct(500, "no hash/salt", "registerUser", null, data.req.signature));
+    // }
     let findData = {
         email: data.email
     }
     let updateData = {
         email: data.email,
-        password: hash,
-        salt: salt,
         provider: 'email',
-        department: data.department,
-        designation: data.designation,
         name: data.name,
         role: data.role,
-        wings: data.wings,
-        employeeId: data.employeeId,
         isActive: true,
         isBlocked: false,
         emailVerified: true
     }
+
+	if (data.name) {
+		updateData.name = data.name
+	}
+	if (data.department) {
+		updateData.department = data.department
+	}
+	if (data.wings) {
+		updateData.wings = data.wings
+	}
+	if (data.dob) {
+		updateData.dob = data.dob
+	}
+	if (data.designation) {
+		updateData.designation = data.designation
+	}
+	if (data.linkedInLink) {
+		updateData.linkedInLink = data.linkedInLink
+	}
+	if (data.githubLink) {
+		updateData.githubLink = data.githubLink
+	}
+	if (data.facebookLink) {
+		updateData.facebookLink = data.facebookLink
+	}
+	if (data.employeeId) {
+		updateData.employeeId = data.employeeId
+	}
+	if (data.twitterLink) {
+		updateData.twitterLink = data.twitterLink
+	}
+	if (data.name && data.dob && data.department && data.designation && data.wings) {
+		updateData.profileCompleted = true
+	}else{
+		updateData.profileCompleted = false
+	}
     let options = {
         upsert: true,
         new: true,
         setDefaultsOnInsert: true
     }
+
     try {
-        let registerUser = await Auth.findAndUpdateUser(findData, updateData, options);
+		let registerUser = await Auth.findAndUpdateUser(findData, updateData, options);
+		let passwordToken = (registerUser._id).toString()
+		updateData.passwordToken = passwordToken;
+		data.signupToken = btoa(passwordToken)
         console.log("Register User Response => ", registerUser)
         return {
             data: registerUser,
@@ -364,7 +415,7 @@ const createPayloadAndAssignProjectToAddedUser = async function (data) {
                 $addToSet: { managedBy: mongoose.Types.ObjectId(data.registerUserId) }
             }
         }
-        if (["USER", "INTERN"].includes(data.role)) {
+        if (["CONTRIBUTOR", "INTERN"].includes(data.role)) {
             updatePayload = {
                 $addToSet: { accessibleBy: mongoose.Types.ObjectId(data.registerUserId) }
             }
@@ -380,7 +431,7 @@ const createPayloadAndAssignProjectToAddedUser = async function (data) {
 const getUserDetailsByUserId = async (req, res, next) => {
     let data = req.data;
 
-    if (!data.userId) {
+    if (!data.userId && !data.auth.id) {
         return res.status(400).send(sendResponse(400, "", 'getUserDetailsByUserId', null, req.data.signature))
     }
     let userRes = await createPayloadAndGetUserDetailsByUserId(data)
@@ -396,7 +447,7 @@ exports.getUserDetailsByUserId = getUserDetailsByUserId
 const createPayloadAndGetUserDetailsByUserId = async function (data) {
     try {
         let payload = {
-            _id: data.userId,
+            _id: data.userId || data.auth.id,
         }
         let projection = {
             // name: data.name,
@@ -474,7 +525,7 @@ const getAllUsersNonPaginated = async (req, res, next) => {
     let data = req.data;
 
     let findData = {
-        role: {$in : ['USER']}
+        role: {$in : ['CONTRIBUTOR']}
     }
     if (data.search) {
         findData["$or"] = [
@@ -549,6 +600,55 @@ const createPayloadAndEditUserCredentialsDetails = async function (data) {
         return { data: userRes, error: false }
     } catch (err) {
         console.log("createPayloadAndEditUserDetails Error : ", err)
+        return { data: err, error: true }
+    }
+}
+
+const getUnAssignedUserLisitng = async (req, res, next) => {
+    let data = req.data;
+
+    let userRes;
+    if (data.projectId) {
+        return res.status(400).send(sendResponse(400, 'Missing Params', 'getUnAssignedUserLisitng', null, req.data.signature))
+	}
+
+	if(data.role && !['CONTRIBUTORS', 'LEADS'].includes(data.role)){
+        return res.status(400).send(sendResponse(400, 'Invalid role passed', 'getUnAssignedUserLisitng', null, req.data.signature))
+	}
+	userRes = await createPayloadAndGetUnAssignedUserOfSpecificProject(data);
+
+    if (userRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getAllLeadsLisitng', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'Leads Fetched', 'getUnAssignedUserLisitng', userRes.data, req.data.signature))
+}
+exports.getUnAssignedUserLisitng = getUnAssignedUserLisitng
+
+const createPayloadAndGetUnAssignedUserOfSpecificProject = async function (data) {
+    try {
+
+        let payload = {
+            _id: data.projectId
+        }
+        let projection = {}
+		let populate ='managedBy accessibleBy';
+		let userRes = null;
+        let projectRes = await Project.findSpecificProject(payload, projection, populate);
+
+		if(data.role == 'LEAD'){
+			userRes = projectRes && projectRes.managedBy
+		}else{
+			userRes = projectRes && projectRes.accessibleBy
+		}
+        console.log("All unassigned user of given project => ", userRes)
+        userRes = userRes.filter((e) => {
+            return (e.isActive && (!e.isBlocked) && e.emailVerified)
+        })
+
+        return { data: userRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndGetUnAssignedUserOfSpecificProject Error : ", err)
         return { data: err, error: true }
     }
 }

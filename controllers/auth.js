@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const moment = require("moment");
+const atob = require("atob");
 
 // Helpers Functions
 const utilities = require('../helpers/security');
@@ -150,6 +151,48 @@ const createPayloadAndInsertCredentials = async function (data) {
     }
 }
 
+const createPayloadAndInsertCredentialsForUser = async function (data) {
+    let { hash, salt } = data.generatedHashSalt;
+    if (!hash || !salt) {
+        return cb(responseUtilities.responseStruct(500, "no hash/salt", "registerUser", null, data.req.signature));
+    }
+    let findData = {
+        userId: data.userId
+    }
+    let updateData = {
+        userId: data.userId,
+        password: hash,
+        salt: salt,
+        accountId: data.accountId,
+        isActive: true,
+        isBlocked: false,
+        emailVerified: true
+    }
+    // if (data.employeeId) {
+    //     updateData.employeeId = data.employeeId
+    // }
+    let options = {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true
+    }
+
+    try {
+        let insertCredentials = await Credentials.createCredentials(findData, updateData, options);
+        console.log("Create Credentials User Response => ", insertCredentials)
+        return {
+            data: insertCredentials,
+            error: false
+        }
+    }
+    catch (error) {
+        return {
+            data: error,
+            error: true
+        }
+    }
+}
+
 //Login
 const userLogin = async (req, res, next) => {
     let data = req.body;
@@ -239,6 +282,7 @@ const encryptData = function (data) {
         id: data.user._id,
         email: data.user.email,
         accountId: data.userCredentials.accountId,
+		profileCompleted : data.user.profileCompleted,
         createdAt: timestamp,
         tokenType: "auth",
         role: data.user.role,
@@ -260,3 +304,85 @@ const encryptData = function (data) {
         error: false
     }
 };
+
+
+const verifyPasswordToken = async (req, res, next) => {
+
+    let data = req.data;
+    if (!data.token) {
+        return res.status(400).send(sendResponse(400, "Params Missing", 'userRegistry', null, req.data.signature))
+    }
+
+    let findUser = await findUserByPasswordToken(data);
+
+    if (findUser.error) {
+        console.log("Error in checkIfEmailExist")
+        return res.status(500).send(sendResponse(500, "Server Boom", "userRegistry", null, null))
+    }
+
+    if (!findUser.data) {
+        return res.status(400).send(sendResponse(400, "User not found", 'userRegistry', null, req.data.signature))
+    }
+
+	let findUserCredential = {userId : findUser.data._id}
+    let credentials = await Credentials.findOneQuery(findUserCredential);
+	if(credentials && credentials.userId){
+        return res.status(400).send(sendResponse(400, "Password already setup", "validatePassword", null, null))
+	}
+
+    return res.status(200).send(sendResponse(200, "User need to setup password", 'userRegistry', {email : findUser.data.email}, null))
+};
+exports.verifyPasswordToken = verifyPasswordToken;
+
+const findUserByPasswordToken = async function (data) {
+    try {
+
+        let findData = {
+            passwordToken: atob(data.token)
+        };
+        let user = await Auth.findUser(findData);
+        console.log("User Find => ", user);
+        return { data: user, error: false }
+    } catch (error) {
+        return { data: error, error: true }
+    }
+}
+
+
+const setPassword = async (req, res, next) => {
+    let data = req.body;
+    if (!data.email || !data.password) {
+        return res.status(400).send(sendResponse(400, "Email and Password are required", 'userLogin', null, req.data.signature))
+    }
+    let user = await findUserExistence(data);
+    if (user.error) {
+        return res.status(400).send(sendResponse(400, user.data, 'userLogin', null, req.data.signature))
+    }
+    if (!user || !user.data) {
+        return res.status(400).send(sendResponse(400, "User not found", 'userLogin', null, req.data.signature))
+    }
+
+	let findUserCredential = {userId : user._id}
+    let credentials = await Credentials.findOneQuery(findUserCredential);
+	if(credentials && credentials.userId){
+        return res.status(400).send(sendResponse(400, "Password already setup", "validatePassword", null, null))
+	}
+
+    let generatedHashSalt = utilities.generatePassword(data.password);
+    data.generatedHashSalt = generatedHashSalt;
+    let accountId = await utilities.generateAccountId();
+    data.accountId = accountId;
+    console.log("Password accountId => ", data.accountId);
+
+	data.userId = user.data._id
+	let insertUserCredentials = await createPayloadAndInsertCredentialsForUser(data);
+    console.log('insertUserCredentials : ', insertUserCredentials)
+
+    if (insertUserCredentials.error) {
+        return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+    }
+    
+    
+    return res.status(200).send(sendResponse(200, "Successfully password setup", 'userLogin', null, req.data.signature))
+}
+exports.setPassword = setPassword;

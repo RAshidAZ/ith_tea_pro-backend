@@ -5,12 +5,15 @@ exports.findInProjects = async function (payload, projection) {
     console.log("------------------------", payload)
     return Projects.find(payload, projection)
 }
-exports.getAllProjects = async function (payload, projection, sortCriteria) {
+exports.getAllProjects = async function (payload, projection, sortCriteria, populate) {
     if (!sortCriteria) {
         sortCriteria = { createdAt: -1 }
     }
+	if (!populate) {
+        populate = 'accessibleBy managedBy'
+    }
     console.log("------------------------", payload, sortCriteria)
-    return Projects.find(payload, projection).populate('accessibleBy managedBy').sort(sortCriteria)
+    return Projects.find(payload, projection).populate(populate).sort(sortCriteria)
 }
 
 exports.getProjectsAllUser = async function (payload, projection) {

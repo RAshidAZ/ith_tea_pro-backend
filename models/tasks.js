@@ -7,10 +7,10 @@ let tasksSchema = new Schema({
     status: {
         type: String,
         enum: {
-            values: process.env.TASK_STATUS.split(","),  // ["NO_PROGRESS", "ONGOING", "COMPLETED", "ONHOLD"]
+            values: process.env.TASK_STATUS.split(","),  // ["NOT_STARTED", "ONGOING", "COMPLETED", "ONHOLD"]
             message: "Status ENUM FAILED",
         },
-        default: "NO_PROGRESS"
+        default: "NOT_STARTED"
     },
     category: {
         type: String,

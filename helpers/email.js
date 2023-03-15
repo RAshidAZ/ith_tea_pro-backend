@@ -114,7 +114,7 @@ const sendWelcomeEmail = function (data) {
       
               <body style="background: #f3f3f3;font-family: 'Montserrat', sans-serif; color: #696766;">
                 <p>Dear ${data.email}</p>
-                <p>Welcome to Team Pro by ITH TECH. Here is your password to start ${data.password}</p>
+                <p>Welcome to Team Pro by ITH TECH. Setup your password here ${process.env.CLIENT_URL}/set-password/${data.signupToken}</p>
                 <p>Here are your details : </br></p>
               <table>
                 <tr>

@@ -23,6 +23,25 @@ let insertUser = [
         "designation": "TEA PRO SUPERADMIN",
         employeeId: "ITH2022181",
         "wings": "Backend"
+    },
+	{
+        _id: "601e3c6ef5eb242d4408dcc6",
+        name: "admin",
+        email: "admin@ith.tech",
+        accountId: "11223344",
+        provider: "email",
+        role: "ADMIN",
+        userName: "admin_seed",
+        password: crypto
+            .pbkdf2Sync("ad@ith", randomSalt, 10000, 64, "sha1")
+            .toString("base64"),
+        salt: salt,
+        emailVerified: true,
+        isActive: true,
+        "department": "TECH",
+        "designation": "TEA PRO ADMIN",
+        employeeId: "ITH2022182",
+        "wings": "Backend"
     }
 ];
 
@@ -54,6 +73,20 @@ let insertCreds = [
         userName: "super_admin_seed",
         password: crypto
             .pbkdf2Sync("sa@ith", randomSalt, 10000, 64, "sha1")
+            .toString("base64"),
+        salt: salt,
+        emailVerified: true,
+        isActive: true,
+        isBlocked: false,
+    },
+	{
+        userId: "601e3c6ef5eb242d4408dcc6",
+        accountId: "11223344",
+        // employeeId: "ITH2022180",
+        provider: "email",
+        userName: "admin_seed",
+        password: crypto
+            .pbkdf2Sync("ad@ith", randomSalt, 10000, 64, "sha1")
             .toString("base64"),
         salt: salt,
         emailVerified: true,
