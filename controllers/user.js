@@ -616,7 +616,7 @@ const getUnAssignedUserLisitng = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, 'Missing Params', 'getUnAssignedUserLisitng', null, req.data.signature))
 	}
 
-	if(data.role && !['CONTRIBUTORS', 'LEAD'].includes(data.role)){
+	if(data.role && !['CONTRIBUTOR', 'LEAD'].includes(data.role)){
         return res.status(400).send(sendResponse(400, 'Invalid role passed', 'getUnAssignedUserLisitng', null, req.data.signature))
 	}
 	userRes = await createPayloadAndGetUnAssignedUserOfSpecificProject(data);
@@ -646,9 +646,9 @@ const createPayloadAndGetUnAssignedUserOfSpecificProject = async function (data)
 			userRes = projectRes && projectRes.accessibleBy
 		}
         console.log("All unassigned user of given project => ", userRes)
-        userRes = userRes.filter((e) => {
-            return (e.isActive && (!e.isBlocked) && e.emailVerified)
-        })
+        // userRes = userRes.filter((e) => {
+        //     return (e.isActive && (!e.isBlocked) && e.emailVerified)
+        // })
 
         return { data: userRes, error: false }
     } catch (err) {
