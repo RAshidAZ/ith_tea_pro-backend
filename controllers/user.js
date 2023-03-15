@@ -612,7 +612,7 @@ const getUnAssignedUserLisitng = async (req, res, next) => {
     let data = req.data;
 
     let userRes;
-    if (data.projectId) {
+    if (!data.projectId) {
         return res.status(400).send(sendResponse(400, 'Missing Params', 'getUnAssignedUserLisitng', null, req.data.signature))
 	}
 
@@ -636,21 +636,34 @@ const createPayloadAndGetUnAssignedUserOfSpecificProject = async function (data)
             _id: data.projectId
         }
         let projection = {}
-		let populate ='managedBy accessibleBy';
+		// let populate ='managedBy accessibleBy';
 		let userRes = null;
-        let projectRes = await Project.findSpecificProject(payload, projection, populate);
-
+        let projectRes = await Project.findSpecificProject(payload, projection);
+		
 		if(data.role == 'LEAD'){
-			userRes = projectRes && projectRes.managedBy
+			userRes = (projectRes && projectRes.managedBy) || []
 		}else{
-			userRes = projectRes && projectRes.accessibleBy
+			userRes = (projectRes && projectRes.accessibleBy) || []
 		}
-        console.log("All unassigned user of given project => ", userRes)
+		let userPayload = {
+			_id : { $nin : userRes},
+			role : data.role
+		}
+		let sortCriteria = {
+			createdAt : -1
+		}
+		projection = {
+			name : 1,
+			role : 1,
+			email : 1
+		}
+		let usersData = await User.getAllUsers(userPayload, projection, sortCriteria);
+        console.log("All unassigned user of given project => ", usersData)
         // userRes = userRes.filter((e) => {
         //     return (e.isActive && (!e.isBlocked) && e.emailVerified)
         // })
 
-        return { data: userRes, error: false }
+        return { data: usersData, error: false }
     } catch (err) {
         console.log("createPayloadAndGetUnAssignedUserOfSpecificProject Error : ", err)
         return { data: err, error: true }
