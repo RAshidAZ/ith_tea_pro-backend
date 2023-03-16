@@ -212,11 +212,6 @@ const addNewUser = async (req, res, next) => {
 			return res.status(400).send(sendResponse(400, 'Employee Id Already Exists', 'addNewUser', null, req.data.signature))
 		}
 	}
-    // let generatedHashSalt = utilities.generatePassword(data.password);
-    // data.generatedHashSalt = generatedHashSalt;
-    // let accountId = await utilities.generateAccountId();
-    // data.accountId = accountId;
-    // console.log("Password accountId => ", data.accountId);
 
     let registerUser = await createPayloadAndRegisterUser(data);
 	if (registerUser.error) {
@@ -225,12 +220,6 @@ const addNewUser = async (req, res, next) => {
     data.registerUser = registerUser.data;
     data.registerUserId = registerUser.data._id;
     console.log('registerUser ---------------: ', registerUser)
-    // let insertUserCredentials = await createPayloadAndInsertCredentials(data);
-    // console.log('insertUserCredentials : ', insertUserCredentials)
-
-    // if (insertUserCredentials.error) {
-    //     return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
-    // }
 
     if (data.projectIds && data.projectIds.length) {
         let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
@@ -286,10 +275,7 @@ const checkEmployeeIdExists = async (data) => {
 }
 
 const createPayloadAndRegisterUser = async function (data) {
-    // let { hash, salt } = data.generatedHashSalt;
-    // if (!hash || !salt) {
-    //     return cb(responseUtilities.responseStruct(500, "no hash/salt", "registerUser", null, data.req.signature));
-    // }
+    
     let findData = {
         email: data.email
     }

@@ -12,8 +12,9 @@ let tasksSchema = new Schema({
         },
         default: "NOT_STARTED"
     },
-    category: {
-        type: String,
+    section: {
+		type: mongoose.Types.ObjectId,
+        ref: "projectSections"
     },
     projectId: {
         type: mongoose.Types.ObjectId,

@@ -123,15 +123,15 @@ const sendWelcomeEmail = function (data) {
                 </tr>
                 <tr>
                   <td>EmployeeId</td>
-                  <td>${data.employeeId}</td>
+                  <td>${data.employeeId || ''}</td>
                 </tr>
                 <tr>
                   <td>Department</td>
-                  <td>${data.department}</td>
+                  <td>${data.department || ''}</td>
                 </tr>
                 <tr>
                   <td>Designation</td>
-                  <td>${data.designation}</td>
+                  <td>${data.designation || ''}</td>
                 </tr>
       
               </table>

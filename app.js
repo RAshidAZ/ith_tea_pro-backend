@@ -18,6 +18,8 @@ const cors = require('cors');
 const device = require('express-device');
 
 const app = express();
+let swagger = require('swagger-node-express').createNew(app);
+
 
 const whitelistOrigin = [
     'http://localhost:3000',
@@ -33,6 +35,7 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(device.capture());
 app.set('trust proxy', true);
+
 
 const formatRequest = require('./helpers/formatRequest');
 app.use(formatRequest)
@@ -54,7 +57,16 @@ const auth = require('./routes/auth');
 app.use('/rating', rating)
 app.use('/auth', auth);
 
+app.use(express.static('apiDoc'));
 
+swagger.setApiInfo({
+  title: "Tea-Pro API",
+  description: "All API divided into groups as per there functionality."
+});
+
+app.get('/api', function (req, res) {
+  res.sendFile(__dirname + '/apiDoc/index.html');
+});
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

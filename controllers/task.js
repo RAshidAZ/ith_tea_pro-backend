@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const { sendResponse } = require('../helpers/sendResponse');
 const { populate } = require('../models/ratings');
 const queryController = require('../query');
-const { Task, Rating, Project, Comments } = queryController;
+const { Task, Rating, Project, Comments, TaskLogs } = queryController;
 
 const actionLogController = require("../controllers/actionLogs");
 
@@ -11,9 +11,13 @@ const actionLogController = require("../controllers/actionLogs");
 const insertUserTask = async (req, res, next) => {
     let data = req.data;
 
-    if (!data.title || !data.category || !data.projectId || !data.tasklead) {
+	if(data.auth.role == "Lead"){
+		data.tasklead = [data.auth.id]
+	}
+    if (!data.title || !data.section || !data.projectId || !data.tasklead || !data.tasklead.length) {
         return res.status(400).send(sendResponse(400, "Please send all required Data fields", 'insertUserTask', null, req.data.signature))
     }
+
 
     let ifAllowedToAddTask = await checkIfAllowedToAddTask(data);
     if (ifAllowedToAddTask.error) {
@@ -51,9 +55,15 @@ const checkIfAllowedToAddTask = async function (data) {
         }
         let getProject = await Project.findSpecificProject(findData);
         if (getProject) {
-            console.log("Project Fetched => ", getProject);
-            if (data.tasklead) {
-                let checkIfLeadIsAssignedThisProject = getProject?.managedBy.includes(data.tasklead) || false;
+			if (data.tasklead && getProject.managedBy.length) {
+				
+				let taskLead = data.tasklead
+                // let checkIfLeadIsAssignedThisProject = getProject?.managedBy.includes(data.tasklead) || false;
+				let managers = (getProject.managedBy).map(el=>el.toString())
+				console.log("Project lead data => ", managers, taskLead);
+				
+				checkIfLeadIsAssignedThisProject = taskLead.every(el=>managers.includes(el.toString())) || false
+
                 if (!checkIfLeadIsAssignedThisProject) {
                     console.log("Lead is not assigned to this project...", getProject.managedBy)
                     return { data: { allowed: false }, error: false }
@@ -82,7 +92,7 @@ const createPayloadAndInsertTask = async function (data) {
             title: data.title,
             description: data.description,
             status: data.status,
-            category: data.category,
+            section: data.section,
             projectId: data.projectId,
             createdBy: data?.auth?.id,    //TODO: Change after auth is updated
             // createdBy: '601e3c6ef5eb242d4408dcc8',
@@ -229,7 +239,7 @@ const getGroupByTasks = async (req, res, next) => {
     }
 
     if(data.groupBy === 'default'){
-        data.aggregateGroupBy = { projectId: "$projectId", category: "$category" }
+        data.aggregateGroupBy = { projectId: "$projectId", section: "$section" }
     }
 
     let taskRes = await createPayloadAndGetGroupByTask(data)
@@ -244,54 +254,88 @@ exports.getGroupByTasks = getGroupByTasks;
 const createPayloadAndGetGroupByTask = async function (data) {
     try {
         let findData = {}
+		let filter = {}
 
-        if(data.projectIds) {
-            let projectIds = JSON.parse(data.projectIds)
-            findData["projectId"] = { $in : projectIds.map(el => mongoose.Types.ObjectId(el)) }
+        if(data.projectIds || data.projectId) {
+            let projectIds = data.projectIds ? JSON.parse(data.projectIds) : [data.projectId]
+            findData["_id"] = { $in : projectIds.map(el => mongoose.Types.ObjectId(el)) }
         }
         if(data.assignedTo) {
             let assignTo = JSON.parse(data.assignedTo)
-            findData["assignedTo"] = { $in : assignTo.map(el => mongoose.Types.ObjectId(el)) }
+            filter["tasks.assignedTo"] = { $in : assignTo.map(el => mongoose.Types.ObjectId(el)) }
+        }
+		if(data.userTasks) {
+            let assignTo = data.auth.id
+            filter["tasks.assignedTo"] = mongoose.Types.ObjectId(assignTo)
         }
         if(data.createdBy) {
             let createdBy = JSON.parse(data.createdBy)
-            findData["createdBy"] = { $in : createdBy.map(el => mongoose.Types.ObjectId(el)) }
+            filter["tasks.createdBy"] = { $in : createdBy.map(el => mongoose.Types.ObjectId(el)) }
         }
-        if(data.category) {
-            let categories = JSON.parse(data.category)
-            findData["category"] = { $in : categories }
+        if(data.sections) {
+            let sections = JSON.parse(data.sections)
+            findData["sections"] = { $in : sections.map(el => mongoose.Types.ObjectId(el)) }
         }
         if(data.priority) {
             let priorities = JSON.parse(data.priority)
-            findData["priority"] = { $in : priorities }
+            filter["tasks.priority"] = { $in : priorities }
         }
         if(data.status) {
             let status = JSON.parse(data.status)
-            findData["status"] = { $in : status }
+            filter["tasks.status"] = { $in : status }
         }
 
+		
         let aggregate = [
-            {
-                $match: findData
-            },
-            {
-                $group: {
-                    _id: data.aggregateGroupBy,
-                    tasks: { $push: "$$ROOT" },
-					total : { $sum : 1},
-					completedTasks : { $sum : {$cond: [{$eq:["$status","COMPLETED"]},1,0]}},
-					ongoingTasks : { $sum : {$cond: [{$eq:["$status","ONGOING"]},1,0]}},
-					onHoldTasks : { $sum : {$cond: [{$eq:["$status","ONHOLD"]},1,0]}},
-					noProgressTasks : { $sum : {$cond: [{$eq:["$status","NOT_STARTED"]},1,0]}}
-				}
-				
-            },
-            { $sort: { _id: 1 } }
+			{
+				$match: findData
+			},
+	
+				{
+				  "$lookup": {
+					"from": "projectsections",
+					"localField": "sections",
+					"foreignField": "_id",
+					"as": "section"
+				  }
+				},
+				{ "$unwind": { "path": "$section" } },
+				{
+				  "$lookup": {
+					"from": "tasks",
+					"let": { "section": "$section._id", "projectId": "$_id" },
+					"pipeline": [
+					  {
+						"$match": {
+						  "$expr": {
+							"$and": [
+							  { "$eq": ["$section", "$$section"] },
+							  { "$eq": ["$projectId", "$$projectId"] }
+							]
+						  }
+						}
+					  }
+					],
+					"as": "tasks"
+				  }
+				},
+				{ "$unwind": { "path": "$tasks",preserveNullAndEmptyArrays : true } },
+				{
+				  "$group": {
+					"_id": { "projectId": "$name", "section": "$section.name" },
+					"tasks": { "$push": "$tasks" }
+				  }
+				},
+			  
+			{ $match : filter },
+            { $sort: { "_id.projectId": 1, "_id.section":1 } }
         ]
+
+		console.log("==============group by filter=*************======",aggregate, filter, findData)
 
         // console.log("qwertyuiop1234567890-", aggregate)
 
-        let taskRes = await Task.taskAggregate(aggregate)
+        let taskRes = await Project.projectAggregate(aggregate)
 
         // console.log(taskRes)
         let populate = []
@@ -322,7 +366,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
             populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name' })
         }
 
-        let populatedRes = await Task.taskPopulate(taskRes, populate)
+        // let populatedRes = await Task.taskPopulate(taskRes, populate)
         // console.log("0000000", populatedRes)
         return { data: taskRes, error: false }
     } catch (err) {
@@ -439,7 +483,7 @@ const payloadGetTaskStatusAnalytics = async function (data) {
                     COMPLETED: 0,
                     ONGOING: 0,
                     ONHOLD: 0,
-                    NO_PROGRESS: 0,
+                    NOT_STARTED: 0,
                     totalTask: 0
                 }
             }
@@ -450,7 +494,7 @@ const payloadGetTaskStatusAnalytics = async function (data) {
                 COMPLETED: sendData[projectIds[i]]['COMPLETED'] * 100 / sendData[projectIds[i]]["totalTask"],
                 ONGOING: sendData[projectIds[i]]['ONGOING'] * 100 / sendData[projectIds[i]]["totalTask"],
                 ONHOLD: sendData[projectIds[i]]['ONHOLD'] * 100 / sendData[projectIds[i]]["totalTask"],
-                NO_PROGRESS: sendData[projectIds[i]]['NOT_STARTED'] * 100 / sendData[projectIds[i]]["totalTask"],
+                NOT_STARTED: sendData[projectIds[i]]['NOT_STARTED'] * 100 / sendData[projectIds[i]]["totalTask"],
                 totalTask: sendData[projectIds[i]]["totalTask"]
             })
         }
@@ -900,6 +944,80 @@ const createPayloadAndDeleteTask = async function (data) {
         let updatePayload = {
             $set: {
                 isDeleted: true
+            }
+        }
+        let options = {
+            new: true
+        }
+        let taskRes = await Task.findOneAndUpdate(payload, updatePayload, options)
+        return { data: taskRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndDeleteTask Error : ", err)
+        return { data: err, error: true }
+    }
+}
+
+const createTaskLogPayloadAndAddLog = async function (data) {
+    try {
+        let payload = {
+            _id: data.projectId,
+        }
+        
+        let taskLogRes = await TaskLogs.addTaskLog(payload)
+        return { data: taskLogRes, error: false }
+    } catch (err) {
+        console.log("createTaskLogPayloadAndAddLog Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.createTaskLogPayloadAndAddLog = createTaskLogPayloadAndAddLog;
+
+//Delete task API Controller
+const updateTaskStatus = async (req, res, next) => {
+    let data = req.data;
+    if (!data.taskId) {
+        return res.status(400).send(sendResponse(400, "", 'updateTaskStatus', null, req.data.signature))
+    }
+
+    let fetchTaskById = await getTaskById(data);
+    if (fetchTaskById.error) {
+        return res.status(500).send(sendResponse(500, '', 'updateTaskStatus', null, req.data.signature))
+    }
+
+    if (!fetchTaskById.data) {
+        return res.status(400).send(sendResponse(400, 'No Task Found', 'updateTaskStatus', null, req.data.signature))
+    }
+    console.log("task Fetched for deletion.... ", fetchTaskById.data, data.filteredProjects)
+    if (fetchTaskById.data?.isRated) {
+        return res.status(400).send(sendResponse(400, 'Task Already Rated', 'updateTaskStatus', null, req.data.signature))
+    }
+
+    if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+        if (fetchTaskById.data.projectId && !data.filteredProjects.includes(fetchTaskById.data.projectId.toString())) {
+            return res.status(400).send(sendResponse(400, 'The Project of this task is no longer assigned to you', 'updateTaskStatus', null, req.data.signature))
+        }
+        if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && (data.auth.id.toString() != fetchTaskById.data.createdBy.toString())) {
+            return res.status(400).send(sendResponse(400, 'You are not allowed to update tasks status', 'updateTaskStatus', null, req.data.signature))
+        }
+    }
+
+    let taskRes = await createPayloadAndUpdateTaskStatus(data)
+    console.log('taskRes : ', taskRes)
+    if (taskRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'deleteTask', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, "Task Deleted Successfully", 'deleteTask', null, req.data.signature))
+}
+exports.updateTaskStatus = updateTaskStatus;
+
+const createPayloadAndUpdateTaskStatus = async function (data) {
+    try {
+        let payload = {
+            _id: data.taskId
+        }
+        let updatePayload = {
+            $set: {
+                status: data.status
             }
         }
         let options = {

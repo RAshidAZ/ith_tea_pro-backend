@@ -10,6 +10,7 @@ const commonVariables = {
     SERVICE_RPC_PORT: '8500',
     STATUS: [200, 500, 400, 401],
     ROLE: ["CONTRIBUTOR", "SUPER_ADMIN", "ADMIN", "LEAD", "GUEST"],          //contributor/GUEST ADD
+	role: '{"contributor":"CONTRIBUTOR", "superadmin":"SUPER_ADMIN", "admin" : "ADMIN", "lead" : "LEAD", "guest" : "GUEST"}',
     TASK_STATUS: ["NOT_STARTED", "ONGOING", "COMPLETED", "ONHOLD"],
     TASK_PRIORITY: ["LOW", "REPEATED", "MEDIUM", "HIGH", "None"],
     ALLOWED_GROUP_BY: ['default', 'category', 'status', 'projectId', 'createdBy', 'assignedTo', 'priority'],

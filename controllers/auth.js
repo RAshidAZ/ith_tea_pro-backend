@@ -154,7 +154,7 @@ const createPayloadAndInsertCredentials = async function (data) {
 const createPayloadAndInsertCredentialsForUser = async function (data) {
     let { hash, salt } = data.generatedHashSalt;
     if (!hash || !salt) {
-        return cb(responseUtilities.responseStruct(500, "no hash/salt", "registerUser", null, data.req.signature));
+        return cb(responseUtilities.responseStruct(500, "no hash/salt", "createPayloadAndInsertCredentialsForUser", null, data.req.signature));
     }
     let findData = {
         userId: data.userId
@@ -168,9 +168,7 @@ const createPayloadAndInsertCredentialsForUser = async function (data) {
         isBlocked: false,
         emailVerified: true
     }
-    // if (data.employeeId) {
-    //     updateData.employeeId = data.employeeId
-    // }
+    
     let options = {
         upsert: true,
         new: true,
@@ -206,13 +204,6 @@ const userLogin = async (req, res, next) => {
     if (!user || !user.data) {
         return res.status(400).send(sendResponse(400, "User not found", 'userLogin', null, req.data.signature))
     }
-
-    // if (user && user.data && !user.data.emailVerified) {
-    //     return res.status(400).send(sendResponse(400, "User email is not verified", 'userLogin', null, req.data.signature))
-    // }
-    // if (user && user.data && user.data.isBlocked) {
-    //     return res.status(400).send(sendResponse(400, "User is Blocked", 'userLogin', null, req.data.signature))
-    // }
 
     data.user = user.data;
     console.log("User ", data.user)
@@ -310,27 +301,27 @@ const verifyPasswordToken = async (req, res, next) => {
 
     let data = req.data;
     if (!data.token) {
-        return res.status(400).send(sendResponse(400, "Params Missing", 'userRegistry', null, req.data.signature))
+        return res.status(400).send(sendResponse(400, "Params Missing", 'validateToken', null, req.data.signature))
     }
 
     let findUser = await findUserByPasswordToken(data);
 
     if (findUser.error) {
         console.log("Error in checkIfEmailExist")
-        return res.status(500).send(sendResponse(500, "Server Boom", "userRegistry", null, null))
+        return res.status(500).send(sendResponse(500, "Error in finding user by password-token", "validateToken", null, null))
     }
 
     if (!findUser.data) {
-        return res.status(400).send(sendResponse(400, "User not found", 'userRegistry', null, req.data.signature))
+        return res.status(400).send(sendResponse(400, "User not found", 'validateToken', null, req.data.signature))
     }
 
 	let findUserCredential = {userId : findUser.data._id}
     let credentials = await Credentials.findOneQuery(findUserCredential);
 	if(credentials && credentials.userId){
-        return res.status(400).send(sendResponse(400, "Password already setup", "validatePassword", null, null))
+        return res.status(400).send(sendResponse(400, "Password already setup", "validateToken", null, null))
 	}
 
-    return res.status(200).send(sendResponse(200, "User need to setup password", 'userRegistry', {email : findUser.data.email}, null))
+    return res.status(200).send(sendResponse(200, "User need to setup password", 'validateToken', {email : findUser.data.email}, null))
 };
 exports.verifyPasswordToken = verifyPasswordToken;
 
@@ -352,21 +343,24 @@ const findUserByPasswordToken = async function (data) {
 
 const setPassword = async (req, res, next) => {
     let data = req.body;
-    if (!data.email || !data.password) {
-        return res.status(400).send(sendResponse(400, "Email and Password are required", 'userLogin', null, req.data.signature))
+    if (!data.email || !data.password || !data.confirmPassword) {
+        return res.status(400).send(sendResponse(400, "Email and Password are required", 'setPassword', null, req.data.signature))
+    }
+	if (data.password != data.confirmPassword) {
+        return res.status(400).send(sendResponse(400, "Password and confirm password don't match", 'setPassword', null, req.data.signature))
     }
     let user = await findUserExistence(data);
     if (user.error) {
-        return res.status(400).send(sendResponse(400, user.data, 'userLogin', null, req.data.signature))
+        return res.status(400).send(sendResponse(400, user.data, 'setPassword', null, req.data.signature))
     }
     if (!user || !user.data) {
-        return res.status(400).send(sendResponse(400, "User not found", 'userLogin', null, req.data.signature))
+        return res.status(400).send(sendResponse(400, "User not found", 'setPassword', null, req.data.signature))
     }
 
 	let findUserCredential = {userId : user._id}
     let credentials = await Credentials.findOneQuery(findUserCredential);
 	if(credentials && credentials.userId){
-        return res.status(400).send(sendResponse(400, "Password already setup", "validatePassword", null, null))
+        return res.status(400).send(sendResponse(400, "Password already setup", "validateToken", null, null))
 	}
 
     let generatedHashSalt = utilities.generatePassword(data.password);
@@ -380,10 +374,10 @@ const setPassword = async (req, res, next) => {
     console.log('insertUserCredentials : ', insertUserCredentials)
 
     if (insertUserCredentials.error) {
-        return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+        return res.status(500).send(sendResponse(500, '', 'addNewUser', "setPassword", req.data.signature))
     }
     
     
-    return res.status(200).send(sendResponse(200, "Successfully password setup", 'userLogin', null, req.data.signature))
+    return res.status(200).send(sendResponse(200, "Successfully password setup", 'userLogin', "setPassword", req.data.signature))
 }
 exports.setPassword = setPassword;

@@ -2,6 +2,7 @@ const { sendResponse } = require('../helpers/sendResponse');
 const queryController = require('../query')
 const { Project } = queryController;
 const { ProjectSections } = queryController;
+const { ProjectLogs } = queryController;
 
 const mongoose = require("mongoose");
 
@@ -88,7 +89,7 @@ exports.createPayloadAndGetUserAssignedProjects = createPayloadAndGetUserAssigne
 
 const addNewProject = async (req, res, next) => {
     let data = req.data;
-    if (!data.name || !data.selectedManagers) {
+    if (!data.name || !data.selectedManagers || !data.selectedManagers.length) {
         return res.status(400).send(sendResponse(400, "", 'addNewProject', null, req.data.signature))
     }
 
@@ -382,6 +383,16 @@ const createPayloadAndgetAllProjects = async function (data) {
                 }
             }
         )
+		pipeline.push(
+            {
+                $lookup: {
+                    from: "projectsections",
+                    localField: "sections",
+                    foreignField: "_id",
+                    as: "sections"
+                }
+            }
+        )
         console.log("Pipline formed => ", pipeline)
         let projectRes = await Project.projectAggregate(pipeline)
         console.log("ProjectRes=>", projectRes.length)
@@ -527,3 +538,53 @@ const createPayloadAndUpdateProjectSection = async function (data) {
     }
 }
 exports.createPayloadAndUpdateProjectSection = createPayloadAndUpdateProjectSection
+
+const getSpecificProject = async (req, res, next) => {
+    let data = req.data;
+
+	if (!data.projectId) {
+        return res.status(400).send(sendResponse(400, "Missing params", 'getSpecificProject', null, req.data.signature))
+    }
+
+    let projectRes = await createPayloadAndfindSpecificProject(data)
+
+    if (projectRes.error || !projectRes.data) {
+        return res.status(500).send(sendResponse(500, '', 'getSpecificProject', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, 'Projects Fetched', 'getSpecificProject', projectRes.data, req.data.signature))
+}
+exports.getSpecificProject = getSpecificProject;
+
+const createPayloadAndfindSpecificProject = async function (data) {
+    try {
+        let payload = {
+            _id: data.projectId
+        }
+
+		let projection = {}
+
+		let populate = 'accessibleBy managedBy sections'
+
+        let projectRes = await Project.findSpecificProject(payload, projection, populate)
+        return { data: projectRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndAddProject Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.createPayloadAndfindSpecificProject = createPayloadAndfindSpecificProject
+
+const createProjectLogPayloadAndAddLog = async function (data) {
+    try {
+        let payload = {
+            _id: data.projectId,
+        }
+        
+        let projectLogRes = await ProjectLogs.addProjectLog(payload)
+        return { data: projectLogRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndGetProjectsAllUser Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.createProjectLogPayloadAndAddLog = createProjectLogPayloadAndAddLog;

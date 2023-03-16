@@ -8,6 +8,9 @@ const ProjectSections = require('./projectSections')
 const Auth = require("./auth");
 const Credentials = require("./credentials");
 const ActionLogs = require("./actionLog");
+const ProjectLogs = require("./projectLogs");
+const TaskLogs = require("./taskLogs");
+
 
 module.exports = {
     Rating,
@@ -18,5 +21,7 @@ module.exports = {
 	ProjectSections,
     Auth,
     Credentials,
-    ActionLogs
+    ActionLogs,
+	ProjectLogs,
+	TaskLogs
 }
