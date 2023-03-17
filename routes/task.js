@@ -13,7 +13,7 @@ const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
 
-const { editUserTask, insertUserTask, getGroupByTasks, getTaskDetailsByTaskId, getTaskStatusAnalytics, getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus } = require('../controllers/task');
+const { editUserTask, insertUserTask, getGroupByTasks, getTaskDetailsByTaskId, getTaskStatusAnalytics, getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask } = require('../controllers/task');
 
 
 //Insert task
@@ -28,10 +28,12 @@ router.patch("/v1/edit",
 
 // Task Listing Main API
 router.get("/v1/groupby",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"])],
+    // [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"])],
     getGroupByTasks);
 
-router.get("/v1/by/taskId", [authenticator], getTaskDetailsByTaskId);
+router.get("/v1/by/taskId", 
+[authenticator], 
+getTaskDetailsByTaskId);
 
 router.get("/v1/status/analytics", [authenticator], getTaskStatusAnalytics);
 
@@ -73,6 +75,11 @@ router.patch("/v1/update/status",
 router.get("/v1/all/of/project",
     [authenticator, filterProjects],
     getTasksByProjectId);
-    
+
+/**Insert Task comment */
+router.post("/v1/add/comment",
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
+    commentUserTask);
+
 module.exports = router;
 

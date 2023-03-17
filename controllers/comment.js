@@ -8,12 +8,10 @@ const { addCommnetIdInRatingById, createPayloadAndGetComments } = ratingControll
 
 const getCommentsOnRating = async (req, res, next) => {
     let data = req.data;
-    console.log('getCommentsOnRating data : ', req.data);
     if (!data.ratingId) {
         return res.status(400).send(sendResponse(400, "", 'getCommentsOnRating', null, req.data.signature))
     }
     let commentRes = await createPayloadAndGetComments(data)
-    console.log('commentRes : ', commentRes)
     if (commentRes.error) {
         return res.status(500).send(sendResponse(500, '', 'getCommentsOnRating', null, req.data.signature))
     }
@@ -27,14 +25,12 @@ exports.getCommentsOnRating = getCommentsOnRating;
 
 const insertUserRatingComment = async (req, res, next) => {
     let data = req.data;
-    console.log('insertUserRatingComment data : ', req.data);
 
     if (!data.ratingId || !data.comment) {
         return res.status(400).send(sendResponse(400, "", 'insertUserRatingComment', null, req.data.signature))
     }
     data.givenBy = data.auth.id 
     let commentRes = await createPayloadAndInsertComment(data)
-    console.log('commentRes : ', commentRes)
     if (commentRes.error || !commentRes.data) {
         return res.status(500).send(sendResponse(500, '', 'insertUserRatingComment', null, req.data.signature))
     }
@@ -69,7 +65,6 @@ exports.createPayloadAndInsertComment = createPayloadAndInsertComment
 
 const insertUserTaskComment = async (req, res, next) => {
     let data = req.data;
-    console.log('insertUserTaskComment data : ', req.data);
 
     if (!data.taskId || !data.comment) {
         return res.status(400).send(sendResponse(400, "", 'insertUserTaskComment', null, req.data.signature))

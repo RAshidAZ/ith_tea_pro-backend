@@ -61,7 +61,6 @@ const getUserAssignedProjects = async (req, res, next) => {
     }
 
     let projectRes = await createPayloadAndGetUserAssignedProjects(data)
-    console.log('projectRes : ', projectRes)
     if (projectRes.error || !projectRes.data) {
         return res.status(500).send(sendResponse(500, '', 'getUserAssignedProjects', null, req.data.signature))
     }
@@ -94,7 +93,6 @@ const addNewProject = async (req, res, next) => {
     }
 
     let projectRes = await createPayloadAndAddProject(data)
-    console.log('projectRes : ', projectRes)
     if (projectRes.error || !projectRes.data) {
         return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
     }
@@ -136,7 +134,6 @@ const editProject = async (req, res, next) => {
     }
 
     let projectRes = await createPayloadAndEditProject(data)
-    console.log('projectRes : ', projectRes)
     if (projectRes.error || !projectRes.data) {
         return res.status(500).send(sendResponse(500, '', 'editProject', null, req.data.signature))
     }
@@ -182,7 +179,6 @@ const assignUserToProject = async (req, res, next) => {
     }
 
     let projectRes = await createPayloadAndAssignProjectToUser(data)
-    console.log('projectRes : ', projectRes)
     if (projectRes.error || !projectRes.data) {
         return res.status(500).send(sendResponse(500, '', 'assignUserToProject', null, req.data.signature))
     }
@@ -236,7 +232,6 @@ const removeUserFromProject = async (req, res, next) => {
     }
 
     let projectRes = await createPayloadAndUnAssignUser(data)
-    console.log('projectRes : ', projectRes)
     if (projectRes.error || !projectRes.data) {
         return res.status(500).send(sendResponse(500, '', 'removeUserFromProject', null, req.data.signature))
     }
@@ -290,7 +285,6 @@ const deleteProject = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, "", 'deleteProject', null, req.data.signature))
     }
     let projectRes = await createPayloadAndDeleteProject(data)
-    console.log('projectRes : ', projectRes)
     if (projectRes.error) {
         return res.status(500).send(sendResponse(500, '', 'deleteProject', null, req.data.signature))
     }
@@ -393,9 +387,7 @@ const createPayloadAndgetAllProjects = async function (data) {
                 }
             }
         )
-        console.log("Pipline formed => ", pipeline)
         let projectRes = await Project.projectAggregate(pipeline)
-        console.log("ProjectRes=>", projectRes.length)
         return { data: projectRes, error: false }
     } catch (err) {
         console.log("createPayloadAndgetAllProjects Error : ", err)
@@ -483,7 +475,6 @@ const addProjectSection = async (req, res, next) => {
     }
 
     let projectSectionRes = await createPayloadAndAddProjectSection(data)
-    console.log('projectRes : ', projectSectionRes)
     if (projectSectionRes.error || !projectSectionRes.data) {
         return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
     }

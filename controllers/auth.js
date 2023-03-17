@@ -62,7 +62,6 @@ const findUserExistence = async function (data) {
             email: data.email
         };
         let user = await Auth.findUser(findData);
-        console.log("User Find => ", user);
         return { data: user, error: false }
     } catch (error) {
         return { data: error, error: true }
@@ -137,7 +136,6 @@ const createPayloadAndInsertCredentials = async function (data) {
 
     try {
         let insertCredentials = await Credentials.createCredentials(findData, updateData, options);
-        console.log("Create Credentials User Response => ", registerUser)
         return {
             data: insertCredentials,
             error: false
@@ -177,7 +175,6 @@ const createPayloadAndInsertCredentialsForUser = async function (data) {
 
     try {
         let insertCredentials = await Credentials.createCredentials(findData, updateData, options);
-        console.log("Create Credentials User Response => ", insertCredentials)
         return {
             data: insertCredentials,
             error: false
@@ -239,7 +236,6 @@ const findUserCredentials = async function (data) {
             userId: data.userId
         };
         let userCredentials = await Auth.findUserCredentials(findData);
-        console.log("User Credentials Find => ", userCredentials)
         return { data: userCredentials, error: false }
 
     } catch (error) {
@@ -333,7 +329,6 @@ const findUserByPasswordToken = async function (data) {
             passwordToken: data.token
         };
         let user = await Auth.findUser(findData);
-        console.log("User Find => ", user);
         return { data: user, error: false }
     } catch (error) {
         return { data: error, error: true }
@@ -371,7 +366,6 @@ const setPassword = async (req, res, next) => {
 
 	data.userId = user.data._id
 	let insertUserCredentials = await createPayloadAndInsertCredentialsForUser(data);
-    console.log('insertUserCredentials : ', insertUserCredentials)
 
     if (insertUserCredentials.error) {
         return res.status(500).send(sendResponse(500, '', 'addNewUser', "setPassword", req.data.signature))

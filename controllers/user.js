@@ -125,7 +125,6 @@ const editUserDetails = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, "Missing Params", 'editUserDetails', null, req.data.signature))
     }
     let userRes = await createPayloadAndEditUserDetails(data)
-    console.log('userRes : ', userRes)
     if (userRes.error) {
         return res.status(500).send(sendResponse(500, 'Something Went Wrong', 'editUserDetails', null, req.data.signature))
     }
@@ -168,7 +167,7 @@ const createPayloadAndEditUserDetails = async function (data) {
         if (data.twitterLink) {
             updatePayload.twitterLink = data.twitterLink
         }
-		if (data.name && data.dob && data.department && data.designation && data.wings) {
+		if (data.name && data.dob && data.department && data.designation && data.employeeId) {
             updatePayload.profileCompleted = true
         }else{
 			updatePayload.profileCompleted = false
@@ -195,7 +194,6 @@ const addNewUser = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, "Not allowed to add this role", 'addNewUser', null, req.data.signature))
     }
     let emailRes = await checkEmailExists(data);
-    console.log('emailRes : ', emailRes)
     if (emailRes.error) {
         return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
     }
@@ -219,14 +217,12 @@ const addNewUser = async (req, res, next) => {
 	}
     data.registerUser = registerUser.data;
     data.registerUserId = registerUser.data._id;
-    console.log('registerUser ---------------: ', registerUser)
 
     if (data.projectIds && data.projectIds.length) {
         let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
         if (assignProjectsToUserRes.error) {
             return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
         }
-        console.log("Assign Projects assignProjectsToUserRes => ", assignProjectsToUserRes.data)
     }
     let actionLogData = {
         actionType: "TEAM_MEMBER",
@@ -242,7 +238,6 @@ const addNewUser = async (req, res, next) => {
     }
 
     let sendWelcomeEmailRes = await emailUtitlities.sendWelcomeEmail(data);
-    console.log("sendWelcomeEmailRes ======> ", sendWelcomeEmailRes);
     return res.status(200).send(sendResponse(200, 'Users Created', 'addNewUser', null, req.data.signature))
 }
 exports.addNewUser = addNewUser;
@@ -336,7 +331,6 @@ const createPayloadAndRegisterUser = async function (data) {
 		updateData.passwordToken = passwordToken;
 		data.signupToken = passwordToken
 		let updateUser = await Auth.findAndUpdateUser(findData, updateData);
-        console.log("Register User Response => ", registerUser)
         return {
             data: registerUser,
             error: false
@@ -425,7 +419,6 @@ const getUserDetailsByUserId = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, "", 'getUserDetailsByUserId', null, req.data.signature))
     }
     let userRes = await createPayloadAndGetUserDetailsByUserId(data)
-    console.log('userRes : ', userRes)
     if (userRes.error) {
         return res.status(500).send(sendResponse(500, '', 'getUserDetailsByUserId', null, req.data.signature))
     }
@@ -482,7 +475,6 @@ const createPayloadAndGetLeadsOfSpecificProject = async function (data) {
         let projectRes = await Project.findSpecificProject(payload, projection, populate);
 
         let allLeads = projectRes?.managedBy;
-        console.log("All leads of given project => ", allLeads)
         allLeads = allLeads.filter((e) => {
             return (e.isActive && (!e.isBlocked) && e.emailVerified)
         })
@@ -503,7 +495,6 @@ const createPayloadAndfindAllLeadsList = async function (data) {
         let projection = {};
 
         let leadsRes = await User.getAllUsers(findData, projection);
-        console.log("Leads res => ", leadsRes.length)
         return { data: leadsRes, error: false }
     } catch (err) {
         console.log("findLeads Error : ", err)
@@ -562,7 +553,6 @@ const updateUserBlockStatus = async (req, res, next) => {
         return res.status(500).send(sendResponse(500, '', 'getAllLeadsLisitng', null, req.data.signature))
     }
 
-    console.log("updateStatusRes",updateStatusRes)
     //this will change when schema of credentials and authenticator is modified
     let updateUserInCredentials = await createPayloadAndEditUserCredentialsDetails(data);
     if (updateUserInCredentials.error) {
@@ -644,7 +634,6 @@ const createPayloadAndGetUnAssignedUserOfSpecificProject = async function (data)
 			email : 1
 		}
 		let usersData = await User.getAllUsers(userPayload, projection, sortCriteria);
-        console.log("All unassigned user of given project => ", usersData)
         // userRes = userRes.filter((e) => {
         //     return (e.isActive && (!e.isBlocked) && e.emailVerified)
         // })

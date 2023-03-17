@@ -25,9 +25,7 @@ module.exports = function () {
                 };
                 return res.status(500).send(response);
             }
-            console.log("Assigned projects of this user => ", allProjectsAssigned);
             allProjectsAssigned = allProjectsAssigned.map(e => e.toString());
-            console.log("All Assigned Projects of this user => ", allProjectsAssigned)
 
             let projectsToFilter = [];
             if (req.query?.projectId) {
@@ -46,25 +44,21 @@ module.exports = function () {
                 projectsToFilter.push(...req.body?.projectId);
             }
 
-            console.log("Projects to filter => ", projectsToFilter)
             if (projectsToFilter && projectsToFilter.length) {
 
                 projectsToFilter = projectsToFilter.map(e => e.toString());
                 if (!(projectsToFilter.every(projectToCheck => allProjectsAssigned.includes(projectToCheck)))) {
-                    console.log("Project is not assigned to you");
                     var response = {
                         success: false,
                         message: 'Unauthorized for this project'
                     };
                     return res.status(400).send(response);
                 } else {
-                    console.log("All project request are assigned to this user");
                     req.data.filteredProjects = allProjectsAssigned;
                     next();
                 }
             }
             else {
-                console.log("All project request are assigned to this user");
                 req.data.filteredProjects = allProjectsAssigned;
                 next();
             }

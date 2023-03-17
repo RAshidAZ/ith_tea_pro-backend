@@ -9,7 +9,6 @@ const commentController = require('./comment');
 
 const getUserRating = async (req, res, next) => {
     let data = req.data;
-    console.log('getUserRating data : ', req.data);
 
     if (!data.userId || !data.date || !data.month || !data.year) {
         return res.status(400).send(sendResponse(400, "Params Missing", 'getUserRating', null, req.data.signature))
@@ -29,7 +28,6 @@ exports.getUserRating = getUserRating
 
 const insertUserRating = async (req, res, next) => {
     let data = req.data;
-    console.log('insertUserRating data : ', req.data);
 
     if (!data.rating || !data.userId || !data.date || !data.month || !data.year) {
         return res.status(400).send(sendResponse(400, "Params Missing", 'insertUserRating', null, req.data.signature))
@@ -48,7 +46,6 @@ const insertUserRating = async (req, res, next) => {
 
     if (data.comment) {
         let commentRes = await commentController.createPayloadAndInsertComment(data)
-        console.log('commentRes : ', commentRes)
         if (commentRes.error || !commentRes.data) {
             return res.status(500).send(sendResponse(500, '', 'insertUserRating', null, req.data.signature))
         }
@@ -56,7 +53,6 @@ const insertUserRating = async (req, res, next) => {
     }
 
     let ratingRes = await createPayloadAndInsertRating(data)
-    console.log('ratingRes : ', ratingRes);
     if (ratingRes.error || !ratingRes.data) {
         return res.status(500).send(sendResponse(500, '', 'insertUserRating', null, req.data.signature))
     }
@@ -66,7 +62,6 @@ exports.insertUserRating = insertUserRating
 
 const updateUserRating = async (req, res, next) => {
     let data = req.data;
-    console.log('updateUserRating data : ', req.data, data.hasOwnProperty('rating'));
 
     if (!data.hasOwnProperty('rating') || !data.ratingId) {
         return res.status(400).send(sendResponse(400, "Params Missing", 'updateUserRating', null, req.data.signature))
@@ -82,7 +77,6 @@ exports.updateUserRating = updateUserRating
 
 const getMonthAllUserRating = async (req, res, next) => {
     let data = req.data;
-    // console.log('getMonthAllUserRating data : ', req.data);
 
     if (!data.month || !data.year) {
         return res.status(400).send(sendResponse(400, "Params Missing", 'getMonthAllUserRating', null, req.data.signature))
@@ -161,7 +155,6 @@ const addCommnetIdInRatingById = async function (data) {
             $addToSet: { comments: data.commentId }
         }
         let insertRes = await Rating.addCommnetIdInRatingById(payload, updatePayload)
-        console.log("insertRes---------------------------", insertRes)
         return { data: insertRes, error: false }
     } catch (error) {
         console.log("addCommnetIdInRatingById Error : ", error)
@@ -262,7 +255,6 @@ exports.createPayloadAndGetComments = createPayloadAndGetComments
 
 const getWeekRating = async (req, res, next) => {
     let data = req.data;
-    // console.log('getMonthAllUserRating data : ', req.data);
 
     let ratingRes = await createPayloadAndGetWeekRating(data)
     if (ratingRes.error) {

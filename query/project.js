@@ -58,3 +58,7 @@ exports.distinctProjects = async function (field, payload) {
     console.log("distinctProjects------------------------", payload, field)
     return Projects.distinct(field, payload)
 }
+
+exports.projectPopulate = function (res, populate) {
+    return Projects.populate(res, populate)
+}

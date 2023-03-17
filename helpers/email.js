@@ -24,7 +24,6 @@ let sendMail = async function (from, to, subject, message, cb) {
             })
         request
             .then((result) => {
-                console.log("Email send response => ", result.body)
                 resolve({
                     error: false,
                     data: result.body
@@ -42,8 +41,6 @@ let sendMail = async function (from, to, subject, message, cb) {
 }
 
 let sendMailByTemplate = function (from, to, subject, templateId, variables, cb) {
-
-    console.log("sendMailByTemplate ===>> ", from, to, subject, templateId, variables);
 
     const request = mailjet
         .post("send", { 'version': 'v3.1' })

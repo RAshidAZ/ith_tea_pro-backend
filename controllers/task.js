@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const { sendResponse } = require('../helpers/sendResponse');
 const { populate } = require('../models/ratings');
 const queryController = require('../query');
+const { CONSTANTS }= require('../config/constants');
+
 const { Task, Rating, Project, Comments, TaskLogs } = queryController;
 
 const actionLogController = require("../controllers/actionLogs");
@@ -29,7 +31,6 @@ const insertUserTask = async (req, res, next) => {
     }
 
     let taskRes = await createPayloadAndInsertTask(data)
-    console.log('taskRes : ', taskRes)
 
     if (taskRes.error || !taskRes.data) {
         return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
@@ -60,12 +61,10 @@ const checkIfAllowedToAddTask = async function (data) {
 				let taskLead = data.tasklead
                 // let checkIfLeadIsAssignedThisProject = getProject?.managedBy.includes(data.tasklead) || false;
 				let managers = (getProject.managedBy).map(el=>el.toString())
-				console.log("Project lead data => ", managers, taskLead);
 				
 				checkIfLeadIsAssignedThisProject = taskLead.every(el=>managers.includes(el.toString())) || false
 
                 if (!checkIfLeadIsAssignedThisProject) {
-                    console.log("Lead is not assigned to this project...", getProject.managedBy)
                     return { data: { allowed: false }, error: false }
                 }
             }
@@ -114,14 +113,12 @@ exports.createPayloadAndInsertTask = createPayloadAndInsertTask
 //Edit user task
 const editUserTask = async (req, res, next) => {
     let data = req.data;
-    console.log('editUserTask data : ', req.data);
 
     if (!data.taskId) {
         return res.status(400).send(sendResponse(400, "", 'editUserTask', null, req.data.signature))
     }
 
     let task = await getTaskById(data);
-    console.log("task Details => ", task)
     if (task.error || !task.data) {
         return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
     }
@@ -131,7 +128,6 @@ const editUserTask = async (req, res, next) => {
     }
 
     let taskRes = await createPayloadAndEditTask(data)
-    console.log('taskRes : ', taskRes)
     if (taskRes.error || !taskRes.data) {
         return res.status(500).send(sendResponse(500, '', 'editUserTask', null, req.data.signature))
     }
@@ -160,7 +156,6 @@ const createPayloadAndEditTask = async function (data) {
             _id: data.taskId
         }
         if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role)) {
-            console.log("user is trying to modify task....", data.auth.role)
             findPayload["$or"] = [
                 { createdBy: data.auth.id },
                 { assignedTo: data.auth.id },
@@ -215,7 +210,6 @@ const createPayloadAndEditTask = async function (data) {
         if (data.priority) {
             updatePayload.priority = data.priority
         }
-        console.log("Upload payload foe edit task => ", updatePayload)
         let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload, {})
         return { data: taskRes, error: false }
     } catch (err) {
@@ -228,7 +222,6 @@ exports.createPayloadAndEditTask = createPayloadAndEditTask
 //Task Lisiting Main API
 const getGroupByTasks = async (req, res, next) => {
     let data = req.data;
-    // console.log('getGroupByTasks data : ', req.data);
 
     let allowedTaskGroup = process.env.ALLOWED_GROUP_BY.split(',')
 
@@ -238,12 +231,9 @@ const getGroupByTasks = async (req, res, next) => {
         data.aggregateGroupBy = `$${data.groupBy}`
     }
 
-    if(data.groupBy === 'default'){
-        data.aggregateGroupBy = { projectId: "$projectId", section: "$section" }
-    }
+	data.aggregateGroupBy = CONSTANTS.GROUP_BY[data.groupBy]
 
     let taskRes = await createPayloadAndGetGroupByTask(data)
-    console.log('taskRes : ', taskRes)
     if (taskRes.error) {
         return res.status(500).send(sendResponse(500, '', 'getGroupByTasks', null, req.data.signature))
     }
@@ -256,6 +246,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
         let findData = {}
 		let filter = {}
 
+		let preserveArrays = false
         if(data.projectIds || data.projectId) {
             let projectIds = data.projectIds ? JSON.parse(data.projectIds) : [data.projectId]
             findData["_id"] = { $in : projectIds.map(el => mongoose.Types.ObjectId(el)) }
@@ -284,6 +275,9 @@ const createPayloadAndGetGroupByTask = async function (data) {
             let status = JSON.parse(data.status)
             filter["tasks.status"] = { $in : status }
         }
+		if (["default", "section"].includes(data.groupBy)) {
+			preserveArrays = true
+		}
 
 		
         let aggregate = [
@@ -319,56 +313,69 @@ const createPayloadAndGetGroupByTask = async function (data) {
 					"as": "tasks"
 				  }
 				},
-				{ "$unwind": { "path": "$tasks",preserveNullAndEmptyArrays : true } },
+				{ "$unwind": { "path": "$tasks",preserveNullAndEmptyArrays : preserveArrays } },
+				{ $match : filter },
 				{
 				  "$group": {
-					"_id": { "projectId": "$name", "section": "$section.name" },
-					"tasks": { "$push": "$tasks" }
+					"_id": data.aggregateGroupBy,
+					"tasks": { "$push": "$tasks" },
+					// totalTasks : { $sum : 1},
+					completedTasks : { $sum : {$cond: [{$eq:["$tasks.status","COMPLETED"]},1,0]}},
+					ongoingTasks : { $sum : {$cond: [{$eq:["$tasks.status","ONGOING"]},1,0]}},
+					onHoldTasks : { $sum : {$cond: [{$eq:["$tasks.status","ONHOLD"]},1,0]}},
+					noProgressTasks : { $sum : {$cond: [{$eq:["$tasks.status","NOT_STARTED"]},1,0]}}
 				  }
 				},
-			  
-			{ $match : filter },
+			{
+				$project: {
+				   _id: 1,
+				   tasks: 1,
+				   totalTasks: { $size: "$tasks" },
+				   completedTasks: 1,
+				   ongoingTasks: 1,
+				   onHoldTasks: 1,
+				   noProgressTasks: 1
+				}
+			},
             { $sort: { "_id.projectId": 1, "_id.section":1 } }
         ]
 
-		console.log("==============group by filter=*************======",aggregate, filter, findData)
 
-        // console.log("qwertyuiop1234567890-", aggregate)
+		console.log("==============group by filter=*************======",data.aggregateGroupBy)
 
         let taskRes = await Project.projectAggregate(aggregate)
 
-        // console.log(taskRes)
         let populate = []
         if (data.groupBy == 'default') {
-            populate.push({ path: '_id.projectId', model: 'projects', select: 'name' })
+            // populate.push({ path: '_id.projectId', model: 'projects', select: 'name' })
             populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
             populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name' })
         }
         if (data.groupBy == 'projectId') {
-            populate.push({ path: '_id', model: 'projects', select: 'name' })
+            // populate.push({ path: '_id', model: 'projects', select: 'name' })
             populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
             populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name' })
         }
         if (data.groupBy == 'createdBy') {
-            populate.push({ path: '_id', model: 'users', select: 'name' })
+            populate.push({ path: '_id.createdBy', model: 'users', select: 'name' })
             populate.push({ path: 'tasks.projectId', model: 'projects', select: 'name' })
             populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name' })
         }
         if (data.groupBy == 'assignedTo') {
-            populate.push({ path: '_id', model: 'users', select: 'name' })
+            populate.push({ path: '_id.assignedTo', model: 'users', select: 'name' })
+			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name' })
             populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
             populate.push({ path: 'tasks.projectId', model: 'projects', select: 'name' })
 
         }
-        if (data.groupBy == 'status' || data.groupBy == 'category') {
+        if (data.groupBy == 'status' || data.groupBy == 'sections') {
             populate.push({ path: 'tasks.projectId', model: 'projects', select: 'name' })
             populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
             populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name' })
         }
 
-        // let populatedRes = await Task.taskPopulate(taskRes, populate)
-        // console.log("0000000", populatedRes)
-        return { data: taskRes, error: false }
+        let populatedRes = await Project.projectPopulate(taskRes, populate)
+        return { data: populatedRes, error: false }
     } catch (err) {
         console.log("createPayloadAndGetGroupByTask Error : ", err)
         return { data: err, error: true }
@@ -378,14 +385,12 @@ exports.createPayloadAndGetGroupByTask = createPayloadAndGetGroupByTask;
 
 const getTaskDetailsByTaskId = async (req, res, next) => {
     let data = req.data;
-    console.log('getTaskDetailsByTaskId data : ', req.data);
 
     if (!data.taskId) {
         return res.status(400).send(sendResponse(400, ``, 'getTaskDetailsByTaskId', null, req.data.signature))
     }
 
     let taskRes = await createPayloadAndGetTask(data)
-    // console.log('taskRes : ', taskRes)
     if (taskRes.error) {
         return res.status(500).send(sendResponse(500, '', 'getTaskDetailsByTaskId', null, req.data.signature))
     }
@@ -430,7 +435,6 @@ const addCommentIdInTaskById = async function (data) {
             $addToSet: { comments: data.commentId }
         }
         let insertRes = await Task.findOneAndUpdate(payload, updatePayload, {})
-        console.log("insertRes---------------------------", insertRes)
         return { data: insertRes, error: false }
     } catch (error) {
         console.log("addCommentIdInTaskById Error : ", error)
@@ -442,10 +446,8 @@ exports.addCommentIdInTaskById = addCommentIdInTaskById;
 
 const getTaskStatusAnalytics = async (req, res, next) => {
     let data = req.data;
-    // console.log('getTaskStatusAnalytics data : ', req.data);
 
     let taskRes = await payloadGetTaskStatusAnalytics(data)
-    console.log('taskRes : ', taskRes)
     if (taskRes.error) {
         return res.status(500).send(sendResponse(500, '', 'getTaskStatusAnalytics', null, req.data.signature))
     }
@@ -548,7 +550,6 @@ const rateUserTask = async (req, res, next) => {
     }
 
     let task = await getTaskById(data);
-    console.log("task Details => ", task)
     if (task.error || !task.data) {
         return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
     }
@@ -581,7 +582,6 @@ const rateUserTask = async (req, res, next) => {
         if (!checkIfAllowedToRateTask) {
             return res.status(400).send(sendResponse(400, 'Not allowed to rate task', 'rateUserTask', null, req.data.signature))
         }
-        console.log("If lead is allowed to rate this task....", checkIfAllowedToRateTask)
     }
 
     if(data.comment){
@@ -672,7 +672,6 @@ const updateUserTaskRating = async function (data) {
             new: true
         }
         let taskRating = await Task.findOneAndUpdate(findData, updateData, options);
-        console.log("Task rated Successfully => ", taskRating);
         return { data: taskRating, error: false }
 
     } catch (err) {
@@ -689,10 +688,8 @@ const getAllTasksWithSameDueDate = async function (data) {
             dueDate: data.taskDetails.dueDate
         }
 
-        console.log("Get all tasks of same due date => ", findData);
 
         let allTasks = await Task.taskFindQuery(findData, {}, "");
-        console.log("Task for same due date fetched Successfully => ", allTasks.length);
         return { data: allTasks, error: false }
 
     } catch (err) {
@@ -711,7 +708,6 @@ const updateOverallRatingDoc = async function (data) {
         const month = dateObj.getMonth() + 1; // getMonth() returns 0-11, add 1 to get 1-12
         const date = dateObj.getUTCDate();
 
-        console.log("Dates for which rating DOC =>", dateObj, date,month, year)
         let findData = {
             userId: data.taskDetails.assignedTo,
             date: date,
@@ -732,9 +728,7 @@ const updateOverallRatingDoc = async function (data) {
             new: true,
             upsert: true
         }
-        console.log("Get corrosponding rating doc => ", findData, " UpdateData => ", updateData)
         let averageUpdatedRating = await Rating.ratingFindOneAndUpdate(findData, updateData, options);
-        console.log("Average Rating document updated Successfully => ", averageUpdatedRating);
         return { data: averageUpdatedRating, error: false }
 
     } catch (err) {
@@ -770,7 +764,6 @@ const getProjectSpecificTasks = async function (data) {
         }
         let populate = "lead createdBy assignedTo ratingComments comments"
         let tasks = await Task.taskFindQuery(findData, {}, populate);
-        console.log("Task fetched Successfully, length => ", tasks.length);
         return { data: tasks, error: false }
     } catch (err) {
         console.log("Error => ", err);
@@ -886,9 +879,7 @@ const createPayloadAndGetTaskLists = async function (data) {
 		if (JSON.stringify(data.homePageTaskList)) {
             findData.status = { $ne : "COMPLETED"};
         }
-        console.log("Find Data for tasks => ", findData);
         let taskList = await Task.taskFindQuery(findData, {}, "");
-        console.log("TaskList fetch according to role => ", taskList.length);
         return { data: taskList, error: false }
 
     } catch (err) {
@@ -913,7 +904,6 @@ const deleteTask = async (req, res, next) => {
     if (!fetchTaskById.data) {
         return res.status(400).send(sendResponse(400, 'No Task Found', 'deleteTask', null, req.data.signature))
     }
-    console.log("task Fetched for deletion.... ", fetchTaskById.data, data.filteredProjects)
     if (fetchTaskById.data?.isRated) {
         return res.status(400).send(sendResponse(400, 'Task Already Rated', 'deleteTask', null, req.data.signature))
     }
@@ -928,7 +918,6 @@ const deleteTask = async (req, res, next) => {
     }
 
     let taskRes = await createPayloadAndDeleteTask(data)
-    console.log('taskRes : ', taskRes)
     if (taskRes.error) {
         return res.status(500).send(sendResponse(500, '', 'deleteTask', null, req.data.signature))
     }
@@ -987,7 +976,6 @@ const updateTaskStatus = async (req, res, next) => {
     if (!fetchTaskById.data) {
         return res.status(400).send(sendResponse(400, 'No Task Found', 'updateTaskStatus', null, req.data.signature))
     }
-    console.log("task Fetched for deletion.... ", fetchTaskById.data, data.filteredProjects)
     if (fetchTaskById.data?.isRated) {
         return res.status(400).send(sendResponse(400, 'Task Already Rated', 'updateTaskStatus', null, req.data.signature))
     }
@@ -996,17 +984,16 @@ const updateTaskStatus = async (req, res, next) => {
         if (fetchTaskById.data.projectId && !data.filteredProjects.includes(fetchTaskById.data.projectId.toString())) {
             return res.status(400).send(sendResponse(400, 'The Project of this task is no longer assigned to you', 'updateTaskStatus', null, req.data.signature))
         }
-        if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && (data.auth.id.toString() != fetchTaskById.data.createdBy.toString())) {
+        if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && (data.auth.id.toString() != fetchTaskById.data.assignedTo.toString())) {
             return res.status(400).send(sendResponse(400, 'You are not allowed to update tasks status', 'updateTaskStatus', null, req.data.signature))
         }
     }
 
     let taskRes = await createPayloadAndUpdateTaskStatus(data)
-    console.log('taskRes : ', taskRes)
     if (taskRes.error) {
         return res.status(500).send(sendResponse(500, '', 'deleteTask', null, req.data.signature))
     }
-    return res.status(200).send(sendResponse(200, "Task Deleted Successfully", 'deleteTask', null, req.data.signature))
+    return res.status(200).send(sendResponse(200, "Task status updated Successfully", 'deleteTask', null, req.data.signature))
 }
 exports.updateTaskStatus = updateTaskStatus;
 
@@ -1027,6 +1014,74 @@ const createPayloadAndUpdateTaskStatus = async function (data) {
         return { data: taskRes, error: false }
     } catch (err) {
         console.log("createPayloadAndDeleteTask Error : ", err)
+        return { data: err, error: true }
+    }
+}
+
+// Controller of adding comment to user task
+const commentUserTask = async (req, res, next) => {
+
+    let data = req.data;
+
+    if (!data.taskId || !data.comment) {
+        return res.status(400).send(sendResponse(400, "Please send all required Data fields", 'commentUserTask', null, req.data.signature))
+    }
+
+    let task = await getTaskById(data);
+    if (task.error || !task.data) {
+        return res.status(400).send(sendResponse(400, 'Task Not found..', 'commentUserTask', null, req.data.signature))
+    }
+
+    let taskDetails = task.data;
+
+    data.taskDetails = taskDetails;
+
+    // if (!["SUPERADMIN", "ADMIN"].includes(data.auth.role)) {
+
+    //     console.log("Lead/contributor adding comment....", data.auth.role);
+
+    //     let checkIfAllowedToCommentTask = taskDetails.lead.includes(data.auth.id) && data.filteredProjects.includes(taskDetails.projectId.toString());
+
+    //     if (!checkIfAllowedToRateTask) {
+    //         return res.status(400).send(sendResponse(400, 'Not allowed to rate task', 'rateUserTask', null, req.data.signature))
+    //     }
+    //     console.log("If lead is allowed to rate this task....", checkIfAllowedToRateTask)
+    // }
+
+    if(data.comment){
+        let insertTaskCommentRes = await createPayloadAndInsertTaskRatingComment(data);
+        if (insertTaskCommentRes.error || !insertTaskCommentRes.data ) {
+            return res.status(500).send(sendResponse(500, 'Task comment could not be added..', 'commentUserTask', null, req.data.signature))
+        }
+        data.commentId = insertTaskCommentRes.data._id;
+    }
+    let updateTaskComment = await updateUserTaskComment(data);
+
+    if (updateTaskComment.error || !updateTaskComment.data) {
+        return res.status(500).send(sendResponse(500, '', 'commentUserTask', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'Task Commented', 'commentUserTask', updateTaskComment.data, req.data.signature));
+}
+exports.commentUserTask = commentUserTask;
+
+const updateUserTaskComment = async function (data) {
+    try {
+
+        let findData = {
+            _id: data.taskId
+        }
+        let updateData = {
+            $addToSet:{ comments: data.commentId }
+        }
+        let options = {
+            new: true
+        }
+        let taskRating = await Task.findOneAndUpdate(findData, updateData, options);
+        return { data: taskRating, error: false }
+
+    } catch (err) {
+        console.log("Error => ", err);
         return { data: err, error: true }
     }
 }

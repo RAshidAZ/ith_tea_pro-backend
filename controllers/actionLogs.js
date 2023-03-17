@@ -6,7 +6,6 @@ const utilities = require('../helpers/security');
 
 exports.addActionLog = async function (data) {
     try {
-        console.log("Inside ActionLog and Payload to insert Is => ", data.actionLogData);
         let payload = data.actionLogData;
 
         let insertLogResponse = await ActionLogs.insertActionLog(payload);

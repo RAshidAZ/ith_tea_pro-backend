@@ -13,7 +13,7 @@ const commonVariables = {
 	role: '{"contributor":"CONTRIBUTOR", "superadmin":"SUPER_ADMIN", "admin" : "ADMIN", "lead" : "LEAD", "guest" : "GUEST"}',
     TASK_STATUS: ["NOT_STARTED", "ONGOING", "COMPLETED", "ONHOLD"],
     TASK_PRIORITY: ["LOW", "REPEATED", "MEDIUM", "HIGH", "None"],
-    ALLOWED_GROUP_BY: ['default', 'category', 'status', 'projectId', 'createdBy', 'assignedTo', 'priority'],
+    ALLOWED_GROUP_BY: ['default', 'section', 'status', 'projectId', 'createdBy', 'assignedTo', 'priority'],
     PAGE_LIMIT:10,
     ENCRYPT_SALT_STATIC: 'dSDFeFenyL2jaSDasdaeFenyL2jas@766sar7^^#&W^FSDBGxg7dgBGxg7dgqw3FSQ',
     ACTION_TYPE : ["TASK", "TASK_RATING", "PROJECTS","TEAM_MEMBER"],
