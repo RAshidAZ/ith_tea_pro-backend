@@ -30,7 +30,6 @@ if (env === 'development') {
     let developmentEnvConfig = require('./development');
     Object.keys(developmentEnvConfig).forEach((key) => {
         process.env[key] = developmentEnvConfig[key];
-        // console.log(key, ' => ',  developmentEnvConfig[key])
     })
 
 
