@@ -207,7 +207,7 @@ const createPayloadAndEditTask = async function (data) {
 			if (!ifLeadAssigned.data.allowed) {
 				return res.status(400).send(sendResponse(401, 'Not Allowed to add given lead for this task', 'createPayloadAndEditTask', null, req.data.signature))
 			}
-			updatePayload.lead = data.lead
+			updatePayload.lead = data.tasklead
 		}
 		let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload, {})
 		return { data: taskRes, error: false }
