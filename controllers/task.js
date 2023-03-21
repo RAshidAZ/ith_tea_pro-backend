@@ -302,6 +302,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 							"$match": {
 								"$expr": {
 									"$and": [
+										{ "$eq": ["$isDeleted", false] },
 										{ "$eq": ["$section", "$$section"] },
 										{ "$eq": ["$projectId", "$$projectId"] }
 									]

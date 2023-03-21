@@ -351,7 +351,7 @@ const createPayloadAndgetAllProjects = async function (data) {
 							$match: {
 								"$expr": {
 									$and: [
-										// { $ne: ["$status", "COMPLETED"] },
+										{ $eq: ["$isDeleted", false] },
 										{ $eq: ["$projectId", "$$projectId"] }
 									]
 								}
@@ -497,7 +497,7 @@ const addProjectSection = async (req, res, next) => {
 	if (projectRes.error || !projectRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
 	}
-	return res.status(200).send(sendResponse(200, "Project's section Added Successfully", 'addNewProject', null, req.data.signature))
+	return res.status(200).send(sendResponse(200, "Project's section Added Successfully", 'addNewProject', projectSectionRes.data, req.data.signature))
 }
 exports.addProjectSection = addProjectSection
 
