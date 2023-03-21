@@ -1,9 +1,11 @@
 const mongoose = require('mongoose');
 const moment = require("moment");
 const atob = require("atob");
+const btoa = require('btoa')
 
 // Helpers Functions
 const utilities = require('../helpers/security');
+const emailUtitlities = require("../helpers/email");
 
 const { sendResponse } = require('../helpers/sendResponse')
 const { Auth, Credentials } = require('../query');
@@ -60,6 +62,19 @@ const findUserExistence = async function (data) {
 
         let findData = {
             email: data.email
+        };
+        let user = await Auth.findUser(findData);
+        return { data: user, error: false }
+    } catch (error) {
+        return { data: error, error: true }
+    }
+}
+
+const findUserExistenceByUserId = async function (data) {
+    try {
+
+        let findData = {
+            _id: data.userId
         };
         let user = await Auth.findUser(findData);
         return { data: user, error: false }
@@ -300,24 +315,31 @@ const verifyPasswordToken = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, "Params Missing", 'validateToken', null, req.data.signature))
     }
 
-    let findUser = await findUserByPasswordToken(data);
+    let findPasswordToken = await findUserByPasswordToken(data);
 
-    if (findUser.error) {
+    if (findPasswordToken.error) {
         console.log("Error in checkIfEmailExist")
         return res.status(500).send(sendResponse(500, "Error in finding user by password-token", "validateToken", null, null))
     }
 
-    if (!findUser.data) {
-        return res.status(400).send(sendResponse(400, "User not found", 'validateToken', null, req.data.signature))
+    if (!findPasswordToken.data) {
+		console.log("============no token data")
+        return res.status(400).send(sendResponse(400, "Invalid request", 'validateToken', null, req.data.signature))
     }
 
-	let findUserCredential = {userId : findUser.data._id}
+	console.log("============token data",findPasswordToken.data)
+	console.log("============ token expired",new Date(), new Date(findPasswordToken.data.tokenExpiration))
+	if (new Date() > new Date(findPasswordToken.data.tokenExpiration)) {
+        return res.status(400).send(sendResponse(400, "Link expired, Please contact admin to resend password setup link", 'validateToken', null, req.data.signature))
+    }
+
+	let findUserCredential = {userId : findPasswordToken.data.userId}
     let credentials = await Credentials.findOneQuery(findUserCredential);
 	if(credentials && credentials.userId){
         return res.status(400).send(sendResponse(400, "Password already setup", "validateToken", null, null))
 	}
 
-    return res.status(200).send(sendResponse(200, "User need to setup password", 'validateToken', {email : findUser.data.email}, null))
+    return res.status(200).send(sendResponse(200, "User need to setup password", 'validateToken', {email : findPasswordToken.data.email}, null))
 };
 exports.verifyPasswordToken = verifyPasswordToken;
 
@@ -326,10 +348,10 @@ const findUserByPasswordToken = async function (data) {
 
 		console.log("================token========",atob(data.token))
         let findData = {
-            passwordToken: data.token
+            token: atob(data.token)
         };
-        let user = await Auth.findUser(findData);
-        return { data: user, error: false }
+        let passwordSetupToken = await Auth.findPasswordSetupToken(findData);
+        return { data: passwordSetupToken, error: false }
     } catch (error) {
         return { data: error, error: true }
     }
@@ -375,3 +397,84 @@ const setPassword = async (req, res, next) => {
     return res.status(200).send(sendResponse(200, "Successfully password setup", 'userLogin', "setPassword", req.data.signature))
 }
 exports.setPassword = setPassword;
+
+const resendPasswordSetupLink = async (req, res, next) => {
+    let data = req.body;
+	// if(!["SUPER_ADMIN", "ADMIN", "LEAD"].includes(data.auth.role)){
+    //     return res.status(401).send(sendResponse(401, "Not allowed to resend password setup link", 'resendPasswordSetupLink', null, req.data.signature))
+
+	// }
+    if (!data.userId) {
+        return res.status(400).send(sendResponse(400, "UserId required", 'resendPasswordSetupLink', null, req.data.signature))
+    }
+
+    let user = await findUserExistenceByUserId(data);
+    if (user.error) {
+        return res.status(400).send(sendResponse(400, user.data, 'resendPasswordSetupLink', null, req.data.signature))
+    }
+    if (!user || !user.data) {
+        return res.status(400).send(sendResponse(400, "User not found", 'resendPasswordSetupLink', null, req.data.signature))
+    }
+
+	
+	
+	let findUserCredential = {userId : data.userId}
+    let credentials = await Credentials.findOneQuery(findUserCredential);
+	
+	if(credentials && credentials.userId){
+		// return res.status(400).send(sendResponse(400, "Password already setup", "resendPasswordSetupLink", null, null))
+	}
+	
+	let findPasswordTokens = await findUserPasswordSetupTokens(data);
+	
+
+    if (findPasswordTokens.error) {
+        return res.status(500).send(sendResponse(500, '', 'resendPasswordSetupLink', null, req.data.signature))
+    }
+
+	let passwordTokens = findPasswordTokens.data
+	let randomString = null;
+	if(passwordTokens.length){
+		randomString = passwordTokens[0].token
+
+		console.log("================token found in log")
+	}else{
+		randomString = Math.random().toString(36).substring(2) + data.userId.toString().substring(15,24);
+		let payload = {
+			email : user.data.email,
+			token : randomString,
+			userId : data.userId
+		}
+		let addPasswordSetupToken = await Auth.addPasswordSetupToken(payload);
+		console.log("==============new token generated=====",addPasswordSetupToken)
+		if(addPasswordSetupToken.err){
+			return res.status(500).send(sendResponse(500, '', 'resendPasswordSetupLink', null, req.data.signature))
+		}
+		
+	}
+	data.email = user.data.email
+	data.signupToken = btoa(randomString).toString();
+	data.name = user.data.name
+	data.employeeId = user.data.employeeId
+	data.department = user.data.department
+	data.designation = user.data.designation
+
+	let sendWelcomeEmailRes = await emailUtitlities.sendWelcomeEmail(data);
+    
+    return res.status(200).send(sendResponse(200, "Successfully password setup link sent", 'resendPasswordSetupLink', null, req.data.signature))
+}
+exports.resendPasswordSetupLink = resendPasswordSetupLink;
+
+const findUserPasswordSetupTokens = async function (data) {
+    try {
+
+        let findData = {
+            userId : data.userId,
+			tokenExpiration : { $gt : new Date()}
+        };
+        let passwordSetupTokens = await Auth.findPasswordSetupTokens(findData);
+        return { data: passwordSetupTokens, error: false }
+    } catch (error) {
+        return { data: error, error: true }
+    }
+}

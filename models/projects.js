@@ -6,12 +6,16 @@ let projectsSchema = new Schema({
         type: String,
         unique: true
     },
-    isActive: {
-        type: Boolean,
-        default: true
-    },
     image: String,
     description: String,
+	status: {
+        type: String,
+        enum: {
+            values: process.env.PROJECT_STATUS.split(","),  // ["COMPLETED", "ONGOING", "UPCOMING"]
+            message: "Status ENUM FAILED",
+        },
+        default: "ONGOING"
+    },
     sections: [{
         type: mongoose.Types.ObjectId,
         ref: "projectSections"
@@ -23,7 +27,15 @@ let projectsSchema = new Schema({
     accessibleBy: [{
         type: mongoose.Types.ObjectId,
         ref: "users"
-    }]
+    }],
+	isActive: {
+        type: Boolean,
+        default: true
+    },
+	isDeleted: {
+        type: Boolean,
+        default: false
+    },
 }, {
     timestamps: true
 });

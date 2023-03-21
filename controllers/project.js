@@ -42,6 +42,7 @@ const createPayloadAndGetProjectsAllUser = async function (data) {
 	try {
 		let payload = {
 			_id: data.projectId,
+			"isDeleted": false
 		}
 		let projection = {
 		}
@@ -73,6 +74,7 @@ const createPayloadAndGetUserAssignedProjects = async function (data) {
 	try {
 		let payload = {
 			accessibleBy: data.userId,
+			"isDeleted": false
 		}
 		let projection = {
 			_id: 1
@@ -300,6 +302,7 @@ const createPayloadAndDeleteProject = async function (data) {
 		let updatePayload = {
 			$set: {
 				isActive: false,
+				isDeleted : true,
 				updatedAt: new Date()
 			}
 		}
@@ -334,7 +337,8 @@ const createPayloadAndgetAllProjects = async function (data) {
 		pipeline.push(
 			{
 				$match: {
-					"isActive": true
+					"isActive": true,
+					"isDeleted": false
 				}
 			})
 		pipeline.push(
@@ -387,6 +391,13 @@ const createPayloadAndgetAllProjects = async function (data) {
 				}
 			}
 		)
+		pipeline.push(
+			{
+				$sort: {
+					updatedAt : -1
+				}
+			}
+		)
 		let projectRes = await Project.projectAggregate(pipeline)
 		return { data: projectRes, error: false }
 	} catch (err) {
@@ -411,7 +422,8 @@ exports.getAllProjectsList = getAllProjectsList;
 const createPayloadAndgetAllProjectsList = async function (data) {
 	try {
 		let payload = {
-			isActive: true
+			isActive: true,
+			"isDeleted": false
 		}
 		if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
 			console.log("Role other than SA/A...", data.auth.role)
@@ -452,7 +464,8 @@ exports.getAllProjectSections = getAllProjectSections;
 const createPayloadAndgetAllProjectSections = async function (data) {
 	try {
 		let payload = {
-			isActive: true
+			isActive: true,
+			// "isDeleted": false
 		}
 
 		let sortCriteria = {
@@ -549,7 +562,8 @@ exports.getSpecificProject = getSpecificProject;
 const createPayloadAndfindSpecificProject = async function (data) {
 	try {
 		let payload = {
-			_id: data.projectId
+			_id: data.projectId,
+			"isDeleted": false
 		}
 
 		let projection = {}

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const moment = require('moment');
 const { sendResponse } = require('../helpers/sendResponse')
 const queryController = require('../query')
-const { Rating } = queryController;
+const { Rating, User } = queryController;
 
 const commentController = require('./comment');
 
@@ -167,64 +167,69 @@ exports.addCommnetIdInRatingById = addCommnetIdInRatingById;
 const getAllUsersRatingForMonth = async function (data) {
 	try {
 		let payload = [
-			{
-				$match: { "month": parseInt(data.month), "year": parseInt(data.year) }
-			},
-			{
-			    $lookup: {
-			        from: "comments",
-			        localField: "comments",
-			        foreignField: "_id",
-			        as: "comments"
-			    }
-			},
-			{
-			    $lookup: {
-			        from: "users",
-			        localField: "userId",
-			        foreignField: "_id",
-			        as: "userId"
-			    }
-			},
-			// {
-			//     $lookup: {
-			//         from: "users",
-			//         localField: "comments.commentedBy",
+	 
+			{ $lookup: {
+				from: "ratings",
+				localField: "_id",
+				foreignField: "userId",
+				as: "ratings"
+			  }},
+                         
+                          
+		  {$unwind:{path:"$ratings","preserveNullAndEmptyArrays" : true}},
+                   {
+					$match: {
+						$or: [
+							 {   ratings :{$exists: false} },
+							{
+								$and: [
+									{ "ratings.month" : parseInt(data.month)},
+									{ "ratings.year" : parseInt(data.year) }
+								]
+							}
+						]
+					}
+				},
+                  
+				{
+					$group: {
+						_id: "$_id",
+						name: { $first: "$name" },
+						email: { $first: "$email" },
+						ratings: { $push: "$ratings" }
+					}
+				},
+				{ $sort: { "name":1, "ratings.date": 1 } },
+				{
+				  
+				  $project:{
+					  
+					  name:1,
+					  email:1,
+					  "ratings.rating":1,
+					  "ratings.dueDate":1,
+					  "ratings.date":1,
+					  "ratings.month":1,
+					  "ratings.year":1,
+					  "ratings.taskIds":1,
+					  monthlyAverage: {
+							$avg: {
+								$map: {
+									input: "$ratings.rating",
+									as: "rating",
+									in: "$$rating"
+								}
+							}
+						}
+					  
+					  }
+				  
+			   }
+			  ]
 
-			//         foreignField: "_id",
-			//         as: "comments.commentedBy"
-			//     }
-			// },
-			{
-				$unwind :{ path : "$userId", "preserveNullAndEmptyArrays" : true}
-			},
-			{
-				$group: {
-					_id: "$userId.name",
-					ratingsAndComment: { $addToSet: { ratingId: "$_id", rating: "$rating", date: "$date", month: "$month", year: "$year", comments: "$comments" } }
-					// ratingsAndComment: { $addToSet: { ratingId: "$_id", rating: "$rating", date: "$date", month: "$month", year: "$year" } }
-				}
-			},
-			{
-				$sort : { "userId.name" : 1}
-			},
-			{
-				$project: {
-					"ratingsAndComment.rating": 1,
-					"ratingsAndComment.ratingId": 1,
-					"ratingsAndComment.date": 1,
-					"ratingsAndComment.month": 1,
-					"ratingsAndComment.year": 1,
-					"ratingsAndComment.comments": 1,
-					// "ratingsAndComment.comments._id": 1,
-					// "ratingsAndComment.comments.createdAt": 1,
-					// "ratingsAndComment.comments.comment": 1,
-					// "ratingsAndComment.comments.commentedBy": 1,
-					// "ratingsAndComment.commentedByArray.name": 1
-				}
-			},
-		]
-		let ratingRes = await Rating.getAllUsersRatingForMonth(payload)
+		// let ratingRes = await Rating.getAllUsersRatingForMonth(payload)
+		let ratingRes = await User.getAllUsersRatingForMonth(payload)
+
 		return { data: ratingRes, error: false }
 	} catch (error) {
 		console.log("getAllUsersRatingForMonth Error : ", error)

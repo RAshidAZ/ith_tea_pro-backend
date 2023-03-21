@@ -124,6 +124,15 @@ const editUserDetails = async (req, res, next) => {
     if (!data.userId) {
         return res.status(400).send(sendResponse(400, "Missing Params", 'editUserDetails', null, req.data.signature))
     }
+	if(data.employeeId){
+		let employeeIdRes = await checkEmployeeIdExists(data);
+		if (employeeIdRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+		}
+		if (employeeIdRes.data) {
+			return res.status(400).send(sendResponse(400, 'Employee Id Already Exists', 'editUserDetails', null, req.data.signature))
+		}
+	}
     let userRes = await createPayloadAndEditUserDetails(data)
     if (userRes.error) {
         return res.status(500).send(sendResponse(500, 'Something Went Wrong', 'editUserDetails', null, req.data.signature))
@@ -167,6 +176,11 @@ const createPayloadAndEditUserDetails = async function (data) {
         if (data.twitterLink) {
             updatePayload.twitterLink = data.twitterLink
         }
+
+		if(data.employeeId){
+			updatePayload.employeeId = data.employeeId
+		}
+
 		if (data.name && data.dob && data.department && data.designation && data.employeeId) {
             updatePayload.profileCompleted = true
         }else{
@@ -327,10 +341,16 @@ const createPayloadAndRegisterUser = async function (data) {
 
     try {
 		let registerUser = await Auth.findAndUpdateUser(findData, updateData, options);
-		let passwordToken = btoa(registerUser._id).toString()
-		updateData.passwordToken = passwordToken;
-		data.signupToken = passwordToken
-		let updateUser = await Auth.findAndUpdateUser(findData, updateData);
+		const randomString = Math.random().toString(36).substring(2) + registerUser._id.toString().substring(15,24);
+		data.signupToken = btoa(randomString).toString();
+		// let updateUser = await Auth.findAndUpdateUser(findData, updateData);
+		let payload = {
+			email : data.email,
+			token : randomString,
+			userId : registerUser._id
+		}
+		let addPasswordSetupToken = await Auth.addPasswordSetupToken(payload);
+
         return {
             data: registerUser,
             error: false

@@ -11,8 +11,8 @@ let credentialsSchema = new Schema(
             type: mongoose.Types.ObjectId,
             ref: "users"
         },
-        emailVerified: { type: Boolean, default: false },
-        isActive: { type: Boolean, default: false },
+        emailVerified: { type: Boolean, default: false },  //true
+        isActive: { type: Boolean, default: false },    //true
         isBlocked: { type: Boolean, default: false },
         // employeeId: String
     },

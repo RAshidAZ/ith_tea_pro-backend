@@ -8,6 +8,7 @@ const clients = {
 };
 const data={}
 const authenticator = require('../middlewares/authenticator')(clients, data);
+const authenticateRole = require("../middlewares/authenticateRole");
 
 const { getAllUsers, editUserDetails } = require('../controllers/user');
 const Auth = require("../controllers/auth");
@@ -17,7 +18,14 @@ const Auth = require("../controllers/auth");
 router.get("/v1/all/", [], getAllUsers);
 router.patch("/v1/edit/", [], editUserDetails);
 
+//login
 router.post("/v1/user/login", [], Auth.userLogin);
+
+//resend password setup link email
+router.post("/v1/resend/password/setup", 
+[authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "LEAD"])], 
+Auth.resendPasswordSetupLink);
+
 
 //check setup password token
 router.get("/v1/verify/token", [], Auth.verifyPasswordToken);

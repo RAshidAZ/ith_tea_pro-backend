@@ -13,7 +13,7 @@ const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
 
-const { editUserTask, insertUserTask, getGroupByTasks, getTaskDetailsByTaskId, getTaskStatusAnalytics, getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask } = require('../controllers/task');
+const { editUserTask, insertUserTask, getGroupByTasks, getTaskDetailsByTaskId, getTaskStatusAnalytics, getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments } = require('../controllers/task');
 
 
 //Insert task
@@ -32,7 +32,7 @@ router.get("/v1/groupby",
     getGroupByTasks);
 
 router.get("/v1/by/taskId", 
-[authenticator], 
+// [authenticator], 
 getTaskDetailsByTaskId);
 
 router.get("/v1/status/analytics", [authenticator], getTaskStatusAnalytics);
@@ -81,5 +81,9 @@ router.post("/v1/add/comment",
     [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
     commentUserTask);
 
+/**Get comments of taks and rating of user for given date*/
+router.get("/v1/comments",
+    [authenticator],
+    getUserTaskComments);
 module.exports = router;
 

@@ -25,7 +25,8 @@ let ratingSchema = new Schema({
     ],
     date: Number,
     month: Number,
-    year: Number
+    year: Number,
+	dueDate: Date
 }, { timestamps: true })
 
 // We need to create a model using it

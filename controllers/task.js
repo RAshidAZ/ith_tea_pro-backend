@@ -87,9 +87,6 @@ const createPayloadAndInsertTask = async function (data) {
 			data.assignedTo = data.auth.id
 		};
 
-		if (data.dueDate) {
-			data.dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 0))
-		}
 		let payload = {
 			title: data.title,
 			description: data.description,
@@ -102,6 +99,9 @@ const createPayloadAndInsertTask = async function (data) {
 			completedDate: data.completedDate,
 			priority: data.priority,
 			lead: data.tasklead
+		}
+		if (data.dueDate) {
+			payload.dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 0))
 		}
 		let taskRes = await Task.insertUserTask(payload)
 		return { data: taskRes, error: false }
@@ -242,7 +242,7 @@ exports.getGroupByTasks = getGroupByTasks;
 
 const createPayloadAndGetGroupByTask = async function (data) {
 	try {
-		let findData = {}
+		let findData = { "isDeleted": false }
 		let filter = {}
 
 		let preserveArrays = false
@@ -400,13 +400,14 @@ exports.getTaskDetailsByTaskId = getTaskDetailsByTaskId;
 const createPayloadAndGetTask = async function (data) {
 	try {
 		let findData = {
-			_id: data.taskId
+			_id: data.taskId,
+			"isDeleted": false
 		}
 		let projection = {
 			// "comments.comment" : 1
 		}
 		let populate = [
-			{ path: 'comments', model: 'comments', select: 'comment _id createdAt commentedBy' },
+			{ path: 'comments', model: 'comments', select: 'comment _id createdAt commentedBy'},
 			{ path: 'createdBy', model: 'users', select: 'name _id' },
 			{ path: 'assignedTo', model: 'users', select: 'name' },
 			{ path: 'projectId', model: 'projects', select: 'name _id' },
@@ -475,7 +476,7 @@ const payloadGetTaskStatusAnalytics = async function (data) {
 		//     },
 		// ]
 		// let taskRes = await Task.taskAggregate(aggregate)
-		let taskRes = await Task.taskFindQuery({}, { status: 1, projectId: 1, _id: 0 })
+		let taskRes = await Task.taskFindQuery({"isDeleted": false}, { status: 1, projectId: 1, _id: 0 })
 		let sendData = {}
 		for (let i = 0; i < taskRes.length; i++) {
 			if (sendData[taskRes[i].projectId]) {
@@ -494,10 +495,10 @@ const payloadGetTaskStatusAnalytics = async function (data) {
 		let projectIds = Object.keys(sendData)
 		for (let i = 0; i < projectIds.length; i++) {
 			sendData[projectIds[i]]["totalTask"] && (sendData[projectIds[i]] = {
-				COMPLETED: sendData[projectIds[i]]['COMPLETED'] * 100 / sendData[projectIds[i]]["totalTask"],
-				ONGOING: sendData[projectIds[i]]['ONGOING'] * 100 / sendData[projectIds[i]]["totalTask"],
-				ONHOLD: sendData[projectIds[i]]['ONHOLD'] * 100 / sendData[projectIds[i]]["totalTask"],
-				NOT_STARTED: sendData[projectIds[i]]['NOT_STARTED'] * 100 / sendData[projectIds[i]]["totalTask"],
+				COMPLETED: parseFloat(sendData[projectIds[i]]['COMPLETED'] * 100 / sendData[projectIds[i]]["totalTask"]).toFixed(2),
+				ONGOING: parseFloat(sendData[projectIds[i]]['ONGOING'] * 100 / sendData[projectIds[i]]["totalTask"]).toFixed(2),
+				ONHOLD: parseFloat(sendData[projectIds[i]]['ONHOLD'] * 100 / sendData[projectIds[i]]["totalTask"]).toFixed(2),
+				NOT_STARTED: parseFloat(sendData[projectIds[i]]['NOT_STARTED'] * 100 / sendData[projectIds[i]]["totalTask"]).toFixed(2),
 				totalTask: sendData[projectIds[i]]["totalTask"]
 			})
 		}
@@ -582,6 +583,7 @@ const rateUserTask = async (req, res, next) => {
 	}
 
 	if (data.comment) {
+		data.type = process.env.ALLOWED_GROUP_BY.split(',')[1]     //RATING
 		let insertTaskCommentRes = await createPayloadAndInsertTaskRatingComment(data);
 		if (insertTaskCommentRes.error || !insertTaskCommentRes.data) {
 			return res.status(500).send(sendResponse(500, 'Task comment could not be added..', 'rateUserTask', null, req.data.signature))
@@ -643,7 +645,8 @@ const createPayloadAndInsertTaskRatingComment = async function (data) {
 		let payload = {
 			commentedBy: data.auth.id,
 			taggedUsers: data.taggedUsers,
-			comment: data.comment
+			comment: data.comment,
+			type : data.type
 		}
 		let commentRes = await Comments.insertRatingComment(payload)
 		return { data: commentRes, error: false }
@@ -709,7 +712,8 @@ const updateOverallRatingDoc = async function (data) {
 			userId: data.taskDetails.assignedTo,
 			date: date,
 			month: month,
-			year: year
+			year: year,
+			dueDate : dueDate
 		}
 
 		let allRatedTasks = data.allTasksWithSameDueDate.filter(task => task.isRated);
@@ -1046,6 +1050,7 @@ const commentUserTask = async (req, res, next) => {
 	// }
 
 	if (data.comment) {
+		// data.type = process.env.ALLOWED_GROUP_BY.split(',')[0]
 		let insertTaskCommentRes = await createPayloadAndInsertTaskRatingComment(data);
 		if (insertTaskCommentRes.error || !insertTaskCommentRes.data) {
 			return res.status(500).send(sendResponse(500, 'Task comment could not be added..', 'commentUserTask', null, req.data.signature))
@@ -1097,6 +1102,54 @@ const checkIfLeadAssignedProject = async function (data) {
 		} else {
 			return { data: { allowed: false }, error: false }
 		}
+	} catch (err) {
+		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}
+
+// Get comments of taks and rating of user for given date
+const getUserTaskComments = async function (req, res, next) {
+
+	let data = req.data;
+
+	if (!data.userId) {
+		return res.status(400).send(sendResponse(400, 'Missing Params', 'getTaskListToRate', null, req.data.signature))
+	}
+	let userComments = await createPayloadAndGetTaskComments(data);
+	if (userComments.error) {
+		return res.status(500).send(sendResponse(500, '', 'getTaskListToRate', null, req.data.signature))
+	}
+
+	return res.status(200).send(sendResponse(200, 'Task List', 'getTaskListToRate', userComments.data, req.data.signature));
+}
+exports.getUserTaskComments = getUserTaskComments;
+
+const createPayloadAndGetTaskComments = async function (data) {
+	try {
+
+		let findData = {
+			userId : data.userId,
+			isDeleted: false
+		};
+
+		//filter tasks of only those project which are assigned to LEAD, CONTRIBUTOR, INTERN
+		if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+			findData.projectId = { $in: data.filteredProjects }
+		}
+
+		if (data.projectId) {
+			findData.projectId = data.projectId
+		} 
+
+		if (data.dueDate) {
+			findData.dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 000))
+		}
+
+		let populate = 'comments ratingComments'
+		let taskList = await Task.taskFindQuery(findData, {}, populate);
+		return { data: taskList, error: false }
+
 	} catch (err) {
 		console.log("Error => ", err);
 		return { data: err, error: true }

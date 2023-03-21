@@ -7,7 +7,7 @@ let tasksSchema = new Schema({
     status: {
         type: String,
         enum: {
-            values: process.env.TASK_STATUS.split(","),  // ["NOT_STARTED", "ONGOING", "COMPLETED", "ONHOLD"]
+            values: process.env.TASK_STATUS.split(","),  // ["NOT_STARTED", "ONGOING", "COMPLETED", "CLOSED", "ONHOLD"]
             message: "Status ENUM FAILED",
         },
         default: "NOT_STARTED"
@@ -50,21 +50,6 @@ let tasksSchema = new Schema({
     dueDate: Date,
     completedDate: Date,
 
-    // isCompleted: {
-    //     type: Boolean,
-    //     default: false
-    // },
-
-    // inProgress: {
-    //     type: Boolean,
-    //     default: false
-    // },
-
-    // onHold: {
-    //     type: Boolean,
-    //     default: false
-    // },
-
     isRated: {
         type: Boolean,
         default: false
@@ -72,12 +57,12 @@ let tasksSchema = new Schema({
     rating: {
         type: Number,
         min: 0,
-        max: 5,
+        max: 5,                      //to be increased as per requirement
         default: 0
     },
 
     givenBy: {
-        type: mongoose.Types.ObjectId,
+        type: mongoose.Types.ObjectId,              //for user that give rating
         ref: "users"
     },
     isDeleted: {
@@ -90,6 +75,10 @@ let tasksSchema = new Schema({
             ref: "comments"
         }
     ],
+	isDeleted: {
+        type: Boolean,
+        default: false
+    }
 
 }, {
     timestamps: true

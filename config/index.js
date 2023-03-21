@@ -11,7 +11,9 @@ const commonVariables = {
     STATUS: [200, 500, 400, 401],
     ROLE: ["CONTRIBUTOR", "SUPER_ADMIN", "ADMIN", "LEAD", "GUEST"],          //contributor/GUEST ADD
 	role: '{"contributor":"CONTRIBUTOR", "superadmin":"SUPER_ADMIN", "admin" : "ADMIN", "lead" : "LEAD", "guest" : "GUEST"}',
-    TASK_STATUS: ["NOT_STARTED", "ONGOING", "COMPLETED", "ONHOLD"],
+    TASK_STATUS: ["NOT_STARTED", "ONGOING", "COMPLETED", "CLOSED", "ONHOLD"],
+	PROJECT_STATUS : ["COMPLETED", "ONGOING", "UPCOMING"],
+	COMMENT_TYPE : ["TASK", "RATING"],
     TASK_PRIORITY: ["LOW", "REPEATED", "MEDIUM", "HIGH", "None"],
     ALLOWED_GROUP_BY: ['default', 'section', 'status', 'projectId', 'createdBy', 'assignedTo', 'priority'],
     PAGE_LIMIT:10,
