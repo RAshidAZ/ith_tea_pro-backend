@@ -32,7 +32,7 @@ router.get("/v1/groupby",
     getGroupByTasks);
 
 router.get("/v1/by/taskId", 
-// [authenticator], 
+[authenticator], 
 getTaskDetailsByTaskId);
 
 router.get("/v1/status/analytics", [authenticator], getTaskStatusAnalytics);

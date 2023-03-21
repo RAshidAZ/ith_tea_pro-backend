@@ -583,7 +583,7 @@ const rateUserTask = async (req, res, next) => {
 	}
 
 	if (data.comment) {
-		data.type = process.env.ALLOWED_GROUP_BY.split(',')[1]     //RATING
+		data.type = 'RATING'     //RATING
 		let insertTaskCommentRes = await createPayloadAndInsertTaskRatingComment(data);
 		if (insertTaskCommentRes.error || !insertTaskCommentRes.data) {
 			return res.status(500).send(sendResponse(500, 'Task comment could not be added..', 'rateUserTask', null, req.data.signature))
@@ -648,6 +648,7 @@ const createPayloadAndInsertTaskRatingComment = async function (data) {
 			comment: data.comment,
 			type : data.type
 		}
+		console.log("=======payload for comment=====",payload)
 		let commentRes = await Comments.insertRatingComment(payload)
 		return { data: commentRes, error: false }
 	} catch (err) {
@@ -1051,6 +1052,7 @@ const commentUserTask = async (req, res, next) => {
 
 	if (data.comment) {
 		// data.type = process.env.ALLOWED_GROUP_BY.split(',')[0]
+		data.type = "TASK"
 		let insertTaskCommentRes = await createPayloadAndInsertTaskRatingComment(data);
 		if (insertTaskCommentRes.error || !insertTaskCommentRes.data) {
 			return res.status(500).send(sendResponse(500, 'Task comment could not be added..', 'commentUserTask', null, req.data.signature))
