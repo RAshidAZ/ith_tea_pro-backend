@@ -48,6 +48,7 @@ let insertUser = [
 let seedUsers = () => {
     User.find({}, (err, resp) => {
         if (resp.length > 0) {
+			console.log("=======already")
             return;
         } else {
             User.create(insertUser, (err, response) => {

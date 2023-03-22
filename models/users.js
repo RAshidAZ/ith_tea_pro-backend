@@ -24,7 +24,7 @@ let userSchema = new Schema(
         role: {
             type: String,
             enum: {
-                values: process.env.ROLE.split(","), // ["CONTRIBUTOR", "SUPER_ADMIN", "ADMIN", "LEAD", "INTERN"]
+                values:  ["CONTRIBUTOR", "SUPER_ADMIN", "ADMIN", "LEAD", "INTERN", "GUEST"],
                 message: "ROLE ENUM FAILED",
             },
             default: "CONTRIBUTOR",
