@@ -19,7 +19,7 @@ const role = JSON.parse(process.env.role);
 const clients = {
     users: {
         host: process.env.SERVICE_RPC_HOST,
-        port: process.env.SC_USER_PORT
+        port: process.env.SERVICE_RPC_PORT
     }
 };
 
@@ -45,7 +45,7 @@ var uploadFile = multer({
             });
         },
         key: function (req, file, cb) {
-			const folder = `socialCollider/image`;
+			const folder = `tpro/image`;
             const filename_new = folder + "/" +Date.now() + "." + file.originalname.split(".")[file.originalname.split(".").length - 1];
             cb(null, filename_new);
         }
@@ -79,7 +79,8 @@ var uploadFile = multer({
 //     }),
 //     limits: { fieldSize: 20 * 1024 * 1024 }
 // });
-router.put('/v1/admin/file', [authenticator, authenticateRole([role.admin,role.superadmin]),uploadFile.single('file')],function (req, res, next) {
+router.put('/v1/upload/file', 
+[uploadFile.single('file')],function (req, res, next) {
     let data = req.body;
     data.req = req.data;
 

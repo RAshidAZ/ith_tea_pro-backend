@@ -560,7 +560,7 @@
       }
     },
 
-	"/upload/v1/upload/file": {
+	"/upload/v1/admin/file": {
 		"put": {
 		  "description": "upload file",
 		  "summary": "upload file",
