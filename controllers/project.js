@@ -3,6 +3,7 @@ const queryController = require('../query')
 const { Project } = queryController;
 const { ProjectSections } = queryController;
 const { ProjectLogs } = queryController;
+const { User } = queryController;
 
 const mongoose = require("mongoose");
 
@@ -194,14 +195,28 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 		let payload = {
 			_id: data.projectId
 		}
+
+		let findUsers = {
+			_id : { $in : data.userIds}
+		}
+
+		let allUsers = await User.getAllUsers(findUsers)
+		allUsers = allUsers.length ? allUsers : []
+		let usersToAssign = allUsers.map((el) => el.role == 'CONTRIBUTOR')
+		if(usersToAssign.length && !usersToAssign[0].role){
+			usersToAssign = []
+		}
+
+		let leadsToAssign = allUsers.filter((el) => el.role == 'LEAD')
+		
+		if(leadsToAssign.length && !leadsToAssign[0].role){
+			leadsToAssign = []
+		}
 		let updatePayload = {
-			$addToSet: { accessibleBy: { $each: data.userIds } }
+			$addToSet: { accessibleBy: { $each: usersToAssign }, managedBy: { $each: leadsToAssign } }
 		}
-		if (data.assignLead) {
-			updatePayload = {
-				$addToSet: { managedBy: { $each: data.userIds } }
-			}
-		}
+
+		console.log("=================assign lead data=========",updatePayload)
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
 		return { data: projectRes, error: false }
 	} catch (err) {

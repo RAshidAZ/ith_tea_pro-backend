@@ -325,7 +325,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 				"$group": {
 					"_id": data.aggregateGroupBy,
 					"tasks": { "$push": "$tasks" },
-					// totalTasks : { $sum : 1},
+					projectId: { $first: "$_id" },
 					completedTasks: { $sum: { $cond: [{ $eq: ["$tasks.status", "COMPLETED"] }, 1, 0] } },
 					ongoingTasks: { $sum: { $cond: [{ $eq: ["$tasks.status", "ONGOING"] }, 1, 0] } },
 					onHoldTasks: { $sum: { $cond: [{ $eq: ["$tasks.status", "ONHOLD"] }, 1, 0] } },
@@ -337,6 +337,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 					_id: 1,
 					tasks: 1,
 					totalTasks: { $size: "$tasks" },
+					projectId : 1,
 					completedTasks: 1,
 					ongoingTasks: 1,
 					onHoldTasks: 1,
