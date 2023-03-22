@@ -18,7 +18,7 @@ router.post("/v1/add", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"]
 //Superadmin, admin edit any user details ( provide userId )
 // Lead edit either self or any user details ( provide userId )
 // User, intern can edit only themself
-router.patch("/v1/edit", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "CONTRIBUTOR", "INTERN",])], editUserDetails);
+router.patch("/v1/edit", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "CONTRIBUTOR", "INTERN", "LEAD", "GUEST"])], editUserDetails);
 
 //get userby userId
 router.get("/v1/userId", [authenticator], getUserDetailsByUserId);

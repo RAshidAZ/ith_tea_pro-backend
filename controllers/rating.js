@@ -166,8 +166,12 @@ exports.addCommnetIdInRatingById = addCommnetIdInRatingById;
 
 const getAllUsersRatingForMonth = async function (data) {
 	try {
+		let roleFilter = []
 		let payload = [
 	 
+			{
+				$match : { role : { $nin : roleFilter }}
+			},
 			{ $lookup: {
 				from: "ratings",
 				localField: "_id",

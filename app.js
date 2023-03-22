@@ -44,12 +44,14 @@ const comment = require('./routes/comment')
 const rating = require('./routes/rating')
 const task = require('./routes/task')
 const user = require('./routes/user')
+const upload = require('./routes/upload')
 const project = require('./routes/project')
 
 app.use('/rating', rating)
 app.use('/comment', comment)
 app.use('/task', task)
 app.use('/user', user)
+app.use('/upload', upload)
 app.use('/projects', project)
 const auth = require('./routes/auth');
 

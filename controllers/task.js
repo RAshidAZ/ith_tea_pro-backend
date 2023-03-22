@@ -245,6 +245,11 @@ const createPayloadAndGetGroupByTask = async function (data) {
 		let findData = { "isDeleted": false }
 		let filter = {}
 
+		
+		if(data.filteredProjects){
+			findData._id = { $in : data.filteredProjects.map((el)=>mongoose.Types.ObjectId(el))}
+		}
+		
 		let preserveArrays = false
 		if (data.projectIds || data.projectId) {
 			let projectIds = data.projectIds ? JSON.parse(data.projectIds) : [data.projectId]
@@ -279,6 +284,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 		}
 
 
+		console.log("====================find check========",findData, data.filteredProjects)
 		let aggregate = [
 			{
 				$match: findData
