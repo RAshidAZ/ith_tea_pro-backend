@@ -2,12 +2,22 @@ let mongoose = require("./db");
 let Schema = mongoose.Schema;
 
 let projectSectionSchema = new Schema({
-    name: {
-        type: String
+    name: { type: String, lowercase: true },
+	projectId: {
+        type: mongoose.Types.ObjectId,
+        ref: "projects"
     },
     isActive: {
         type: Boolean,
         default: true
+    },
+	isArchived: {
+        type: Boolean,
+        default: false
+    },
+	isDeleted: {
+        type: Boolean,
+        default: false
     }
 
 }, {

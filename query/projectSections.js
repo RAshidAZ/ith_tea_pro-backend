@@ -5,6 +5,12 @@ exports.findInProjects = async function (payload, projection) {
     console.log("------------------------", payload)
     return ProjectSections.find(payload, projection)
 }
+
+exports.findSection = async function (payload) {
+    console.log("------------------------", payload)
+    return ProjectSections.findOne(payload)
+}
+
 exports.getAllProjects = async function (payload, projection, sortCriteria) {
     if (!sortCriteria) {
         sortCriteria = { createdAt: -1 }
@@ -32,6 +38,11 @@ exports.getProjectsAllUser = async function (payload, projection) {
 exports.projectSectionFindOneAndUpdate = async function (payload, updatePayload, options = {}) {
     console.log("addNewProjectSection------------------------", payload)
     return ProjectSections.findOneAndUpdate(payload,updatePayload, options)
+}
+
+exports.createProjectSection = async function (payload) {
+    console.log("createProjectSection------------------------", payload)
+    return ProjectSections.create(payload)
 }
 
 exports.updateMany = async function (payload, updatePayload) {

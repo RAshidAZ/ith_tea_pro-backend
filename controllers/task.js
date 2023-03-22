@@ -282,6 +282,9 @@ const createPayloadAndGetGroupByTask = async function (data) {
 		if (["default", "section"].includes(data.groupBy)) {
 			preserveArrays = true
 		}
+		if (JSON.stringify(data.isArchived)) {
+			filter["section.isArchived"] = data.isArchived
+		}
 
 
 		console.log("====================find check========",findData, data.filteredProjects)
@@ -326,6 +329,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 					"_id": data.aggregateGroupBy,
 					"tasks": { "$push": "$tasks" },
 					projectId: { $first: "$_id" },
+					sectionId: { $first: "$section._id" },
 					completedTasks: { $sum: { $cond: [{ $eq: ["$tasks.status", "COMPLETED"] }, 1, 0] } },
 					ongoingTasks: { $sum: { $cond: [{ $eq: ["$tasks.status", "ONGOING"] }, 1, 0] } },
 					onHoldTasks: { $sum: { $cond: [{ $eq: ["$tasks.status", "ONHOLD"] }, 1, 0] } },
@@ -338,6 +342,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 					tasks: 1,
 					totalTasks: { $size: "$tasks" },
 					projectId : 1,
+					sectionId : 1,
 					completedTasks: 1,
 					ongoingTasks: 1,
 					onHoldTasks: 1,
@@ -484,19 +489,24 @@ const payloadGetTaskStatusAnalytics = async function (data) {
 		//     },
 		// ]
 		// let taskRes = await Task.taskAggregate(aggregate)
-		let taskRes = await Task.taskFindQuery({"isDeleted": false}, { status: 1, projectId: 1, _id: 0 })
+		let taskRes = await Task.taskFindQuery({"isDeleted": false}, { status: 1, projectId: 1, _id: 0, dueDate:1, completedDate:1 })
 		let sendData = {}
 		for (let i = 0; i < taskRes.length; i++) {
 			if (sendData[taskRes[i].projectId]) {
 				sendData[taskRes[i].projectId][taskRes[i].status] += 1
 				sendData[taskRes[i].projectId].totalTask += 1
+				if(taskRes[i].completedDate && taskRes[i].dueDate && new Date(taskRes[i].dueDate) < new Date(taskRes[i].completedDate)){
+					sendData[taskRes[i].projectId].overDueTasks += 1
+				}
+		
 			} else {
 				sendData[taskRes[i].projectId] = {
 					COMPLETED: 0,
 					ONGOING: 0,
 					ONHOLD: 0,
 					NOT_STARTED: 0,
-					totalTask: 0
+					totalTask: 0,
+					overDueTasks : 0
 				}
 			}
 		}
@@ -507,7 +517,10 @@ const payloadGetTaskStatusAnalytics = async function (data) {
 				ONGOING: parseFloat(sendData[projectIds[i]]['ONGOING'] * 100 / sendData[projectIds[i]]["totalTask"]).toFixed(2),
 				ONHOLD: parseFloat(sendData[projectIds[i]]['ONHOLD'] * 100 / sendData[projectIds[i]]["totalTask"]).toFixed(2),
 				NOT_STARTED: parseFloat(sendData[projectIds[i]]['NOT_STARTED'] * 100 / sendData[projectIds[i]]["totalTask"]).toFixed(2),
-				totalTask: sendData[projectIds[i]]["totalTask"]
+				totalTask: sendData[projectIds[i]]["totalTask"],
+				overDueTasks: parseFloat(sendData[projectIds[i]]['overDueTasks'] * 100 / sendData[projectIds[i]]["totalTask"]).toFixed(2),
+
+				// overDueTasks: sendData[projectIds[i]]["totalTask"]
 			})
 		}
 		return { data: sendData, error: false }

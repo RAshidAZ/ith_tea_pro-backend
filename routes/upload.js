@@ -36,6 +36,7 @@ var uploadFile = multer({
     storage: multerS3({
         s3: s3,
         bucket: process.env.AWS_BUCKET,
+		limits: { fileSize: 1024 * 1024 * 15 },
         acl: 'public-read',
         contentType: multerS3.AUTO_CONTENT_TYPE,
         // serverSideEncryption: 'AES256',

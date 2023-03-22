@@ -19,3 +19,7 @@ exports.taskFindOneQuery = function (findData, projection, populate) {
 exports.taskFindQuery = function (findData, projection, populate) {
     return Tasks.find(findData, projection).populate(populate)
 }
+
+exports.taskCount = function (findData) {
+    return Tasks.countDocuments(findData)
+}

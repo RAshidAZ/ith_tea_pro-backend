@@ -12,7 +12,7 @@ const authenticator = require('../middlewares/authenticator')(clients, data);
 const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
-const { getProjectsAllUser, getAllProjects, getSpecificProject, addNewProject, editProject, deleteProject, assignUserToProject, getUserAssignedProjects, removeUserFromProject, getAllProjectsList, assignLeadToProject, removeLeadFromProject, getAllProjectSections, addProjectSection } = require('../controllers/project');
+const { getProjectsAllUser, getAllProjects, getSpecificProject, addNewProject, editProject, archiveStatusSectionUpdate, deleteProject, deleteProjectSection, editProjectSection, archiveStatusProjectUpdate, assignUserToProject, getUserAssignedProjects, removeUserFromProject, getAllProjectsList, assignLeadToProject, removeLeadFromProject, getAllProjectSections, addProjectSection } = require('../controllers/project');
 //Add new Project
 router.post("/v1/add/new",
     [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])],
@@ -39,6 +39,9 @@ router.get("/v1/user/all",
     getProjectsAllUser);
 
 router.patch("/v1/delete", [authenticator], deleteProject);
+
+//change project archive status
+router.patch("/v1/update/archive", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "LEAD"])], archiveStatusProjectUpdate);
 
 //Assign Users to project
 router.patch("/v1/assign/users",
@@ -79,6 +82,21 @@ router.get("/v1/categories",
 router.post("/v1/add/section",
 [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "LEAD"])],
 addProjectSection);
+
+//edit Project section/category
+router.patch("/v1/edit/section",
+[authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "LEAD"])],
+editProjectSection);
+
+//delete Project section/category
+router.patch("/v1/delete/section",
+[authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "LEAD"])],
+deleteProjectSection);
+
+//update section archive status
+router.patch("/v1/archive/section", 
+[authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "LEAD"])], 
+archiveStatusSectionUpdate);
 
 module.exports = router;
 

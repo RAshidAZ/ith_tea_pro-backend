@@ -28,6 +28,10 @@ let projectsSchema = new Schema({
         type: mongoose.Types.ObjectId,
         ref: "users"
     }],
+	isArchived: {
+        type: Boolean,
+        default: false
+    },
 	isActive: {
         type: Boolean,
         default: true

@@ -2,6 +2,7 @@ const { sendResponse } = require('../helpers/sendResponse');
 const queryController = require('../query')
 const { Project } = queryController;
 const { ProjectSections } = queryController;
+const { Task } = queryController;
 const { ProjectLogs } = queryController;
 const { User } = queryController;
 
@@ -234,7 +235,6 @@ const assignLeadToProject = async (req, res, next) => {
 
 	data.assignLead = true;
 	let projectRes = await createPayloadAndAssignProjectToUser(data)
-	console.log('projectRes : ', projectRes)
 	if (projectRes.error || !projectRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'assignUserToProject', null, req.data.signature))
 	}
@@ -265,7 +265,6 @@ const removeLeadFromProject = async (req, res, next) => {
 	data.removeLead = true;
 
 	let projectRes = await createPayloadAndUnAssignUser(data)
-	console.log('projectRes : ', projectRes)
 	if (projectRes.error || !projectRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'removeUserFromProject', null, req.data.signature))
 	}
@@ -300,6 +299,15 @@ const deleteProject = async (req, res, next) => {
 	let data = req.data;
 	if (!data.projectId) {
 		return res.status(400).send(sendResponse(400, "", 'deleteProject', null, req.data.signature))
+	}
+
+	let taskCountRes = await getTaskCountForProject(data)
+	if (taskCountRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'deleteProject', null, req.data.signature))
+	}
+
+	if(taskCountRes.data){
+		return res.status(400).send(sendResponse(400, "Can't delete project, tasks exist", 'deleteProject', null, req.data.signature))
 	}
 	let projectRes = await createPayloadAndDeleteProject(data)
 	if (projectRes.error) {
@@ -338,7 +346,12 @@ const createPayloadAndgetAllProjects = async function (data) {
 
 		let projectAccess = {};
 
+		let findData = {
+			"isActive": true,
+			"isDeleted": false
+		}
 		if (!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
+			findData['isArchived'] = false
 			projectAccess["$match"] =
 			{
 				"$or": [
@@ -351,10 +364,7 @@ const createPayloadAndgetAllProjects = async function (data) {
 
 		pipeline.push(
 			{
-				$match: {
-					"isActive": true,
-					"isDeleted": false
-				}
+				$match: findData
 			})
 		pipeline.push(
 			{
@@ -480,7 +490,7 @@ const createPayloadAndgetAllProjectSections = async function (data) {
 	try {
 		let payload = {
 			isActive: true,
-			// "isDeleted": false
+			"isDeleted": false
 		}
 
 		let sortCriteria = {
@@ -499,20 +509,28 @@ const createPayloadAndgetAllProjectSections = async function (data) {
 const addProjectSection = async (req, res, next) => {
 	let data = req.data;
 	if (!data.name || !data.projectId) {
-		return res.status(400).send(sendResponse(400, "", 'addNewProject', null, req.data.signature))
+		return res.status(400).send(sendResponse(400, "Missing params", 'addProjectSection', null, req.data.signature))
+	}
+
+	let sectionRes = await checkIfSectionEist(data)
+	if (sectionRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'addProjectSection', null, req.data.signature))
+	}
+
+	if (sectionRes.data) {
+		return res.status(400).send(sendResponse(400, "Section with the name already exist for this project", 'addProjectSection', null, req.data.signature))
 	}
 
 	let projectSectionRes = await createPayloadAndAddProjectSection(data)
 	if (projectSectionRes.error || !projectSectionRes.data) {
-		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
+		return res.status(500).send(sendResponse(500, '', 'addProjectSection', null, req.data.signature))
 	}
 	data.projectSections = [projectSectionRes.data._id]
 	let projectRes = await createPayloadAndUpdateProjectSection(data)
-	console.log('projectRes : ', projectRes)
 	if (projectRes.error || !projectRes.data) {
-		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
+		return res.status(500).send(sendResponse(500, '', 'addProjectSection', null, req.data.signature))
 	}
-	return res.status(200).send(sendResponse(200, "Project's section Added Successfully", 'addNewProject', projectSectionRes.data, req.data.signature))
+	return res.status(200).send(sendResponse(200, "Project's section Added Successfully", 'addProjectSection', projectSectionRes.data, req.data.signature))
 }
 exports.addProjectSection = addProjectSection
 
@@ -520,17 +538,13 @@ exports.addProjectSection = addProjectSection
 const createPayloadAndAddProjectSection = async function (data) {
 	try {
 		let payload = {
-			name: data.name
+			name: data.name,
+			isActive : true,
+			isDeleted : false,
+			projectId : data.projectId
 		}
 
-		let options = {
-			upsert: true,
-			new: true,
-			setDefaultsOnInsert: true
-		}
-
-		let updatePayload = {}
-		let projectSectionRes = await ProjectSections.projectSectionFindOneAndUpdate(payload, updatePayload, options)
+		let projectSectionRes = await ProjectSections.createProjectSection(payload)
 		return { data: projectSectionRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndAddProject Error : ", err)
@@ -608,3 +622,257 @@ const createProjectLogPayloadAndAddLog = async function (data) {
 	}
 }
 exports.createProjectLogPayloadAndAddLog = createProjectLogPayloadAndAddLog;
+
+const archiveStatusProjectUpdate = async (req, res, next) => {
+	let data = req.data;
+	if (!data.projectId || !JSON.stringify(data.isArchived)) {
+		return res.status(400).send(sendResponse(400, "", 'archiveStatusProjectUpdate', null, req.data.signature))
+	}
+
+	if(data.isArchived == 'true'){
+		let dueTaskRes = await getDueTaskCountForProject(data)
+		if (dueTaskRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'archiveStatusProjectUpdate', null, req.data.signature))
+		}
+	
+		if(dueTaskRes.data){
+			return res.status(400).send(sendResponse(400, "Can't archive project, due tasks exist", 'archiveStatusProjectUpdate', null, req.data.signature))
+		}
+	}
+	let projectRes = await createPayloadAndArchiveProject(data)
+	if (projectRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'archiveStatusProjectUpdate', null, req.data.signature))
+	}
+	return res.status(200).send(sendResponse(200, "Project Archive status changed Successfully", 'archiveStatusProjectUpdate', null, req.data.signature))
+}
+exports.archiveStatusProjectUpdate = archiveStatusProjectUpdate
+
+const createPayloadAndArchiveProject = async function (data) {
+	try {
+		let payload = {
+			_id: data.projectId
+		}
+		let updatePayload = {
+			$set: {
+				isArchived: data.isArchived,
+				updatedAt: new Date()
+			}
+		}
+		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
+		return { data: projectRes, error: false }
+	} catch (err) {
+		console.log("createPayloadAndArchiveProject Error : ", err)
+		return { data: err, error: true }
+	}
+}
+exports.createPayloadAndArchiveProject = createPayloadAndArchiveProject;
+
+//editeditProjectSection project section
+const editProjectSection = async (req, res, next) => {
+	let data = req.data;
+	if (!data.name || !data.sectionId) {
+		return res.status(400).send(sendResponse(400, "", 'editProjectSection', null, req.data.signature))
+	}
+
+	let projectSectionRes = await createPayloadAndEditProjectSection(data)
+	if (projectSectionRes.error || !projectSectionRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'editProjectSection', null, req.data.signature))
+	}
+	
+	return res.status(200).send(sendResponse(200, "Project's section updated Successfully", 'editProjectSection', null, req.data.signature))
+}
+exports.editProjectSection = editProjectSection
+
+const createPayloadAndEditProjectSection = async function (data) {
+	try {
+		let payload = {
+			_id : data.sectionId
+		}
+
+		let options = {
+			upsert: true,
+			new: true,
+			setDefaultsOnInsert: true
+		}
+
+		let updatePayload = { }
+	
+		if(data.name){
+			updatePayload.name = data.name
+		}
+		let projectSectionRes = await ProjectSections.projectSectionFindOneAndUpdate(payload, updatePayload, options)
+		return { data: projectSectionRes, error: false }
+	} catch (err) {
+		console.log("createPayloadAndAddProject Error : ", err)
+		return { data: err, error: true }
+	}
+}
+exports.createPayloadAndAddProjectSection = createPayloadAndAddProjectSection
+
+//add project section
+const deleteProjectSection = async (req, res, next) => {
+	let data = req.data;
+	if (!data.sectionId) {
+		return res.status(400).send(sendResponse(400, "", 'deleteProjectSection', null, req.data.signature))
+	}
+
+	let tasksList = await getAllTasksWithSameSection(data)
+
+	if (tasksList.error) {
+		return res.status(500).send(sendResponse(500, '', 'deleteProjectSection', null, req.data.signature))
+	}
+
+	if(tasksList && tasksList.data.length){
+		return res.status(400).send(sendResponse(400, "Can't delete section, task exist", 'deleteProjectSection', null, req.data.signature))
+	}
+	let projectSectionRes = await createPayloadAndDeleteProjectSection(data)
+	if (projectSectionRes.error || !projectSectionRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'deleteProjectSection', null, req.data.signature))
+	}
+	let projectRes = await createPayloadAndRemoveProjectSection(data)
+	if (projectRes.error || !projectRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'deleteProjectSection', null, req.data.signature))
+	}
+	return res.status(200).send(sendResponse(200, "Section deleted Successfully", 'deleteProjectSection', null, req.data.signature))
+}
+exports.deleteProjectSection = deleteProjectSection
+
+const createPayloadAndRemoveProjectSection = async function (data) {
+	try {
+		let payload = {
+			sections : data.sectionId
+		}
+
+		let updatePayload = {
+			$pull: { sections: data.sectionId }
+		}
+
+		let projectRes = await Project.updateProjects(payload, updatePayload)
+		return { data: projectRes, error: false }
+	} catch (err) {
+		console.log("createPayloadAndRemoveProjectSection Error : ", err)
+		return { data: err, error: true }
+	}
+}
+exports.createPayloadAndRemoveProjectSection = createPayloadAndRemoveProjectSection
+
+const getAllTasksWithSameSection = async function (data) {
+	try {
+
+		let findData = {
+			isDeleted : false,
+			section : data.sectionId
+		}
+
+		let allTasks = await Task.taskFindQuery(findData, {}, "");
+		return { data: allTasks, error: false }
+
+	} catch (err) {
+		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}
+
+//editeditProjectSection project section
+const createPayloadAndDeleteProjectSection = async function (data) {
+	try {
+		let payload = {
+			_id : data.sectionId
+		}
+
+		let updatePayload = { isDeleted : true, isActive : false }
+	
+		let projectSectionRes = await ProjectSections.projectSectionFindOneAndUpdate(payload, updatePayload, {})
+		return { data: projectSectionRes, error: false }
+	} catch (err) {
+		console.log("createPayloadAndDeleteProjectSection Error : ", err)
+		return { data: err, error: true }
+	}
+}
+exports.createPayloadAndDeleteProjectSection = createPayloadAndDeleteProjectSection
+
+
+const archiveStatusSectionUpdate = async (req, res, next) => {
+	let data = req.data;
+	if (!data.sectionId || !JSON.stringify(data.isArchived)) {
+		return res.status(400).send(sendResponse(400, "", 'archiveStatusProjectUpdate', null, req.data.signature))
+	}
+	let projectSectionRes = await createPayloadAndArchiveSection(data)
+	if (projectSectionRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'archiveStatusProjectUpdate', null, req.data.signature))
+	}
+	return res.status(200).send(sendResponse(200, "Section Archive status changed Successfully", 'archiveStatusProjectUpdate', null, req.data.signature))
+}
+exports.archiveStatusSectionUpdate = archiveStatusSectionUpdate
+
+const createPayloadAndArchiveSection = async function (data) {
+	try {
+		let payload = {
+			_id: data.sectionId
+		}
+		let updatePayload = {
+			$set: {
+				isArchived: data.isArchived,
+				updatedAt: new Date()
+			}
+		}
+		let projectSectionRes = await ProjectSections.projectSectionFindOneAndUpdate(payload, updatePayload)
+		return { data: projectSectionRes, error: false }
+	} catch (err) {
+		console.log("createPayloadAndArchiveSection Error : ", err)
+		return { data: err, error: true }
+	}
+}
+exports.createPayloadAndArchiveSection = createPayloadAndArchiveSection;
+
+const getTaskCountForProject = async function (data) {
+	try {
+
+		let findData = {
+			isDeleted : false,
+			projectId : data.projectId
+		}
+
+		let tascCount = await Task.taskCount(findData);
+		return { data: tascCount, error: false }
+
+	} catch (err) {
+		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}
+
+const checkIfSectionEist = async function (data) {
+	try {
+		let payload = {
+			name: data.name,
+			isActive : true,
+			isDeleted : false,
+			projectId : data.projectId
+		}
+		
+		let projectSectionRes = await ProjectSections.findSection(payload)
+		return { data: projectSectionRes, error: false }
+	} catch (err) {
+		console.log("createPayloadAndAddProject Error : ", err)
+		return { data: err, error: true }
+	}
+}
+
+const getDueTaskCountForProject = async function (data) {
+	try {
+
+		let findData = {
+			isDeleted : false,
+			isRated : false,
+			projectId : data.projectId
+		}
+
+		let tascCount = await Task.taskCount(findData);
+		return { data: tascCount, error: false }
+
+	} catch (err) {
+		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}

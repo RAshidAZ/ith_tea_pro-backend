@@ -25,9 +25,17 @@ exports.getAllUsers = getAllUsers;
 
 const findAllUserWithPagination = async function (data) {
     try {
-        let payload = {
-            role: { $nin: ["ADMIN", "SUPER_ADMIN"]}
+		
+		let payload = {
+			role: { $nin: ["ADMIN", "SUPER_ADMIN"]}
         }
+
+		if(['LEAD', 'CONTRIBUTOR', 'GUEST'].includes(data.auth.role) && data.filteredProjects){
+			let filteredProjectsUsers = await filteredDistinctProjectsUsers(data)
+			if(filteredProjectsUsers && filteredProjectsUsers.data && filteredProjectsUsers.data[0]){
+				payload._id  = { $in : filteredProjectsUsers.data[0].allUsers}
+			}
+		}
         if (data.search) {
             payload["$or"] = [
                 { "name": { "$regex": data.search, "$options": "i" } },
@@ -181,6 +189,10 @@ const createPayloadAndEditUserDetails = async function (data) {
 			updatePayload.employeeId = data.employeeId
 		}
 
+		if(data.profilePicture){
+			updatePayload.profilePicture = data.profilePicture
+		}
+
 		if (data.name && data.dob && data.department && data.designation && data.employeeId) {
             updatePayload.profileCompleted = true
         }else{
@@ -274,6 +286,9 @@ const checkEmployeeIdExists = async (data) => {
         let payload = {
             employeeId: data.employeeId,
         }
+		if(data.userId){
+			payload._id = {$ne : data.userId}
+		}
         let projection = { employeeId: 1 }
         let userRes = await User.userfindOneQuery(payload, projection)
         return { data: userRes, error: false }
@@ -664,3 +679,33 @@ const createPayloadAndGetUnAssignedUserOfSpecificProject = async function (data)
         return { data: err, error: true }
     }
 }
+
+const filteredDistinctProjectsUsers = async function (data) {
+	try {
+
+		let filteredProjects = data.filteredProjects || []
+		filteredProjects = filteredProjects.map(el => mongoose.Types.ObjectId(el))
+        let pipeline = [
+			{
+				$match : { _id : { $in : filteredProjects } }
+			},
+			{
+			  $project: {
+				allUsers: {
+				  $setUnion: ["$managedBy", "$accessibleBy"]
+				}
+			  }
+			}
+		  ]
+        let projectsUsers = await Project.projectAggregate(pipeline)
+		console.log("all project users",projectsUsers)
+        return { data: projectsUsers, error: false }
+    } catch (err) {
+        console.log("createPayloadAndEditUserDetails Error : ", err)
+        return { data: err, error: true }
+    }
+        
+
+       
+}
+exports.filteredDistinctProjectsUsers = filteredDistinctProjectsUsers

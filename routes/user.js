@@ -9,6 +9,7 @@ const clients = {
 const data = {}
 const authenticator = require('../middlewares/authenticator')(clients, data);
 const authenticateRole = require("../middlewares/authenticateRole");
+const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
 const { getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng} = require('../controllers/user');
 
@@ -27,7 +28,7 @@ router.get("/v1/userId", [authenticator], getUserDetailsByUserId);
 router.get("/v1/all", [authenticator], getAllUsersListingNonPaginated);
 
 // Get all users (except SA & A) - Pagination
-router.get("/v1/all/pagination", [authenticator], getAllUsers);
+router.get("/v1/all/pagination", [authenticator, filterProjects], getAllUsers);
 
 //Users listing - Non Paginated ( for dropdown ) - Only User
 router.get("/v1/list", [authenticator], getAllUsersNonPaginated);

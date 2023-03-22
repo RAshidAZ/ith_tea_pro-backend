@@ -62,3 +62,8 @@ exports.distinctProjects = async function (field, payload) {
 exports.projectPopulate = function (res, populate) {
     return Projects.populate(res, populate)
 }
+
+exports.updateProjects = async function (payload, updatePayload) {
+    console.log("updateProjects------------------------", payload)
+    return Projects.updateMany(payload, updatePayload, {multi : true})
+}

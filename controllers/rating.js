@@ -166,7 +166,7 @@ exports.addCommnetIdInRatingById = addCommnetIdInRatingById;
 
 const getAllUsersRatingForMonth = async function (data) {
 	try {
-		let roleFilter = []
+		let roleFilter = ["SUPER_ADMIN", "ADMIN"]
 		let payload = [
 	 
 			{
