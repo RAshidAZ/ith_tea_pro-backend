@@ -38,7 +38,7 @@ router.get("/v1/user/all",
     [authenticator, filterProjects],
     getProjectsAllUser);
 
-router.patch("/v1/delete", [authenticator], deleteProject);
+router.patch("/v1/delete", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], deleteProject);
 
 //change project archive status
 router.patch("/v1/update/archive", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "LEAD"])], archiveStatusProjectUpdate);

@@ -13,7 +13,7 @@ const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
 
-const { editUserTask, insertUserTask, getGroupByTasks, getTaskDetailsByTaskId, getTaskStatusAnalytics, getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments } = require('../controllers/task');
+const { editUserTask, insertUserTask, getGroupByTasks, getTaskDetailsByTaskId, getTaskStatusAnalytics, getTodayTasksList,  getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments } = require('../controllers/task');
 
 
 //Insert task
@@ -87,3 +87,6 @@ router.get("/v1/comments",
     getUserTaskComments);
 module.exports = router;
 
+router.get("/v1/get/today/tasks",
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN"]), filterProjects],
+    getTodayTasksList)

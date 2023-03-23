@@ -4,7 +4,7 @@ let Schema = mongoose.Schema;
 let projectsSchema = new Schema({
     name: {
         type: String,
-        unique: true
+        // unique: true
     },
     image: String,
     description: String,

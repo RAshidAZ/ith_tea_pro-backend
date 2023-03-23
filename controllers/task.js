@@ -1178,3 +1178,63 @@ const createPayloadAndGetTaskComments = async function (data) {
 		return { data: err, error: true }
 	}
 }
+
+//Get task lists for homepage - Set according to role
+const getTodayTasksList = async function (req, res, next) {
+
+	let data = req.data;
+
+	let tasksLists = await createPayloadAndGetTodayTaskLists(data);
+	if (tasksLists.error) {
+		return res.status(500).send(sendResponse(500, '', 'getTaskListForHomePage', null, req.data.signature))
+	}
+
+	return res.status(200).send(sendResponse(200, 'Task List', 'getTaskListForHomePage', tasksLists.data, req.data.signature));
+}
+exports.getTodayTasksList = getTodayTasksList;
+
+const createPayloadAndGetTodayTaskLists = async function (data) {
+	try {
+
+		let findData = {
+			isDeleted: false
+		};
+
+		//filter tasks of only those project which are assigned to LEAD, CONTRIBUTOR, INTERN
+		if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+			findData.projectId = { $in: data.filteredProjects }
+		}
+
+		if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role)) {
+
+			findData["$or"] = [
+				{ createdBy: data.auth.id },
+				{ assignedTo: data.auth.id }
+			]
+		} else if (["LEAD", "SUPER_ADMIN", "ADMIN"].includes(data.auth.role) && data.userId) {
+			findData.assignedTo = data.userId
+		}
+
+		if (JSON.stringify(data.isRated)) {
+			findData.isRated = data.isRated
+		}
+
+		if (data.dueDate) {
+			findData.dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 000))
+		}
+
+		if (JSON.stringify(data.pendingRatingTasks)) {
+			findData.status = "COMPLETED";
+			findData.isRated = false
+		}
+		if (JSON.stringify(data.homePageTaskList)) {
+			findData.status = { $ne: "COMPLETED" };
+		}
+		let taskList = await Task.taskFindQuery(findData, {}, "");
+		return { data: taskList, error: false }
+
+	} catch (err) {
+		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}

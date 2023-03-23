@@ -32,8 +32,8 @@ const findAllUserWithPagination = async function (data) {
 
 		if(['LEAD', 'CONTRIBUTOR', 'GUEST'].includes(data.auth.role) && data.filteredProjects){
 			let filteredProjectsUsers = await filteredDistinctProjectsUsers(data)
-			if(filteredProjectsUsers && filteredProjectsUsers.data && filteredProjectsUsers.data[0]){
-				payload._id  = { $in : filteredProjectsUsers.data[0].allUsers}
+			if(filteredProjectsUsers && filteredProjectsUsers.data){
+				payload._id  = { $in : filteredProjectsUsers.data}
 			}
 		}
         if (data.search) {
@@ -685,9 +685,11 @@ const filteredDistinctProjectsUsers = async function (data) {
 
 		let filteredProjects = data.filteredProjects || []
 		filteredProjects = filteredProjects.map(el => mongoose.Types.ObjectId(el))
+		let findData = { _id : { $in : filteredProjects } }
+
         let pipeline = [
 			{
-				$match : { _id : { $in : filteredProjects } }
+				$match : findData
 			},
 			{
 			  $project: {
@@ -698,8 +700,9 @@ const filteredDistinctProjectsUsers = async function (data) {
 			}
 		  ]
         let projectsUsers = await Project.projectAggregate(pipeline)
-		console.log("all project users",projectsUsers)
-        return { data: projectsUsers, error: false }
+		let allUsers = (projectsUsers[0] && projectsUsers[0].allUsers) || []
+		console.log("======================all users======",allUsers)
+        return { data: allUsers, error: false }
     } catch (err) {
         console.log("createPayloadAndEditUserDetails Error : ", err)
         return { data: err, error: true }

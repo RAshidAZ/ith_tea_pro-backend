@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const moment = require('moment');
 const { sendResponse } = require('../helpers/sendResponse')
 const queryController = require('../query')
-const { Rating, User } = queryController;
+const { Rating, User, Project } = queryController;
 
 const commentController = require('./comment');
 
@@ -166,11 +166,22 @@ exports.addCommnetIdInRatingById = addCommnetIdInRatingById;
 
 const getAllUsersRatingForMonth = async function (data) {
 	try {
-		let roleFilter = ["SUPER_ADMIN", "ADMIN"]
+		let findData = { role : { $nin : ["SUPER_ADMIN", "ADMIN"] }}
+		if(data.auth.role == 'CONTRIBUTOR'){
+			findData._id = mongoose.Types.ObjectId(data.auth.id)
+		}
+		if(data.auth.role == 'LEAD' && data.filteredProjects){
+			let allProjectUsers = await filteredDistinctProjectsUsers(data)
+			if(allProjectUsers && allProjectUsers.data){
+				findData._id = { $in : (allProjectUsers.data).map((el)=> mongoose.Types.ObjectId(el)) }
+			}
+		}
+
+		console.log("================find filter in month rating=============",findData)
 		let payload = [
 	 
 			{
-				$match : { role : { $nin : roleFilter }}
+				$match : findData
 			},
 			{ $lookup: {
 				from: "ratings",
@@ -341,3 +352,25 @@ const createPayloadAndGetWeekRating = async function (data) {
 	}
 }
 exports.createPayloadAndGetWeekRating = createPayloadAndGetWeekRating;
+
+const filteredDistinctProjectsUsers = async function (data) {
+	try {
+
+
+		let field = 'accessibleBy'
+		let payload = {
+			_id : { $in : data.filteredProjects || []}
+		}
+
+        let projectsUsers = await Project.distinctProjects(field, payload)
+		let allUsers = projectsUsers || []
+		allUsers.push(data.auth.id)
+		console.log("======================all users======",allUsers)
+        return { data: allUsers, error: false }
+    } catch (err) {
+        console.log("createPayloadAndEditUserDetails Error : ", err)
+        return { data: err, error: true }
+    }
+       
+}
+exports.filteredDistinctProjectsUsers = filteredDistinctProjectsUsers

@@ -96,6 +96,13 @@ const addNewProject = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "", 'addNewProject', null, req.data.signature))
 	}
 
+	let checkIfProjectNameExist = await checkUniqueProject(data)
+	if(checkIfProjectNameExist.error){
+		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
+	}
+	if(checkIfProjectNameExist.data.exist){
+		return res.status(400).send(sendResponse(400, "Project name already exist", 'addNewProject', null, req.data.signature))
+	}
 	let projectRes = await createPayloadAndAddProject(data)
 	if (projectRes.error || !projectRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
@@ -873,6 +880,26 @@ const getDueTaskCountForProject = async function (data) {
 
 	} catch (err) {
 		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}
+
+const checkUniqueProject = async function (data) {
+	try {
+		let payload = {
+			name: data.name,
+			isDeleted : false
+		}
+		if(data.projectId){
+			payload._id = { $ne : data.projectId}
+		}
+		let projectRes = await Project.findSpecificProject(payload)
+		if(projectRes){
+			return { data: { exist: true }, error: false }
+		}
+		return { data: { exist: false }, error: false }
+	} catch (err) {
+		console.log("checkUniqueProject Error : ", err)
 		return { data: err, error: true }
 	}
 }

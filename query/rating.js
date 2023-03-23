@@ -23,7 +23,6 @@ exports.addCommnetIdInRatingById = async function (payload, updatePayload) {
     return Rating.findOneAndUpdate(payload, updatePayload)
 }
 exports.getAllUsersRatingForMonth = async function (payload) {
-    console.log("getAllUsersRatingForMonth------------------------", payload)
     return Rating.aggregate(payload)
 }
 exports.ratingFindOneAndUpdate = async function (payload, updatePayload, options) {
@@ -42,6 +41,5 @@ exports.getUserRating = async function (payload, projection, sortCriteria) {
 	if (!projection) {
         projection = {}
     }
-    console.log("getAllUsersRatingForMonth------------------------", payload)
     return Rating.find(payload, projection).sort(sortCriteria)
 }

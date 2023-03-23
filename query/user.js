@@ -33,6 +33,5 @@ exports.getAllUsersCountForPagination = function (findPayload) {
 }
 
 exports.getAllUsersRatingForMonth = async function (payload) {
-    console.log("getAllUsersRatingForMonth------------------------", payload)
     return Users.aggregate(payload)
 }
