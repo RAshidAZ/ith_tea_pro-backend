@@ -209,13 +209,15 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 		}
 
 		let allUsers = await User.getAllUsers(findUsers)
+		console.log("=======================all users data",allUsers)
 		allUsers = allUsers.length ? allUsers : []
-		let usersToAssign = allUsers.map((el) => el.role == 'CONTRIBUTOR')
+		let usersToAssign = allUsers.filter((el) => el.role == 'CONTRIBUTOR')
+		let leadsToAssign = allUsers.filter((el) => el.role == 'LEAD')
+		console.log("=================assign user/lead data=========",usersToAssign, leadsToAssign)
 		if(usersToAssign.length && !usersToAssign[0].role){
 			usersToAssign = []
 		}
 
-		let leadsToAssign = allUsers.filter((el) => el.role == 'LEAD')
 		
 		if(leadsToAssign.length && !leadsToAssign[0].role){
 			leadsToAssign = []
@@ -224,7 +226,6 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 			$addToSet: { accessibleBy: { $each: usersToAssign }, managedBy: { $each: leadsToAssign } }
 		}
 
-		console.log("=================assign lead data=========",updatePayload)
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
 		return { data: projectRes, error: false }
 	} catch (err) {
@@ -337,6 +338,15 @@ const createPayloadAndDeleteProject = async function (data) {
 			}
 		}
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
+		let taskPayload = { projectId : data.projectId}
+		let taskUpdatePayload = {
+			$set: {
+				isDeleted : true,
+				updatedAt: new Date()
+			}
+		}
+
+		let tasksRes = await Task.updateMany(taskPayload, taskUpdatePayload)
 		return { data: projectRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndDeleteProject Error : ", err)
@@ -357,8 +367,12 @@ const createPayloadAndgetAllProjects = async function (data) {
 			"isActive": true,
 			"isDeleted": false
 		}
-		if (!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
+		if(JSON.stringify(data.isArchived)){
+			findData['isArchived'] = data.isArchived
+		}else{
 			findData['isArchived'] = false
+		}
+		if (!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
 			projectAccess["$match"] =
 			{
 				"$or": [
@@ -636,12 +650,15 @@ const archiveStatusProjectUpdate = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "", 'archiveStatusProjectUpdate', null, req.data.signature))
 	}
 
-	if(data.isArchived == 'true'){
+	if(data.isArchived == 'true' || data.isArchived == true){
+
+		console.log("==============check task before archive project")
 		let dueTaskRes = await getDueTaskCountForProject(data)
 		if (dueTaskRes.error) {
 			return res.status(500).send(sendResponse(500, '', 'archiveStatusProjectUpdate', null, req.data.signature))
 		}
 	
+		console.log("==============check task before archive project",dueTaskRes.data )
 		if(dueTaskRes.data){
 			return res.status(400).send(sendResponse(400, "Can't archive project, due tasks exist", 'archiveStatusProjectUpdate', null, req.data.signature))
 		}
@@ -666,6 +683,16 @@ const createPayloadAndArchiveProject = async function (data) {
 			}
 		}
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
+
+		let taskPayload = { projectId : data.projectId}
+		let taskUpdatePayload = {
+			$set: {
+				isArchived : true,
+				updatedAt: new Date()
+			}
+		}
+
+		let tasksRes = await Task.updateMany(taskPayload, taskUpdatePayload)
 		return { data: projectRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndArchiveProject Error : ", err)
@@ -837,6 +864,7 @@ const getTaskCountForProject = async function (data) {
 
 		let findData = {
 			isDeleted : false,
+			isRated : false,
 			projectId : data.projectId
 		}
 
@@ -875,8 +903,8 @@ const getDueTaskCountForProject = async function (data) {
 			projectId : data.projectId
 		}
 
-		let tascCount = await Task.taskCount(findData);
-		return { data: tascCount, error: false }
+		let taskCount = await Task.taskCount(findData);
+		return { data: taskCount, error: false }
 
 	} catch (err) {
 		console.log("Error => ", err);

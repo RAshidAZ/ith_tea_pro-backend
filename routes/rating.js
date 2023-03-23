@@ -25,7 +25,5 @@ rating.getMonthAllUserRating);
 
 router.get("/v1/week/rating", [authenticator], rating.getWeekRating);
 
-
-
 module.exports = router;
 

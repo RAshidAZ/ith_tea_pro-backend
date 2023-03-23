@@ -16,6 +16,7 @@ const commonVariables = {
 	COMMENT_TYPE : ["TASK", "RATING"],
     TASK_PRIORITY: ["LOW", "REPEATED", "MEDIUM", "HIGH", "None"],
     ALLOWED_GROUP_BY: ['default', 'section', 'status', 'projectId', 'createdBy', 'assignedTo', 'priority'],
+	ALLOWED_SORT_BY: ['default', 'due-date', 'status', 'date-created', 'date-updated', 'date-completed', 'alphabetically'],
     PAGE_LIMIT:10,
     ENCRYPT_SALT_STATIC: 'dSDFeFenyL2jaSDasdaeFenyL2jas@766sar7^^#&W^FSDBGxg7dgBGxg7dgqw3FSQ',
     ACTION_TYPE : ["TASK", "TASK_RATING", "PROJECTS","TEAM_MEMBER"],

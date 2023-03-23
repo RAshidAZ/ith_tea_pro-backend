@@ -106,7 +106,6 @@ const createPayloadAndRegisterUser = async function (data) {
 
     try {
         let registerUser = await Auth.findAndUpdateUser(findData, updateData, options);
-        console.log("Register User Response => ", registerUser)
         let sendData = {
             email: res.email,
             emailVerified: res.emailVerified
@@ -292,7 +291,6 @@ const encryptData = function (data) {
     };
 
     let generateToken = utilities.encryptData(userData);
-    console.log("generateToken", generateToken)
     if (generateToken.error) {
         return generateToken
     }
@@ -327,8 +325,6 @@ const verifyPasswordToken = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, "Invalid request", 'validateToken', null, req.data.signature))
     }
 
-	console.log("============token data",findPasswordToken.data)
-	console.log("============ token expired",new Date(), new Date(findPasswordToken.data.tokenExpiration))
 	if (new Date() > new Date(findPasswordToken.data.tokenExpiration)) {
         return res.status(400).send(sendResponse(400, "Link expired, Please contact admin to resend password setup link", 'validateToken', null, req.data.signature))
     }
@@ -346,7 +342,6 @@ exports.verifyPasswordToken = verifyPasswordToken;
 const findUserByPasswordToken = async function (data) {
     try {
 
-		console.log("================token========",atob(data.token))
         let findData = {
             token: atob(data.token)
         };
@@ -446,7 +441,6 @@ const resendPasswordSetupLink = async (req, res, next) => {
 			userId : data.userId
 		}
 		let addPasswordSetupToken = await Auth.addPasswordSetupToken(payload);
-		console.log("==============new token generated=====",addPasswordSetupToken)
 		if(addPasswordSetupToken.err){
 			return res.status(500).send(sendResponse(500, '', 'resendPasswordSetupLink', null, req.data.signature))
 		}

@@ -23,3 +23,7 @@ exports.taskFindQuery = function (findData, projection, populate) {
 exports.taskCount = function (findData) {
     return Tasks.countDocuments(findData)
 }
+
+exports.updateMany = async function (payload, updatePayload) {
+    return Tasks.updateMany(payload, updatePayload)
+}

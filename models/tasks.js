@@ -65,7 +65,16 @@ let tasksSchema = new Schema({
         type: mongoose.Types.ObjectId,              //for user that give rating
         ref: "users"
     },
+	attachments: [
+        {
+            type: String
+        }
+    ],
     isDeleted: {
+        type: Boolean,
+        default: false
+    },
+	isArchived: {
         type: Boolean,
         default: false
     },

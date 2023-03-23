@@ -17,7 +17,6 @@ const encryptData = function (data) {
             algorithm: "HS256"
         };
         let encryptedData = jwt.sign(data, process.env.ENCRYPT_SALT_STATIC, signOptions);
-        console.log("encryptedData", encryptedData)
 
         return {
             data: encryptedData,

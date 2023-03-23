@@ -1,12 +1,16 @@
 const mongoose = require('mongoose');
+const btoa = require('btoa')
 const { sendResponse } = require('../helpers/sendResponse');
 const { populate } = require('../models/ratings');
 const queryController = require('../query');
 const { CONSTANTS } = require('../config/constants');
 
-const { Task, Rating, Project, Comments, TaskLogs } = queryController;
+const { Task, Rating, Project, Comments, TaskLogs, User } = queryController;
 
 const actionLogController = require("../controllers/actionLogs");
+
+//helper
+const emailUtitlities = require("../helpers/email");
 
 
 //Insert Task
@@ -103,7 +107,22 @@ const createPayloadAndInsertTask = async function (data) {
 		if (data.dueDate) {
 			payload.dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 0))
 		}
+
+		if (data.attachments) {
+			payload["attachments"] = data.attachments 
+		}
+
 		let taskRes = await Task.insertUserTask(payload)
+
+		if(data.assignedTo && (data.auth.id != data.assignedTo)){
+			let findUser = { _id : data.assignedTo}
+			let userData = await User.userfindOneQuery(findUser)
+			data.userData = userData;
+			data.email = userData.email;
+			data.taskLink = btoa(taskRes._id.toString())
+			console.log("==========task link details",data.taskLink)
+			let sendTaskMail = emailUtitlities.sendTaskMail(data)
+		}
 		return { data: taskRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndInsertTask Error : ", err)
@@ -167,6 +186,9 @@ const createPayloadAndEditTask = async function (data) {
 		let updatePayload = {}
 		if (data.title) {
 			updatePayload.title = data.title
+		}
+		if (data.attachments) {
+			updatePayload["attachments"] = data.attachments 
 		}
 		if (data.description) {
 			updatePayload.description = data.description
@@ -244,7 +266,16 @@ const createPayloadAndGetGroupByTask = async function (data) {
 	try {
 		let findData = { "isDeleted": false }
 		let filter = {}
+		let sortTaskOrder = { "_id.projectId": 1, "_id.section": 1 }
+		let allowedSortType = process.env.ALLOWED_SORT_BY.split(',')
+		let filterAnd = []
 
+
+		if (JSON.stringify(data.isArchived)) {
+			findData["isArchived"] = data.isArchived
+		}else {
+			findData["isArchived"] = false
+		}
 		
 		if(data.filteredProjects){
 			findData._id = { $in : data.filteredProjects.map((el)=>mongoose.Types.ObjectId(el))}
@@ -283,11 +314,46 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			preserveArrays = true
 		}
 		if (JSON.stringify(data.isArchived)) {
-			filter["section.isArchived"] = data.isArchived
+			filterAnd.push({
+				$or: [
+					{ section: { $exists: false } },
+					{ "section.isArchived": data.isArchived }
+				]
+			})
+		}else {
+			filterAnd.push({
+				$or: [
+					{ section: { $exists: false } },
+					{ "section.isArchived": false }
+				]
+			})
+		}
+		
+		if(filterAnd.length){
+			filter["$and"] = filterAnd
+		}
+		
+		let filterDate = {};
+		if (data.fromDate) {
+			let fromDate = new Date(data.fromDate)
+			filterDate["$gte"] = new Date(fromDate.setUTCHours(0, 0, 0, 0))	
 		}
 
+		if (data.toDate) {
+			let toDate = new Date(data.toDate)
+			filterDate["$lte"] = new Date(toDate.setUTCHours(23, 59, 59, 999))
+		}
 
-		console.log("====================find check========",findData, data.filteredProjects)
+		if (data.fromDate || data.toDate) {
+			filter["tasks.dueDate"] = filterDate;
+		}
+
+		if(data.sortType && allowedSortType.includes(data.sortType)){
+			let sortOrder = parseInt(data.sortOrder || 0)
+			console.log("=================sort order and type ====", data.sortType, sortOrder)
+			sortTaskOrder = sortOrder > 0 ? CONSTANTS.SORTBY_IN_INCREASING_ORDER[data.sortType] : CONSTANTS.SORTBY_IN_DECREASING_ORDER[data.sortType]
+		}
+		console.log("====================find check========",sortTaskOrder)
 		let aggregate = [
 			{
 				$match: findData
@@ -349,7 +415,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 					noProgressTasks: 1
 				}
 			},
-			{ $sort: { "_id.projectId": 1, "_id.section": 1 } }
+			{ $sort: sortTaskOrder }
 		]
 
 
@@ -866,7 +932,8 @@ const createPayloadAndGetTaskLists = async function (data) {
 	try {
 
 		let findData = {
-			isDeleted: false
+			isDeleted: false,
+			isArchived :  false,
 		};
 
 		//filter tasks of only those project which are assigned to LEAD, CONTRIBUTOR, INTERN
@@ -1196,40 +1263,21 @@ exports.getTodayTasksList = getTodayTasksList;
 const createPayloadAndGetTodayTaskLists = async function (data) {
 	try {
 
+		
+		let currentDate = new Date();
+		
+		let startDayTime =  new Date(new Date().setUTCHours(00, 00, 00, 000));
+		let endDayTime =  new Date(new Date().setUTCHours(23, 59, 59, 000));
+		
 		let findData = {
-			isDeleted: false
+			isDeleted: false,
+			isArchived :  false,
+			dueDate : { $gte : startDayTime, $lte : endDayTime }
 		};
+		
+		console.log("================task find data======",findData)
 
-		//filter tasks of only those project which are assigned to LEAD, CONTRIBUTOR, INTERN
-		if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
-			findData.projectId = { $in: data.filteredProjects }
-		}
-
-		if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role)) {
-
-			findData["$or"] = [
-				{ createdBy: data.auth.id },
-				{ assignedTo: data.auth.id }
-			]
-		} else if (["LEAD", "SUPER_ADMIN", "ADMIN"].includes(data.auth.role) && data.userId) {
-			findData.assignedTo = data.userId
-		}
-
-		if (JSON.stringify(data.isRated)) {
-			findData.isRated = data.isRated
-		}
-
-		if (data.dueDate) {
-			findData.dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 000))
-		}
-
-		if (JSON.stringify(data.pendingRatingTasks)) {
-			findData.status = "COMPLETED";
-			findData.isRated = false
-		}
-		if (JSON.stringify(data.homePageTaskList)) {
-			findData.status = { $ne: "COMPLETED" };
-		}
+		
 		let taskList = await Task.taskFindQuery(findData, {}, "");
 		return { data: taskList, error: false }
 

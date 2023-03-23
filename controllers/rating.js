@@ -91,8 +91,6 @@ const getMonthAllUserRating = async (req, res, next) => {
 }
 exports.getMonthAllUserRating = getMonthAllUserRating
 
-
-
 const createPayloadAndInsertRating = async function (data) {
 	try {
 		let payload = {
@@ -166,81 +164,86 @@ exports.addCommnetIdInRatingById = addCommnetIdInRatingById;
 
 const getAllUsersRatingForMonth = async function (data) {
 	try {
-		let findData = { role : { $nin : ["SUPER_ADMIN", "ADMIN"] }}
-		if(data.auth.role == 'CONTRIBUTOR'){
+		let findData = { role: { $nin: ["SUPER_ADMIN", "ADMIN"] } }
+		// if(data.auth.role == 'CONTRIBUTOR'){
+		// 	findData._id = mongoose.Types.ObjectId(data.auth.id)
+		// }
+		if(data.userRating){
 			findData._id = mongoose.Types.ObjectId(data.auth.id)
 		}
-		if(data.auth.role == 'LEAD' && data.filteredProjects){
+		if (data.auth.role == 'LEAD' && data.filteredProjects) {
 			let allProjectUsers = await filteredDistinctProjectsUsers(data)
-			if(allProjectUsers && allProjectUsers.data){
-				findData._id = { $in : (allProjectUsers.data).map((el)=> mongoose.Types.ObjectId(el)) }
+			if (allProjectUsers && allProjectUsers.data) {
+				findData._id = { $in: (allProjectUsers.data).map((el) => mongoose.Types.ObjectId(el)) }
 			}
 		}
 
-		console.log("================find filter in month rating=============",findData)
+		console.log("================find filter in month rating=============", findData)
 		let payload = [
-	 
+
 			{
-				$match : findData
+				$match: findData
 			},
-			{ $lookup: {
-				from: "ratings",
-				localField: "_id",
-				foreignField: "userId",
-				as: "ratings"
-			  }},
-                         
-                          
-		  {$unwind:{path:"$ratings","preserveNullAndEmptyArrays" : true}},
-                   {
-					$match: {
-						$or: [
-							 {   ratings :{$exists: false} },
-							{
-								$and: [
-									{ "ratings.month" : parseInt(data.month)},
-									{ "ratings.year" : parseInt(data.year) }
-								]
-							}
-						]
-					}
-				},
-                  
-				{
-					$group: {
-						_id: "$_id",
-						name: { $first: "$name" },
-						email: { $first: "$email" },
-						ratings: { $push: "$ratings" }
-					}
-				},
-				{ $sort: { "name":1, "ratings.date": 1 } },
-				{
-				  
-				  $project:{
-					  
-					  name:1,
-					  email:1,
-					  "ratings.rating":1,
-					  "ratings.dueDate":1,
-					  "ratings.date":1,
-					  "ratings.month":1,
-					  "ratings.year":1,
-					  "ratings.taskIds":1,
-					  monthlyAverage: {
-							$avg: {
-								$map: {
-									input: "$ratings.rating",
-									as: "rating",
-									in: "$$rating"
-								}
+			{
+				$lookup: {
+					from: "ratings",
+					localField: "_id",
+					foreignField: "userId",
+					as: "ratings"
+				}
+			},
+
+
+			{ $unwind: { path: "$ratings", "preserveNullAndEmptyArrays": true } },
+			{
+				$match: {
+					$or: [
+						{ ratings: { $exists: false } },
+						{
+							$and: [
+								{ "ratings.month": parseInt(data.month) },
+								{ "ratings.year": parseInt(data.year) }
+							]
+						}
+					]
+				}
+			},
+
+			{
+				$group: {
+					_id: "$_id",
+					name: { $first: "$name" },
+					email: { $first: "$email" },
+					ratings: { $push: "$ratings" }
+				}
+			},
+			{ $sort: { "name": 1, "ratings.date": 1 } },
+			{
+
+				$project: {
+
+					name: 1,
+					email: 1,
+					"ratings.rating": 1,
+					"ratings.dueDate": 1,
+					"ratings.date": 1,
+					"ratings.month": 1,
+					"ratings.year": 1,
+					"ratings.taskIds": 1,
+					monthlyAverage: {
+						$avg: {
+							$map: {
+								input: "$ratings.rating",
+								as: "rating",
+								in: "$$rating"
 							}
 						}
-					  
-					  }
-				  
-			   }
-			  ]
+					}
+
+				}
+
+			}
+		]
 
 		// let ratingRes = await Rating.getAllUsersRatingForMonth(payload)
 		let ratingRes = await User.getAllUsersRatingForMonth(payload)
@@ -359,18 +362,18 @@ const filteredDistinctProjectsUsers = async function (data) {
 
 		let field = 'accessibleBy'
 		let payload = {
-			_id : { $in : data.filteredProjects || []}
+			_id: { $in: data.filteredProjects || [] }
 		}
 
-        let projectsUsers = await Project.distinctProjects(field, payload)
+		let projectsUsers = await Project.distinctProjects(field, payload)
 		let allUsers = projectsUsers || []
 		allUsers.push(data.auth.id)
-		console.log("======================all users======",allUsers)
-        return { data: allUsers, error: false }
-    } catch (err) {
-        console.log("createPayloadAndEditUserDetails Error : ", err)
-        return { data: err, error: true }
-    }
-       
+		console.log("======================all users======", allUsers)
+		return { data: allUsers, error: false }
+	} catch (err) {
+		console.log("createPayloadAndEditUserDetails Error : ", err)
+		return { data: err, error: true }
+	}
+
 }
 exports.filteredDistinctProjectsUsers = filteredDistinctProjectsUsers

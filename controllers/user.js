@@ -712,3 +712,90 @@ const filteredDistinctProjectsUsers = async function (data) {
        
 }
 exports.filteredDistinctProjectsUsers = filteredDistinctProjectsUsers
+
+// team analytics
+const getTeamAnalytics = async (req, res, next) => {
+    let data = req.data;
+
+    let userRes = await createPayloadAndgetTeamAnalytics(data)
+
+    if (userRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getTeamAnalytics', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'Users Fetched', 'getTeamAnalytics', userRes.data, req.data.signature))
+}
+exports.getTeamAnalytics = getTeamAnalytics;
+
+const createPayloadAndgetTeamAnalytics = async function (data) {
+    try {
+
+        let payload = [
+			{
+			  $lookup: {
+				from: "tasks",
+				localField: "_id",
+				foreignField: "assignedTo",
+				as: "tasks"
+			  }
+			},
+			{
+			  $project: {
+				name: 1,
+				 email : 1,
+				totalTasks: { $size: "$tasks" },
+				completedTasks: {
+				  $size: {
+					$filter: {
+					  input: "$tasks",
+					  as: "task",
+					  cond: { $eq: ["$$task.status", "COMPLETED"] }
+					}
+				  }
+				},
+		        completedAfterDueDate: {
+		          $size: {
+		            $filter: {
+		              input: "$tasks",
+		              as: "task",
+		              cond: {
+		                $and: [
+		                  { $eq: ["$$task.status", "COMPLETED"] },
+		                  { $gt: ["$$task.completedDate", "$$task.dueDate"] }
+		                ]
+		              }
+		            }
+		          }
+		        }
+			  }
+			},
+			 {
+				$project: {
+				  name: 1,
+				  totalTasks: 1,
+				  completedTasks: 1,
+				  completedAfterDueDate: 1,
+				  completedPercentage: {
+					$cond: {
+					  if: { $eq: ["$totalTasks", 0] },
+					  then: 0,
+					  else: { $multiply: [{ $divide: ["$completedTasks", "$totalTasks"] }, 100] }
+					}
+				  },
+				  completedAfterDueDatePercentage: {
+					$cond: {
+					  if: { $eq: ["$totalTasks", 0] },
+					  then: 0,
+					  else: { $multiply: [{ $divide: ["$completedAfterDueDate", "$totalTasks"] }, 100] }
+					}
+				}
+			}
+		}
+		  ]
+        let userRes = await User.userAggregate(payload);
+        return { data: userRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndgetTeamAnalytics Error : ", err)
+        return { data: err, error: true }
+    }
+}
