@@ -27,7 +27,7 @@ const findAllUserWithPagination = async function (data) {
     try {
 		
 		let payload = {
-			role: { $nin: ["ADMIN", "SUPER_ADMIN"]}
+			role: { $nin: ["SUPER_ADMIN"]}
         }
 
 		if(['LEAD', 'CONTRIBUTOR', 'GUEST'].includes(data.auth.role) && data.filteredProjects){
