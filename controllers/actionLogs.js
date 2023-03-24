@@ -15,3 +15,38 @@ exports.addActionLog = async function (data) {
         return { data: err, error: true }
     }
 }
+exports.addProjectLog = async function (data) {
+    try {
+        let payload = data.actionLogData;
+
+        let insertLogResponse = await ActionLogs.insertProjectLog(payload);
+        console.log("insertProjectResponse => ", insertLogResponse)
+        return { data: insertLogResponse, error: false }
+    } catch (err) {
+        return { data: err, error: true }
+    }
+}
+
+exports.addTaskLog = async function (data) {
+    try {
+        let payload = data.actionLogData;
+
+        let insertLogResponse = await ActionLogs.insertTaskLog(payload);
+        console.log("insertTaskResponse => ", insertLogResponse)
+        return { data: insertLogResponse, error: false }
+    } catch (err) {
+        return { data: err, error: true }
+    }
+}
+
+exports.addRatingLog = async function (data) {
+    try {
+        let payload = data.actionLogData;
+
+        let insertLogResponse = await ActionLogs.insertRatingLog(payload);
+        console.log("addRatingLog => ", insertLogResponse)
+        return { data: insertLogResponse, error: false }
+    } catch (err) {
+        return { data: err, error: true }
+    }
+}

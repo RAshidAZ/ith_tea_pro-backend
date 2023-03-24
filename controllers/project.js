@@ -10,6 +10,7 @@ const mongoose = require("mongoose");
 
 const ratingController = require('./rating')
 const { addCommnetIdInRatingById } = ratingController;
+const actionLogController = require("../controllers/actionLogs");
 
 const getAllProjects = async (req, res, next) => {
 	let data = req.data;
@@ -107,6 +108,20 @@ const addNewProject = async (req, res, next) => {
 	if (projectRes.error || !projectRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
 	}
+
+	let actionLogData = {
+		actionTaken: 'PROJECT_ADDED',
+		actionBy: data.auth.id,
+		projectId : projectRes.data._id
+	}
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addProjectLog(data);
+
+	if (addActionLogRes.error) {
+		console.log("===========error",addActionLogRes.data)
+		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
+	}
+	
 	return res.status(200).send(sendResponse(200, "Project's Added Successfully", 'addNewProject', null, req.data.signature))
 }
 exports.addNewProject = addNewProject
@@ -146,6 +161,18 @@ const editProject = async (req, res, next) => {
 
 	let projectRes = await createPayloadAndEditProject(data)
 	if (projectRes.error || !projectRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'editProject', null, req.data.signature))
+	}
+
+	let actionLogData = {
+		actionTaken: 'PROJECT_UPDATED',
+		actionBy: data.auth.id,
+		projectId : projectRes.data._id
+	}
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addProjectLog(data);
+
+	if (addActionLogRes.error) {
 		return res.status(500).send(sendResponse(500, '', 'editProject', null, req.data.signature))
 	}
 	return res.status(200).send(sendResponse(200, "Project's Edited Successfully", 'editProject', null, req.data.signature))
@@ -193,6 +220,18 @@ const assignUserToProject = async (req, res, next) => {
 	if (projectRes.error || !projectRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'assignUserToProject', null, req.data.signature))
 	}
+
+	let actionLogData = {
+		actionTaken: 'USERS_ASSIGNED',
+		actionBy: data.auth.id,
+		projectId : data.projectId
+	}
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addProjectLog(data);
+
+	if (addActionLogRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'assignUserToProject', null, req.data.signature))
+	}
 	return res.status(200).send(sendResponse(200, "Project's  User Assigned Successfully", 'assignUserToProject', null, req.data.signature))
 }
 exports.assignUserToProject = assignUserToProject
@@ -209,6 +248,7 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 		}
 
 		let allUsers = await User.getAllUsers(findUsers)
+		data.allUsers = allUsers
 		console.log("=======================all users data",allUsers)
 		allUsers = allUsers.length ? allUsers : []
 		let usersToAssign = allUsers.filter((el) => el.role == 'CONTRIBUTOR')
@@ -227,6 +267,7 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 		}
 
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
+		data.projectRes = projectRes;
 		return { data: projectRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndEditProject Error : ", err)
@@ -246,6 +287,20 @@ const assignLeadToProject = async (req, res, next) => {
 	if (projectRes.error || !projectRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'assignUserToProject', null, req.data.signature))
 	}
+
+	let actionLogData = {
+		actionTaken: 'LEADS_ASSIGNED',
+		actionBy: data.auth.id,
+		projectId : data.projectId
+	}
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addProjectLog(data);
+
+	if (addActionLogRes.error) {
+		console.log("===========error",addActionLogRes.data)
+		return res.status(500).send(sendResponse(500, '', 'assignUserToProject', null, req.data.signature))
+	}
+
 	return res.status(200).send(sendResponse(200, "Project's Lead Assigned Successfully", 'assignUserToProject', null, req.data.signature))
 }
 exports.assignLeadToProject = assignLeadToProject
@@ -320,6 +375,18 @@ const deleteProject = async (req, res, next) => {
 	let projectRes = await createPayloadAndDeleteProject(data)
 	if (projectRes.error) {
 		return res.status(500).send(sendResponse(500, '', 'deleteProject', null, req.data.signature))
+	}
+
+	let actionLogData = {
+		actionTaken: 'PROJECT_DELETED',
+		actionBy: data.auth.id,
+		projectId : data.projectId
+	}
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addProjectLog(data);
+
+	if (addActionLogRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
 	}
 	return res.status(200).send(sendResponse(200, "Project Deleted Successfully", 'deleteProject', null, req.data.signature))
 }
@@ -667,6 +734,19 @@ const archiveStatusProjectUpdate = async (req, res, next) => {
 	if (projectRes.error) {
 		return res.status(500).send(sendResponse(500, '', 'archiveStatusProjectUpdate', null, req.data.signature))
 	}
+
+	let actionLogData = {
+		actionTaken: data.isArchived ? 'PROJECT_ARCHIVED' : 'PROJECT_UNARCHIVED',
+		actionBy: data.auth.id,
+		projectId : data.projectId
+	}
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addProjectLog(data);
+
+	if (addActionLogRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'assignUserToProject', null, req.data.signature))
+	}
+
 	return res.status(200).send(sendResponse(200, "Project Archive status changed Successfully", 'archiveStatusProjectUpdate', null, req.data.signature))
 }
 exports.archiveStatusProjectUpdate = archiveStatusProjectUpdate
@@ -679,6 +759,7 @@ const createPayloadAndArchiveProject = async function (data) {
 		let updatePayload = {
 			$set: {
 				isArchived: data.isArchived,
+				isActive : data.isArchived,
 				updatedAt: new Date()
 			}
 		}
@@ -972,3 +1053,40 @@ const getDueTaskCountForSection = async function (data) {
 		return { data: err, error: true }
 	}
 }
+
+const sendUsersProjectAssignedMail = async function (data) {
+	try {
+		let allUsers = data.allUsers
+		let projectRes = data.projectRes
+
+		for(let i in allUsers){
+			let mailData= {
+				user : allUsers[i],
+				project : projectRes
+			}
+
+			let sendProjectAssignedMail = await sendProjectAssignedMail(mailData);
+			if(sendProjectAssignedMail.error){
+				return { data: err, error: true }
+			}
+			if(parseInt(i)+1 ==  allUsers.length){
+				return { data: projectRes, error: false }
+			}
+		}
+	} catch (err) {
+		console.log("sendUsersProjectAssignedMail Error : ", err)
+		return { data: err, error: true }
+	}
+}
+exports.sendUsersProjectAssignedMail = sendUsersProjectAssignedMail
+
+const sendProjectAssignedMail = async function (data) {
+	try {
+		
+		return { data: null, error: false }
+	} catch (err) {
+		console.log("createPayloadAndUnAssignUser Error : ", err)
+		return { data: err, error: true }
+	}
+}
+exports.sendProjectAssignedMail = sendProjectAssignedMail

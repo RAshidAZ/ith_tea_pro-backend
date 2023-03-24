@@ -7,6 +7,8 @@ const { Rating, User, Project } = queryController;
 
 const commentController = require('./comment');
 
+const actionLogController = require("../controllers/actionLogs");
+
 const getUserRating = async (req, res, next) => {
 	let data = req.data;
 
@@ -56,6 +58,20 @@ const insertUserRating = async (req, res, next) => {
 	if (ratingRes.error || !ratingRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'insertUserRating', null, req.data.signature))
 	}
+
+	let actionLogData = {
+		actionTaken: 'RATE_TASK',
+		actionBy: data.auth.id,
+		userId : data.userId,
+		ratingId : ratingRes.data._id
+	}
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addRatingLog(data);
+
+	if (addActionLogRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
+	}
+
 	return res.status(200).send(sendResponse(200, 'Rating Inserted', 'insertUserRating', null, req.data.signature))
 }
 exports.insertUserRating = insertUserRating

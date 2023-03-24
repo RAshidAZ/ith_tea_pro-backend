@@ -40,6 +40,18 @@ const insertUserTask = async (req, res, next) => {
 		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
 	}
 
+	let actionLogData = {
+		actionTaken: 'TASK_ADDED',
+		actionBy: data.auth.id,
+		taskId : taskRes.data._id
+	}
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addTaskLog(data);
+
+	if (addActionLogRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
+	}
+
 	return res.status(200).send(sendResponse(200, 'Task Inserted', 'insertUserTask', taskRes.data, req.data.signature))
 }
 exports.insertUserTask = insertUserTask
@@ -47,10 +59,10 @@ exports.insertUserTask = insertUserTask
 const checkIfAllowedToAddTask = async function (data) {
 
 	try {
+		
 		if (["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) {
 			return { data: { allowed: true }, error: false }
 		}
-
 		let findData = {
 			_id: data.projectId,
 			"$or": [
@@ -59,6 +71,7 @@ const checkIfAllowedToAddTask = async function (data) {
 			]
 		}
 		let getProject = await Project.findSpecificProject(findData);
+		
 		if (getProject) {
 			if (data.tasklead) {
 
@@ -116,8 +129,13 @@ const createPayloadAndInsertTask = async function (data) {
 
 		if(data.assignedTo && (data.auth.id != data.assignedTo)){
 			let findUser = { _id : data.assignedTo}
+			let findAssignedBy = { _id : data.auth.id }
 			let userData = await User.userfindOneQuery(findUser)
-			data.userData = userData;
+			let assignedBy = await User.userfindOneQuery(findAssignedBy)
+			let getProject = await Project.findSpecificProject({_id:data.projectId});
+			data.projectName = (getProject && getProject.name) || null
+			data.userName = (userData && userData.name) || null  ;
+			data.assignedBy = assignedBy.name
 			data.email = userData.email;
 			data.taskLink = btoa(taskRes._id.toString())
 			console.log("==========task link details",data.taskLink)
@@ -153,20 +171,27 @@ const editUserTask = async (req, res, next) => {
 		return res.status(500).send(sendResponse(500, '', 'editUserTask', null, req.data.signature))
 	}
 
-	if (data.status || data.dueDate) {
-		let actionLogData = {
-			actionType: "TASK",
-			actionTaken: data.status ? "TASK_STATUS_CHANGE" : "TASK_DUE_DATE_CHANGE",
-			actionBy: data.auth.id,
-			taskId: data.taskId
-		}
-		data.actionLogData = actionLogData;
-		let addActionLogRes = await actionLogController.addActionLog(data);
+	let actionTaken = 'TASK_UPDATED'
 
-		if (addActionLogRes.error) {
-			return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
-		}
+	if(data.status && data.status != taskRes.data.status){
+		actionTaken = 'TASK_STATUS_UPDATED'
+	}else if(data.dueDate && new Date(data.dueDate).getTime() != new Date(taskRes.data.dueDate).getTime()){
+
+		console.log("=========due dates========", data.dueDate, taskRes.data.dueDate)
+		actionTaken = 'TASK_DUEDATE_UPDATED'
 	}
+	let actionLogData = {
+		actionTaken: actionTaken,
+		actionBy: data.auth.id,
+		taskId : taskRes.data._id
+	}
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addTaskLog(data);
+
+	if (addActionLogRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
+	}
+
 	return res.status(200).send(sendResponse(200, 'Task Edited Successfully', 'editUserTask', null, req.data.signature))
 }
 exports.editUserTask = editUserTask;
@@ -212,7 +237,9 @@ const createPayloadAndEditTask = async function (data) {
 			updatePayload.assignedTo = data.assignedTo
 		}
 		if (data.dueDate) {
-			updatePayload.dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 0))
+			let dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 0))
+			data.dueDate = dueDate
+			updatePayload.dueDate = dueDate
 		}
 		if (data.completedDate) {
 			updatePayload.completedDate = data.completedDate
@@ -231,7 +258,7 @@ const createPayloadAndEditTask = async function (data) {
 			}
 			updatePayload.lead = data.tasklead
 		}
-		let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload, {})
+		let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload, {new : false})
 		return { data: taskRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndEditTask Error : ", err)
@@ -558,7 +585,6 @@ const payloadGetTaskStatusAnalytics = async function (data) {
 		let taskRes = await Task.taskFindQuery({"isDeleted": false}, { status: 1, projectId: 1, _id: 0, dueDate:1, completedDate:1 })
 		let sendData = {}
 		for (let i = 0; i < taskRes.length; i++) {
-			console.log("=============task iter",i)
 			if (!sendData[taskRes[i].projectId]) {
 
 				sendData[taskRes[i].projectId] = {
@@ -697,16 +723,17 @@ const rateUserTask = async (req, res, next) => {
 	}
 
 	let actionLogData = {
-		actionType: "TASK_RATING",
-		actionTaken: "TASK_RATING",
+		actionTaken: 'RATE_TASK',
 		actionBy: data.auth.id,
-		taskId: data.taskId
+		userId : taskDetails.assignedTo,
+		taskId: data.taskId,
+		ratingId : updatedOverallRating.data._id
 	}
 	data.actionLogData = actionLogData;
-	let addActionLogRes = await actionLogController.addActionLog(data);
+	let addActionLogRes = await actionLogController.addRatingLog(data);
 
 	if (addActionLogRes.error) {
-		return res.status(500).send(sendResponse(500, '', 'rateUserTask', null, req.data.signature))
+		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
 	}
 
 	return res.status(200).send(sendResponse(200, 'Task Rated', 'rateUserTask', updatedOverallRating.data, req.data.signature));
@@ -921,6 +948,7 @@ const getTaskListToRate = async function (req, res, next) {
 		return res.status(400).send(sendResponse(400, 'Missing Params', 'getTaskListToRate', null, req.data.signature))
 	}
 	data.isRated = false;
+	data.status = 'COMPLETED'
 	let tasksLists = await createPayloadAndGetTaskLists(data);
 	if (tasksLists.error) {
 		return res.status(500).send(sendResponse(500, '', 'getTaskListToRate', null, req.data.signature))
@@ -938,6 +966,9 @@ const createPayloadAndGetTaskLists = async function (data) {
 			isArchived :  false,
 		};
 
+		if(data.status){
+			findData.status = data.status
+		}
 		//filter tasks of only those project which are assigned to LEAD, CONTRIBUTOR, INTERN
 		if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
 			findData.projectId = { $in: data.filteredProjects }
@@ -1013,6 +1044,18 @@ const deleteTask = async (req, res, next) => {
 	if (taskRes.error) {
 		return res.status(500).send(sendResponse(500, '', 'deleteTask', null, req.data.signature))
 	}
+
+	let actionLogData = {
+		actionTaken: 'TASK_DELETED',
+		actionBy: data.auth.id,
+		taskId : data.taskId
+	}
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addTaskLog(data);
+
+	if (addActionLogRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'deleteTask', null, req.data.signature))
+	}
 	return res.status(200).send(sendResponse(200, "Task Deleted Successfully", 'deleteTask', null, req.data.signature))
 }
 exports.deleteTask = deleteTask;
@@ -1082,9 +1125,24 @@ const updateTaskStatus = async (req, res, next) => {
 	}
 
 	let taskRes = await createPayloadAndUpdateTaskStatus(data)
-	if (taskRes.error) {
+	if (taskRes.error || !taskRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'updateTaskStatus', null, req.data.signature))
 	}
+
+	if(data.status && data.status != taskRes.data.status){
+		let actionLogData = {
+			actionTaken: 'TASK_STATUS_UPDATED',
+			actionBy: data.auth.id,
+			taskId : data.taskId
+		} 
+		data.actionLogData = actionLogData;
+		let addActionLogRes = await actionLogController.addTaskLog(data);
+	
+		if (addActionLogRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'updateTaskStatus', null, req.data.signature))
+		}
+	}
+
 	return res.status(200).send(sendResponse(200, "Task status updated Successfully", 'updateTaskStatus', null, req.data.signature))
 }
 exports.updateTaskStatus = updateTaskStatus;
@@ -1100,7 +1158,7 @@ const createPayloadAndUpdateTaskStatus = async function (data) {
 			}
 		}
 		let options = {
-			new: true
+			new: false
 		}
 		let taskRes = await Task.findOneAndUpdate(payload, updatePayload, options)
 		return { data: taskRes, error: false }

@@ -88,5 +88,5 @@ router.get("/v1/comments",
 module.exports = router;
 
 router.get("/v1/get/today/tasks",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN"]), filterProjects],
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects],
     getTodayTasksList)
