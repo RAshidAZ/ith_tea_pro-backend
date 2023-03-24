@@ -831,6 +831,19 @@ const archiveStatusSectionUpdate = async (req, res, next) => {
 	if (!data.sectionId || !JSON.stringify(data.isArchived)) {
 		return res.status(400).send(sendResponse(400, "", 'archiveStatusProjectUpdate', null, req.data.signature))
 	}
+	if(data.isArchived == 'true' || data.isArchived == true){
+
+		console.log("==============check task before archive section")
+		let dueTaskRes = await getDueTaskCountForSection(data)
+		if (dueTaskRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'archiveStatusProjectUpdate', null, req.data.signature))
+		}
+	
+		console.log("==============check task before archive section",dueTaskRes.data )
+		if(dueTaskRes.data){
+			return res.status(400).send(sendResponse(400, "Can't archive section, due tasks exist", 'archiveStatusProjectUpdate', null, req.data.signature))
+		}
+	}
 	let projectSectionRes = await createPayloadAndArchiveSection(data)
 	if (projectSectionRes.error) {
 		return res.status(500).send(sendResponse(500, '', 'archiveStatusProjectUpdate', null, req.data.signature))
@@ -851,6 +864,16 @@ const createPayloadAndArchiveSection = async function (data) {
 			}
 		}
 		let projectSectionRes = await ProjectSections.projectSectionFindOneAndUpdate(payload, updatePayload)
+
+		let taskPayload = { section : data.sectionId}
+		let taskUpdatePayload = {
+			$set: {
+				isArchived : true,
+				updatedAt: new Date()
+			}
+		}
+
+		let tasksRes = await Task.updateMany(taskPayload, taskUpdatePayload)
 		return { data: projectSectionRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndArchiveSection Error : ", err)
@@ -928,6 +951,24 @@ const checkUniqueProject = async function (data) {
 		return { data: { exist: false }, error: false }
 	} catch (err) {
 		console.log("checkUniqueProject Error : ", err)
+		return { data: err, error: true }
+	}
+}
+
+const getDueTaskCountForSection = async function (data) {
+	try {
+
+		let findData = {
+			isDeleted : false,
+			isRated : false,
+			section : data.sectionId
+		}
+
+		let taskCount = await Task.taskCount(findData);
+		return { data: taskCount, error: false }
+
+	} catch (err) {
+		console.log("Error => ", err);
 		return { data: err, error: true }
 	}
 }

@@ -558,14 +558,9 @@ const payloadGetTaskStatusAnalytics = async function (data) {
 		let taskRes = await Task.taskFindQuery({"isDeleted": false}, { status: 1, projectId: 1, _id: 0, dueDate:1, completedDate:1 })
 		let sendData = {}
 		for (let i = 0; i < taskRes.length; i++) {
-			if (sendData[taskRes[i].projectId]) {
-				sendData[taskRes[i].projectId][taskRes[i].status] += 1
-				sendData[taskRes[i].projectId].totalTask += 1
-				if(taskRes[i].completedDate && taskRes[i].dueDate && new Date(taskRes[i].dueDate) < new Date(taskRes[i].completedDate)){
-					sendData[taskRes[i].projectId].overDueTasks += 1
-				}
-		
-			} else {
+			console.log("=============task iter",i)
+			if (!sendData[taskRes[i].projectId]) {
+
 				sendData[taskRes[i].projectId] = {
 					COMPLETED: 0,
 					ONGOING: 0,
@@ -574,6 +569,13 @@ const payloadGetTaskStatusAnalytics = async function (data) {
 					totalTask: 0,
 					overDueTasks : 0
 				}
+
+		
+			} 
+			sendData[taskRes[i].projectId][taskRes[i].status] += 1
+			sendData[taskRes[i].projectId].totalTask += 1
+			if(taskRes[i].completedDate && taskRes[i].dueDate && new Date(taskRes[i].dueDate) < new Date(taskRes[i].completedDate)){
+				sendData[taskRes[i].projectId].overDueTasks += 1
 			}
 		}
 		let projectIds = Object.keys(sendData)
@@ -1081,9 +1083,9 @@ const updateTaskStatus = async (req, res, next) => {
 
 	let taskRes = await createPayloadAndUpdateTaskStatus(data)
 	if (taskRes.error) {
-		return res.status(500).send(sendResponse(500, '', 'deleteTask', null, req.data.signature))
+		return res.status(500).send(sendResponse(500, '', 'updateTaskStatus', null, req.data.signature))
 	}
-	return res.status(200).send(sendResponse(200, "Task status updated Successfully", 'deleteTask', null, req.data.signature))
+	return res.status(200).send(sendResponse(200, "Task status updated Successfully", 'updateTaskStatus', null, req.data.signature))
 }
 exports.updateTaskStatus = updateTaskStatus;
 
