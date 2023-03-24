@@ -19,6 +19,7 @@ let insertLeads = [
             .toString("base64"),
         salt: salt,
         emailVerified: true,
+		profileCompleted : true,
         isActive: true,
         "department": "TECH",
         "designation": "TEA PRO LEAD",
