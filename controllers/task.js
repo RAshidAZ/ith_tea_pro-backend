@@ -1157,6 +1157,15 @@ const createPayloadAndUpdateTaskStatus = async function (data) {
 				status: data.status
 			}
 		}
+
+		if(data.status == 'COMPLETED'){
+			updatePayload = {
+				$set: {
+					status: data.status,
+					completedDate : new Date()
+				}
+			}
+		}
 		let options = {
 			new: false
 		}
