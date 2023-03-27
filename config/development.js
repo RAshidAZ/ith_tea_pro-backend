@@ -14,5 +14,5 @@ module.exports = development = {
     MAILJET_APIKEY_PUBLIC: 'c47de902fdfd2f36c8ec79e2613f5d73', // ScriptToAddContacts : UserAccountName
     MAILJET_APIKEY_PRIVATE: '2a6501a2791deb1ea480dc0ec69a55ea', // ScriptToAddContacts : UserAccountName
 
-    mongoConnectionString: "mongodb://localhost/tea-pro"
+    mongoConnectionString: "mongodb://localhost/tea-pro3"
 }
