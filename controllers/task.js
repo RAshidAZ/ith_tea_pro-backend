@@ -399,6 +399,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 					"as": "section"
 				}
 			},
+			
 			{ "$unwind": { "path": "$section" } },
 			{
 				"$lookup": {
