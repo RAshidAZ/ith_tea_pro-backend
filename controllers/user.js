@@ -199,6 +199,10 @@ const createPayloadAndEditUserDetails = async function (data) {
 			updatePayload.profileCompleted = false
 		}
 
+		if (JSON.stringify(data.profileCompleted)) {
+            updatePayload.profileCompleted = data.profileCompleted;
+        }
+
         if (JSON.stringify(data.isBlocked)) {
             updatePayload.isBlocked = data.isBlocked;
         }

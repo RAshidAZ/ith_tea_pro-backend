@@ -299,7 +299,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 
 
 		if (JSON.stringify(data.isArchived)) {
-			findData["isArchived"] = data.isArchived
+			findData["isArchived"] = JSON.parse(data.isArchived)
 		}else {
 			findData["isArchived"] = false
 		}
@@ -344,7 +344,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			filterAnd.push({
 				$or: [
 					{ section: { $exists: false } },
-					{ "section.isArchived": data.isArchived }
+					{ "section.isArchived": JSON.parse(data.isArchived) }
 				]
 			})
 		}else {
@@ -394,7 +394,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 					"as": "section"
 				}
 			},
-			{ "$unwind": { "path": "$section" } },
+			{ "$unwind": { "path": "$section", preserveNullAndEmptyArrays: preserveArrays } },
 			{
 				"$lookup": {
 					"from": "tasks",
@@ -446,9 +446,9 @@ const createPayloadAndGetGroupByTask = async function (data) {
 		]
 
 
-		console.log("==============group by filter=*************======", data.aggregateGroupBy)
-
+		
 		let taskRes = await Project.projectAggregate(aggregate)
+		console.log("==============group by filter=*************======", taskRes)
 
 		let populate = []
 		if (data.groupBy == 'default') {
