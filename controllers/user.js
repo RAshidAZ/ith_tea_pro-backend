@@ -189,7 +189,7 @@ const createPayloadAndEditUserDetails = async function (data) {
 			updatePayload.employeeId = data.employeeId
 		}
 
-		if(data.profilePicture){
+		if(JSON.stringify(data.profilePicture)){
 			updatePayload.profilePicture = data.profilePicture
 		}
 

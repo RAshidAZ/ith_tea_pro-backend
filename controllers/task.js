@@ -380,7 +380,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			console.log("=================sort order and type ====", data.sortType, sortOrder)
 			sortTaskOrder = sortOrder > 0 ? CONSTANTS.SORTBY_IN_INCREASING_ORDER[data.sortType] : CONSTANTS.SORTBY_IN_DECREASING_ORDER[data.sortType]
 		}
-		console.log("====================find check========",sortTaskOrder)
+		console.log("====================find check========",findData, filter, data.isArchived)
 		let aggregate = [
 			{
 				$match: findData
@@ -1002,7 +1002,8 @@ const createPayloadAndGetTaskLists = async function (data) {
 		if (JSON.stringify(data.homePageTaskList)) {
 			findData.status = { $ne: "COMPLETED" };
 		}
-		let taskList = await Task.taskFindQuery(findData, {}, "");
+		let populate = 'lead assignedTo'
+		let taskList = await Task.taskFindQuery(findData, {}, populate);
 		return { data: taskList, error: false }
 
 	} catch (err) {

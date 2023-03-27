@@ -431,14 +431,17 @@ const createPayloadAndgetAllProjects = async function (data) {
 		let projectAccess = {};
 
 		let findData = {
-			"isActive": true,
 			"isDeleted": false
 		}
+		
 		if(JSON.stringify(data.isArchived)){
-			findData['isArchived'] = data.isArchived
+			findData['isArchived'] = JSON.parse(data.isArchived)
 		}else{
 			findData['isArchived'] = false
+			findData['isActive'] = true
 		}
+
+		console.log("================finda data",findData)
 		if (!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
 			projectAccess["$match"] =
 			{
@@ -474,6 +477,8 @@ const createPayloadAndgetAllProjects = async function (data) {
 					as: "tasks"
 				}
 			})
+
+			// pipeline.push({ "$unwind": { "path": "$tasks", preserveNullAndEmptyArrays: true } })
 		pipeline.push(
 			{
 				$lookup: {
@@ -484,6 +489,7 @@ const createPayloadAndgetAllProjects = async function (data) {
 				}
 			}
 		)
+		// pipeline.push({ "$unwind": { "path": "$accessibleBy", preserveNullAndEmptyArrays: true } })
 		pipeline.push(
 			{
 				$lookup: {
@@ -492,8 +498,9 @@ const createPayloadAndgetAllProjects = async function (data) {
 					foreignField: "_id",
 					as: "managedBy"
 				}
-			}
-		)
+			},
+			)
+		// pipeline.push({ "$unwind": { "path": "$managedBy", preserveNullAndEmptyArrays: true } })
 		pipeline.push(
 			{
 				$lookup: {
@@ -503,7 +510,9 @@ const createPayloadAndgetAllProjects = async function (data) {
 					as: "sections"
 				}
 			}
+			
 		)
+		// pipeline.push({ "$unwind": { "path": "$sections", preserveNullAndEmptyArrays: true } })
 		pipeline.push(
 			{
 				$sort: {
@@ -511,6 +520,8 @@ const createPayloadAndgetAllProjects = async function (data) {
 				}
 			}
 		)
+
+		console.log("==============is pipeline",pipeline)
 		let projectRes = await Project.projectAggregate(pipeline)
 		return { data: projectRes, error: false }
 	} catch (err) {
@@ -773,6 +784,7 @@ const createPayloadAndArchiveProject = async function (data) {
 			}
 		}
 
+		let sectionRes = await ProjectSections.updateMany(taskPayload, taskUpdatePayload)
 		let tasksRes = await Task.updateMany(taskPayload, taskUpdatePayload)
 		return { data: projectRes, error: false }
 	} catch (err) {

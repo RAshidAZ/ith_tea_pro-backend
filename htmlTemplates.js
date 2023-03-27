@@ -2,57 +2,141 @@ let assignedUsersTemplate = ''
 exports.assignedUsersTemplate = assignedUsersTemplate
 
 let welcomeEmailTemplate = `<!DOCTYPE html>
-	< html xmlns = "http://www.w3.org/1999/xhtml" >
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Email</title>
+  
 
-		<head>
-			<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-			<title>Welcome to TPro</title>
-			<link href="https://fonts.googleapis.com/css?family=Rubik&display=swap" rel="stylesheet">
-				<link href="https://fonts.googleapis.com/css?family=Montserrat&display=swap" rel="stylesheet">
-					<style>
-						h2,
-						h3 {
-							margin: 0;
-						font-weight: 100
-			  }
-
-						p {
-							font - size: 13px;
-						margin: 0;
-						line-height: 22px;
-						color: #797474
-			  }
-					</style>
-				</head>
-
-				<body style="background: #f3f3f3;font-family: 'Montserrat', sans-serif; color: #696766;">
-					<p>Dear ${data.email}</p>
-					<p>Welcome to Team Pro by ITH TECH. Setup your password here ${process.env.CLIENT_URL}/set-password/${data.signupToken}</p>
-					<p>Here are your details : </br></p>
-				<table>
-					<tr>
-						<td>Name</td>
-						<td>${data.name}</td>
-					</tr>
-					<tr>
-						<td>EmployeeId</td>
-						<td>${data.employeeId || ''}</td>
-					</tr>
-					<tr>
-						<td>Department</td>
-						<td>${data.department || ''}</td>
-					</tr>
-					<tr>
-						<td>Designation</td>
-						<td>${data.designation || ''}</td>
-					</tr>
-
+</head>
+<body>
+<table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout:fixed;background-color:#f9f9f9" id="bodyTable">
+	<tbody>
+		<tr>
+			<td style="padding-right:10px;padding-left:10px;" align="center" valign="top" id="bodyCell">
+				<table border="0" cellpadding="0" cellspacing="0" width="100%" class="wrapperWebview" style="max-width:600px">
+					
 				</table>
+				<table border="0" cellpadding="0" cellspacing="0" width="100%" class="wrapperBody" style="max-width:600px">
+					<tbody>
+						<tr>
+							<td align="center" valign="top">
+								<table border="0" cellpadding="0" cellspacing="0" width="100%" class="tableCard" style="background-color:#fff;">
+									<tbody>
+										<tr>
+											<td style="background-color:#551a8b;font-size:1px;line-height:3px" class="topBorder" height="3">&nbsp;</td>
+										</tr>
+										<tr>
+											<td style="padding:20px;" valign="middle" class="emailLogo">
+												<a href="https://projects.ith.tech/" style="text-decoration:none" target="_blank">
+												<img src='https://aio-dev.s3.ap-southeast-1.amazonaws.com/tpro/image/1679905765814.png'	alt="tea pro" width="250px">
 
-				<p><b>Thanks,</b> <br /> TPro by ITH.TECH</p>
-			</body>
+													
+												</a>
+											
+											</td>
+										</tr>
+									
+										<tr>
+											<td style="padding-bottom: 5px; padding-left: 20px; padding-right: 20px;" align="center" valign="top" class="mainTitle">
+												<h2 class="text" style="color:#000;font-family:Poppins,Helvetica,Arial,sans-serif;font-size:28px;font-weight:500;font-style:normal;letter-spacing:normal;line-height:36px;text-transform:none;text-align:left;padding:0;margin:0">Dear ${data.name}</h2>
+											</td>
+										</tr>
+									
+										<tr>
+											<td style="padding-left:20px;padding-right:20px" align="center" valign="top" class="containtTable ui-sortable">
+												<table border="0" cellpadding="0" cellspacing="0" width="100%" class="tableDescription" style="text-align:left;">
+													<tbody>
+													<tr>
+													 <td>
+														
+														<p>Welcome to Team Pro by ITH TECH. Setup your password here <br>
+														${process.env.CLIENT_URL}/set-password/${data.signupToken}</p>	
 
-		</html>`
+														<p>Here are your details : </p>
+													 </td>	
+													</tr>	
+													<tr>
+														<td>Name : ${data.name}</td>
+														
+													  </tr>
+		  
+													</tbody>
+												</table>
+												<table border="0" cellpadding="0" cellspacing="0" width="100%" class="tableButton" style="">
+													<tbody>
+														<tr>
+															<td style="padding-top:20px;padding-bottom:20px" align="center" valign="top">
+																
+															</td>
+														</tr>
+													</tbody>
+												</table>
+											</td>
+										</tr>
+										<tr>
+											<td style="font-size:1px;line-height:1px" height="20">&nbsp;</td>
+										</tr>
+										
+									</tbody>
+								</table>
+								<table border="0" cellpadding="0" cellspacing="0" width="100%" class="space">
+									<tbody>
+										<tr>
+											<td style="font-size:1px;line-height:1px" height="30">&nbsp;</td>
+										</tr>
+									</tbody>
+								</table>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<table border="0" cellpadding="0" cellspacing="0" width="100%" class="wrapperFooter" style="max-width:600px">
+					<tbody>
+						<tr>
+							<td align="center" valign="top">
+								<table border="0" cellpadding="0" cellspacing="0" width="100%" class="footer">
+									<tbody>
+										<tr>
+											<td style="padding-top:10px;padding-bottom:10px;padding-left:10px;padding-right:10px" align="center" valign="top" class="socialLinks">
+												<a href="#" style="display:inline-block" target="_blank" class="facebook">
+													<img alt="" border="0" src="http://email.aumfusion.com/vespro/img/social/light/facebook.png" style="height:auto;width:100%;max-width:40px;margin-left:2px;margin-right:2px" width="40">
+												</a>
+												<a href="#" style="display: inline-block;" target="_blank" class="twitter">
+													<img alt="" border="0" src="http://email.aumfusion.com/vespro/img/social/light/twitter.png" style="height:auto;width:100%;max-width:40px;margin-left:2px;margin-right:2px" width="40">
+												</a>
+												<a href="#" style="display: inline-block;" target="_blank" class="pintrest">
+													<img alt="" border="0" src="http://email.aumfusion.com/vespro/img/social/light/pintrest.png" style="height:auto;width:100%;max-width:40px;margin-left:2px;margin-right:2px" width="40">
+												</a>
+												<a href="#" style="display: inline-block;" target="_blank" class="instagram">
+													<img alt="" border="0" src="http://email.aumfusion.com/vespro/img/social/light/instagram.png" style="height:auto;width:100%;max-width:40px;margin-left:2px;margin-right:2px" width="40">
+												</a>
+												<a href="#" style="display: inline-block;" target="_blank" class="linkdin">
+													<img alt="" border="0" src="http://email.aumfusion.com/vespro/img/social/light/linkdin.png" style="height:auto;width:100%;max-width:40px;margin-left:2px;margin-right:2px" width="40">
+												</a>
+											</td>
+										</tr>
+									
+										<tr>
+											<td style="font-size:1px;line-height:1px" height="30">&nbsp;</td>
+										</tr>
+									</tbody>
+								</table>
+							</td>
+						</tr>
+						<tr>
+							<td style="font-size:1px;line-height:1px" height="30">&nbsp;</td>
+						</tr>
+					</tbody>
+				</table>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<!-- partial -->
+  
+</body>
+</html>`
 exports.welcomeEmailTemplate = welcomeEmailTemplate
 
 let assignedTaskTemplate = `<!DOCTYPE html>
