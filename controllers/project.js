@@ -216,6 +216,12 @@ const assignUserToProject = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "", 'assignUserToProject', null, req.data.signature))
 	}
 
+
+	let projectData = await Project.findSpecificProject({ _id : data.projectId});
+
+	if (!projectData || projectData.isArchived) {
+		return res.status(400).send(sendResponse(400, "Project Archived, Can't assign lead/users ", 'assignUserToProject', null, req.data.signature))
+	}
 	let projectRes = await createPayloadAndAssignProjectToUser(data)
 	if (projectRes.error || !projectRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'assignUserToProject', null, req.data.signature))
@@ -283,6 +289,11 @@ const assignLeadToProject = async (req, res, next) => {
 	}
 
 	data.assignLead = true;
+	let projectData = await Project.findSpecificProject({ _id : data.projectId});
+
+	if (!projectData || projectData.isArchived) {
+		return res.status(400).send(sendResponse(400, "Project Archived, Can't assign lead/users ", 'assignUserToProject', null, req.data.signature))
+	}
 	let projectRes = await createPayloadAndAssignProjectToUser(data)
 	if (projectRes.error || !projectRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'assignUserToProject', null, req.data.signature))

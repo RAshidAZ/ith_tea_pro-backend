@@ -24,6 +24,11 @@ const insertUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "Please send all required Data fields", 'insertUserTask', null, req.data.signature))
 	}
 
+	let projectData = await Project.findSpecificProject({ _id : data.projectId});
+
+	if (!projectData || projectData.isArchived) {
+		return res.status(400).send(sendResponse(400, "Project Archived, Can't assign lead/users ", 'assignUserToProject', null, req.data.signature))
+	}
 
 	let ifAllowedToAddTask = await checkIfAllowedToAddTask(data);
 	if (ifAllowedToAddTask.error) {
@@ -394,7 +399,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 					"as": "section"
 				}
 			},
-			{ "$unwind": { "path": "$section", preserveNullAndEmptyArrays: preserveArrays } },
+			// { "$unwind": { "path": "$section", preserveNullAndEmptyArrays: preserveArrays } },
 			{
 				"$lookup": {
 					"from": "tasks",
@@ -448,7 +453,6 @@ const createPayloadAndGetGroupByTask = async function (data) {
 
 		
 		let taskRes = await Project.projectAggregate(aggregate)
-		console.log("==============group by filter=*************======", taskRes)
 
 		let populate = []
 		if (data.groupBy == 'default') {
