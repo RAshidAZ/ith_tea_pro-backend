@@ -21,7 +21,9 @@ let ratingLogSchema = new Schema({
 	ratingId: {
         type: mongoose.Types.ObjectId,
         ref: "ratings"
-    }
+    },
+	previous: { type: Object },
+	new : { type: Object }
     
 }, {
     timestamps: true

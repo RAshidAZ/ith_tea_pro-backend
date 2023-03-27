@@ -188,7 +188,9 @@ const editUserTask = async (req, res, next) => {
 	let actionLogData = {
 		actionTaken: actionTaken,
 		actionBy: data.auth.id,
-		taskId : taskRes.data._id
+		taskId : taskRes.data._id,
+		previous : task.data,
+		new : data.taskUpdatePayload
 	}
 	data.actionLogData = actionLogData;
 	let addActionLogRes = await actionLogController.addTaskLog(data);
@@ -247,6 +249,7 @@ const createPayloadAndEditTask = async function (data) {
 			updatePayload.dueDate = dueDate
 		}
 		if (data.completedDate) {
+			console.log("=========update task",data.completedDate)
 			updatePayload.completedDate = data.completedDate
 		}
 		if (data.priority) {
@@ -263,6 +266,8 @@ const createPayloadAndEditTask = async function (data) {
 			}
 			updatePayload.lead = data.tasklead
 		}
+		data.taskUpdatePayload = updatePayload;
+		console.log("=========update task",data.taskUpdatePayload,updatePayload )
 		let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload, {new : false})
 		return { data: taskRes, error: false }
 	} catch (err) {
@@ -1141,7 +1146,9 @@ const updateTaskStatus = async (req, res, next) => {
 		let actionLogData = {
 			actionTaken: 'TASK_STATUS_UPDATED',
 			actionBy: data.auth.id,
-			taskId : data.taskId
+			taskId : data.taskId,
+			previous : { status : taskRes && taskRes.data.status},
+			new : { status : data.status }
 		} 
 		data.actionLogData = actionLogData;
 		let addActionLogRes = await actionLogController.addTaskLog(data);

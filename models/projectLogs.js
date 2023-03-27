@@ -16,7 +16,9 @@ let projectLogSchema = new Schema({
     projectId: {
         type: mongoose.Types.ObjectId,
         ref: "projects"
-    }
+    },
+	previous: { type: Object },
+	new : { type: Object }
     
 }, {
     timestamps: true

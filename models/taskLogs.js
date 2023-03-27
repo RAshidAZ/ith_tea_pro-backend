@@ -16,7 +16,19 @@ let taskLogSchema = new Schema({
     taskId: {
         type: mongoose.Types.ObjectId,
         ref: "tasks"
-    }
+    },
+	previous: { 
+		status: { type: String },
+		dueDate: { type: Date },
+		completedDate : { type: Date },
+		priority: { type: String }
+	},
+	new : { 
+		status: { type: String },
+		dueDate: { type: Date },
+		completedDate : { type: Date },
+		priority: { type: String } 
+	}
     
 }, {
     timestamps: true
