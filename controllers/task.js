@@ -1370,3 +1370,41 @@ const createPayloadAndGetTodayTaskLists = async function (data) {
 		return { data: err, error: true }
 	}
 }
+
+//Get overdue tasks list
+const getOverDueTasks = async function (req, res, next) {
+
+	let data = req.data;
+
+	let tasksLists = await createPayloadAndGetOverDueTasks(data);
+	if (tasksLists.error) {
+		return res.status(500).send(sendResponse(500, '', 'getOverDueTasks', null, req.data.signature))
+	}
+
+	return res.status(200).send(sendResponse(200, 'Task List', 'getOverDueTasks', tasksLists.data, req.data.signature));
+}
+exports.getOverDueTasks = getOverDueTasks;
+
+const createPayloadAndGetOverDueTasks = async function (data) {
+	try {
+
+		let findData = {
+			isDeleted: false,
+			isArchived :  false,
+			$or:
+			[
+				{ status : {$ne : 'COMPLETED'}, dueDate : { $lte : new Date()}},
+				{ status : 'COMPLETED', $expr: { $lt: [ "$dueDate" , "$completedDate" ] } }
+			]
+		};
+
+		
+		let populate = 'lead assignedTo'
+		let taskList = await Task.taskFindQuery(findData, {}, populate);
+		return { data: taskList, error: false }
+
+	} catch (err) {
+		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}

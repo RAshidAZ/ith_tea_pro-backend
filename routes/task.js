@@ -13,7 +13,7 @@ const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
 
-const { editUserTask, insertUserTask, getGroupByTasks, getTaskDetailsByTaskId, getTaskStatusAnalytics, getTodayTasksList,  getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments } = require('../controllers/task');
+const { editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTaskStatusAnalytics, getTodayTasksList,  getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments } = require('../controllers/task');
 
 
 //Insert task
@@ -34,6 +34,10 @@ router.get("/v1/groupby",
 router.get("/v1/by/taskId", 
 [authenticator], 
 getTaskDetailsByTaskId);
+
+router.get("/v1/overdue/tasks", 
+[authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN"])], 
+getOverDueTasks);
 
 router.get("/v1/status/analytics", [authenticator], getTaskStatusAnalytics);
 
