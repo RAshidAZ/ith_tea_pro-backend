@@ -1393,11 +1393,12 @@ const createPayloadAndGetOverDueTasks = async function (data) {
 			isArchived :  false,
 			$or:
 			[
-				{ status : {$ne : 'COMPLETED'}, dueDate : { $lte : new Date()}},
+				{ status : {$ne : 'COMPLETED'}, dueDate : { $gte : new Date()}},
 				{ status : 'COMPLETED', $expr: { $lt: [ "$dueDate" , "$completedDate" ] } }
 			]
 		};
 
+		// console.log("==========find data", findData['$or'])
 		
 		let populate = 'lead assignedTo'
 		let taskList = await Task.taskFindQuery(findData, {}, populate);
