@@ -712,6 +712,11 @@ const createPayloadAndfindSpecificProject = async function (data) {
 		let populate = 'accessibleBy managedBy sections'
 
 		let projectRes = await Project.findSpecificProject(payload, projection, populate)
+		if(data.auth.role =='LEAD' && projectRes && projectRes.accessibleBy){
+
+			let user = await User.userfindOneQuery({_id : data.auth.id})
+			projectRes.accessibleBy.push(user)
+		}
 		return { data: projectRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndAddProject Error : ", err)

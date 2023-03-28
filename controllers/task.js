@@ -1018,6 +1018,7 @@ const createPayloadAndGetTaskLists = async function (data) {
 		}
 		if (JSON.stringify(data.homePageTaskList)) {
 			findData.status = { $ne: "COMPLETED" };
+			findData.assignedTo = data.auth.id
 		}
 		let populate = 'lead assignedTo'
 		let taskList = await Task.taskFindQuery(findData, {}, populate);
