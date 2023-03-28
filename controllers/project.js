@@ -129,6 +129,8 @@ exports.addNewProject = addNewProject
 
 const createPayloadAndAddProject = async function (data) {
 	try {
+		let selectedManagers = data.selectedManagers || [];
+		selectedManagers.push(process.env.ADMIN_ID.toString());
 		let payload = {
 			name: data.name,
 			// sections: data.projectCategories,

@@ -18,7 +18,7 @@ const insertUserTask = async (req, res, next) => {
 	let data = req.data;
 
 	if (data.auth.role == "Lead") {
-		data.tasklead = [data.auth.id]
+		data.tasklead = [process.env.ADMIN_ID]
 	}
 	if (!data.title || !data.section || !data.projectId || !data.tasklead || !data.tasklead.length) {
 		return res.status(400).send(sendResponse(400, "Please send all required Data fields", 'insertUserTask', null, req.data.signature))
@@ -526,6 +526,7 @@ const createPayloadAndGetTask = async function (data) {
 		}
 		let populate = [
 			{ path: 'comments', model: 'comments', select: 'comment _id createdAt commentedBy'},
+			{ path: 'ratingComments', model: 'comments', select: 'comment _id createdAt commentedBy'},
 			{ path: 'createdBy', model: 'users', select: 'name _id' },
 			{ path: 'assignedTo', model: 'users', select: 'name' },
 			{ path: 'projectId', model: 'projects', select: 'name _id' },
@@ -534,7 +535,8 @@ const createPayloadAndGetTask = async function (data) {
 		]
 		let taskRes = await Task.taskFindOneQuery(findData, projection, populate)
 		let commentPopulate = {
-			path: 'comments.commentedBy', model: 'users', select: 'name _id'
+			path: 'comments.commentedBy', model: 'users', select: 'name _id',
+			path: 'ratingComments.commentedBy', model: 'users', select: 'name _id'
 		}
 		let populatedRes = await Task.taskPopulate(taskRes, commentPopulate)
 		return { data: populatedRes, error: false }
