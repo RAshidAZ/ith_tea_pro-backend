@@ -185,10 +185,13 @@ const getAllUsersRatingForMonth = async function (data) {
 			roleFilter.push('LEAD')
 		}
 		let findData = { role: { $nin: roleFilter } }
+		console.log("=================user rating**************************", data.userRating)
 		if(data.userRating){
+		console.log("=================user rating**************************", data.userRating)
+
 			findData._id = mongoose.Types.ObjectId(data.auth.id)
 		}
-		if (['LEAD', 'CONTRIBUTOR'].includes(data.auth.role) && data.filteredProjects) {
+		if (!data.userRating && ['LEAD', 'CONTRIBUTOR'].includes(data.auth.role) && data.filteredProjects) {
 			let allProjectUsers = await filteredDistinctProjectsUsers(data)
 			if (allProjectUsers && allProjectUsers.data) {
 				findData._id = { $in: (allProjectUsers.data).map((el) => mongoose.Types.ObjectId(el)) }

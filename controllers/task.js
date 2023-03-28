@@ -17,6 +17,7 @@ const emailUtitlities = require("../helpers/email");
 const insertUserTask = async (req, res, next) => {
 	let data = req.data;
 
+	console.log("==============assigned to value",data.assignedTo)
 	if (data.auth.role == "Lead") {
 		data.tasklead = [process.env.ADMIN_ID]
 	}
@@ -534,10 +535,12 @@ const createPayloadAndGetTask = async function (data) {
 			{ path: 'section', model: 'projectSections', select: 'name _id' }
 		]
 		let taskRes = await Task.taskFindOneQuery(findData, projection, populate)
-		let commentPopulate = {
+		let commentPopulate = [{
 			path: 'comments.commentedBy', model: 'users', select: 'name _id',
+		},
+		{
 			path: 'ratingComments.commentedBy', model: 'users', select: 'name _id'
-		}
+		}]
 		let populatedRes = await Task.taskPopulate(taskRes, commentPopulate)
 		return { data: populatedRes, error: false }
 	} catch (err) {
@@ -1393,11 +1396,11 @@ const createPayloadAndGetOverDueTasks = async function (data) {
 		let findData = {
 			isDeleted: false,
 			isArchived :  false,
-			$or:
-			[
-				{ status : {$ne : 'COMPLETED'}, dueDate : { $gte : new Date()}},
-				{ status : 'COMPLETED', $expr: { $lt: [ "$dueDate" , "$completedDate" ] } }
-			]
+			status : {$nin : ['ONHOLD','COMPLETED']}, dueDate : { $lte : new Date()},
+			// $or:
+			// [
+			// 	{ status : 'COMPLETED', $expr: { $lt: [ "$dueDate" , "$completedDate" ] } }
+			// ]
 		};
 
 		// console.log("==========find data", findData['$or'])
