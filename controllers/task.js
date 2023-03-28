@@ -949,7 +949,7 @@ const getTaskListWithPendingRating = async function (req, res, next) {
 	let data = req.data;
 
 	data.pendingRatingTasks = true;
-	let tasksLists = await createPayloadAndGetTaskLists(data);
+	let tasksLists = await createPayloadAndGetPendingRatingTasks(data);
 	if (tasksLists.error) {
 		return res.status(500).send(sendResponse(500, '', 'getTaskListForHomePage', null, req.data.signature))
 	}
@@ -1407,6 +1407,43 @@ const createPayloadAndGetOverDueTasks = async function (data) {
 		};
 
 		// console.log("==========find data", findData['$or'])
+		
+		let populate = 'lead assignedTo'
+		let taskList = await Task.taskFindQuery(findData, {}, populate);
+		return { data: taskList, error: false }
+
+	} catch (err) {
+		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}
+
+const createPayloadAndGetPendingRatingTasks = async function (data) {
+	try {
+
+		let findData = {
+			isDeleted: false,
+			isArchived :  false,
+			status : "COMPLETED",
+			isRated : false
+		};
+
+		//filter tasks of only those project which are assigned to LEAD, CONTRIBUTOR, INTERN
+		if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+			findData.projectId = { $in: data.filteredProjects }
+		}
+
+		if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role)) {
+
+			findData["$or"] = [
+				{ createdBy: data.auth.id },
+				{ assignedTo: data.auth.id }
+			]
+		}
+		if (data.auth.role == 'LEAD') {
+			findData.lead = data.auth.id
+		}
+
 		
 		let populate = 'lead assignedTo'
 		let taskList = await Task.taskFindQuery(findData, {}, populate);

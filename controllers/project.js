@@ -1120,3 +1120,110 @@ const sendProjectAssignedMail = async function (data) {
 	}
 }
 exports.sendProjectAssignedMail = sendProjectAssignedMail
+
+const getSpecificProjectUsers = async (req, res, next) => {
+	let data = req.data;
+
+	if (!data.projectId) {
+		return res.status(400).send(sendResponse(400, "Missing params", 'getSpecificProject', null, req.data.signature))
+	}
+
+	let projectRes = await createPayloadAndfindSpecificProjectUsers(data)
+
+	if (projectRes.error || !projectRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'getSpecificProject', null, req.data.signature))
+	}
+	return res.status(200).send(sendResponse(200, 'Projects Fetched', 'getSpecificProject', projectRes.data, req.data.signature))
+}
+exports.getSpecificProjectUsers = getSpecificProjectUsers;
+
+const createPayloadAndfindSpecificProjectUsers = async function (data) {
+	try {
+		let payload = {
+			_id: data.projectId,
+			"isDeleted": false
+		}
+
+		let projection = {}
+		if(data.auth.role == 'CONTRIBUTOR'){
+			payload.accessibleBy = data.auth.id
+			projection['accessibleBy.$']  = 1
+		}
+
+		let populate = 'accessibleBy managedBy'
+
+		let projectRes = await Project.findSpecificProject(payload, projection, populate)
+
+		let allUsers = JSON.parse(JSON.stringify(projectRes.accessibleBy || []))
+		let allLeads = JSON.parse(JSON.stringify(projectRes.managedBy || []))
+
+		let sendData = [];
+		if(data.auth.role == 'LEAD'){
+			if(data.selectedLeadRole && data.selectedLeadRole == 'ADMIN'){
+				allUsers = []
+				allLeads = allLeads.filter(el=> el._id.toString() == data.auth.id.toString())
+			}else if(data.selectedLeadRole){
+				allLeads = []
+			}
+			// sendData = allUsers.concat(allLeads)
+
+		}else if(['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+			allLeads = allLeads.filter(el=> el.role == 'LEAD')
+			// sendData = allUsers.concat(allLeads)
+		}
+
+		console.log("==================lead and contributors",allLeads,allUsers )
+		sendData = allUsers.concat(allLeads)
+
+		console.log("=============")
+		
+		return { data: sendData, error: false }
+	} catch (err) {
+		console.log("createPayloadAndAddProject Error : ", err)
+		return { data: err, error: true }
+	}
+}
+
+const getSpecificProjectLeads = async (req, res, next) => {
+	let data = req.data;
+
+	if (!data.projectId) {
+		return res.status(400).send(sendResponse(400, "Missing params", 'getSpecificProjectLeads', null, req.data.signature))
+	}
+
+	let projectRes = await createPayloadAndfindSpecificProjectLeads(data)
+
+	if (projectRes.error || !projectRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'getSpecificProjectLeads', null, req.data.signature))
+	}
+	return res.status(200).send(sendResponse(200, 'Projects leads Fetched', 'getSpecificProjectLeads', projectRes.data, req.data.signature))
+}
+exports.getSpecificProjectLeads = getSpecificProjectLeads;
+
+const createPayloadAndfindSpecificProjectLeads = async function (data) {
+	try {
+		let payload = {
+			_id: data.projectId,
+			"isDeleted": false
+		}
+
+		let projection = {}
+
+		let populate = 'managedBy'
+
+		let projectRes = await Project.findSpecificProject(payload, projection, populate)
+
+		let leadList = JSON.parse(JSON.stringify(projectRes.managedBy || []));
+
+		if(data.auth.role == 'CONTRIBUTOR'){
+			leadList = leadList.filter(el=>(el && el.role == 'LEAD'))
+		}else if(data.auth.role == 'LEAD'){
+			leadList = leadList.filter(el=> ((el._id.toString() == data.auth.id.toString()) || (el.role == 'ADMIN')))
+		}
+		
+		return { data: leadList, error: false }
+	} catch (err) {
+		console.log("createPayloadAndAddProject Error : ", err)
+		return { data: err, error: true }
+	}
+}

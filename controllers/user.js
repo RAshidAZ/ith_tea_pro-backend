@@ -30,12 +30,12 @@ const findAllUserWithPagination = async function (data) {
 			role: { $nin: ["SUPER_ADMIN"]}
         }
 
-		if(['LEAD', 'CONTRIBUTOR', 'GUEST'].includes(data.auth.role) && data.filteredProjects){
-			let filteredProjectsUsers = await filteredDistinctProjectsUsers(data)
-			if(filteredProjectsUsers && filteredProjectsUsers.data){
-				payload._id  = { $in : filteredProjectsUsers.data}
-			}
-		}
+		// if(['LEAD', 'CONTRIBUTOR', 'GUEST'].includes(data.auth.role) && data.filteredProjects){
+		// 	let filteredProjectsUsers = await filteredDistinctProjectsUsers(data)
+		// 	if(filteredProjectsUsers && filteredProjectsUsers.data){
+		// 		payload._id  = { $in : filteredProjectsUsers.data}
+		// 	}
+		// }
         if (data.search) {
             payload["$or"] = [
                 { "name": { "$regex": data.search, "$options": "i" } },
