@@ -118,13 +118,13 @@ const createPayloadAndInsertTask = async function (data) {
 			projectId: data.projectId,
 			createdBy: data?.auth?.id,    //TODO: Change after auth is updated
 			assignedTo: data.assignedTo,
-			dueDate: data.dueDate || new Date(new Date().setUTCHours(23, 59, 59, 0)),
+			dueDate: data.dueDate || new Date().setHours(23,59,59,999),
 			completedDate: data.completedDate,
 			priority: data.priority,
 			lead: data.tasklead
 		}
 		if (data.dueDate) {
-			payload.dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 0))
+			payload.dueDate = new Date(data.dueDate).setHours(23,59,59,999)
 		}
 
 		if (data.attachments) {
@@ -183,7 +183,7 @@ const editUserTask = async (req, res, next) => {
 		actionTaken = 'TASK_STATUS_UPDATED'
 	}else if(data.dueDate && new Date(data.dueDate).getTime() != new Date(taskRes.data.dueDate).getTime()){
 
-		console.log("=========due dates========", data.dueDate, taskRes.data.dueDate)
+		console.log("=========due dates========", new Date(data.dueDate), taskRes.data.dueDate)
 		actionTaken = 'TASK_DUEDATE_UPDATED'
 	}
 	let actionLogData = {
@@ -244,11 +244,13 @@ const createPayloadAndEditTask = async function (data) {
 		if (data.assignedTo) {
 			updatePayload.assignedTo = data.assignedTo
 		}
+		console.log("================data due date, ",data.dueDate)
 		if (data.dueDate) {
-			let dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 0))
+			let dueDate = new Date(data.dueDate).setHours(23,59,59,999)
 			data.dueDate = dueDate
 			updatePayload.dueDate = dueDate
 		}
+		console.log("================updatePayload due date, ",updatePayload.dueDate)
 		if (data.completedDate) {
 			console.log("=========update task",data.completedDate)
 			updatePayload.completedDate = data.completedDate
@@ -1009,7 +1011,7 @@ const createPayloadAndGetTaskLists = async function (data) {
 		}
 
 		if (data.dueDate) {
-			findData.dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 000))
+			findData.dueDate = new Date(data.dueDate).setHours(23,59,59,999)
 		}
 
 		if (JSON.stringify(data.pendingRatingTasks)) {
@@ -1323,7 +1325,7 @@ const createPayloadAndGetTaskComments = async function (data) {
 		} 
 
 		if (data.dueDate) {
-			findData.dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 000))
+			findData.dueDate = new Date(data.dueDate).setHours(23,59,59,999)
 		}
 
 		let populate = 'comments ratingComments'
