@@ -124,7 +124,7 @@ const createPayloadAndInsertTask = async function (data) {
 			lead: data.tasklead
 		}
 		if (data.dueDate) {
-			payload.dueDate = new Date(new Date().setUTCHours(23, 59, 59, 000))
+			payload.dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 000))
 		}
 
 		if (data.attachments) {
@@ -246,7 +246,7 @@ const createPayloadAndEditTask = async function (data) {
 		}
 		console.log("================data due date, ",data.dueDate)
 		if (data.dueDate) {
-			let dueDate = new Date(new Date().setUTCHours(23, 59, 59, 000))
+			let dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 000))
 			data.dueDate = dueDate
 			updatePayload.dueDate = dueDate
 		}
