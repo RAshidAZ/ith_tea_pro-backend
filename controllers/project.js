@@ -1148,6 +1148,7 @@ const createPayloadAndfindSpecificProjectUsers = async function (data) {
 		if(data.auth.role == 'CONTRIBUTOR'){
 			payload.accessibleBy = data.auth.id
 			projection['accessibleBy.$']  = 1
+			projection['managedBy']  = 0
 		}
 
 		let populate = 'accessibleBy managedBy'
@@ -1172,10 +1173,8 @@ const createPayloadAndfindSpecificProjectUsers = async function (data) {
 			// sendData = allUsers.concat(allLeads)
 		}
 
-		console.log("==================lead and contributors",allLeads,allUsers )
 		sendData = allUsers.concat(allLeads)
 
-		console.log("=============")
 		
 		return { data: sendData, error: false }
 	} catch (err) {
