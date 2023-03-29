@@ -145,6 +145,9 @@ const createPayloadAndAddProject = async function (data) {
 		if (data.description) {
 			payload.description = data.description
 		}
+		if (data.colorCode) {
+			payload.colorCode = data.colorCode
+		}
 		let projectRes = await Project.addNewProject(payload)
 		return { data: projectRes, error: false }
 	} catch (err) {
@@ -200,6 +203,9 @@ const createPayloadAndEditProject = async function (data) {
 		}
 		if (data.sections) {
 			updatePayload.sections = data.sections
+		}
+		if (data.colorCode) {
+			updatePayload.colorCode = data.colorCode
 		}
 		// let projectSectionRes = await Project.editProjectDetails(payload, updatePayload)
 		let projectRes = await Project.editProjectDetails(payload, updatePayload)

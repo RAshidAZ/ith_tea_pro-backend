@@ -28,6 +28,7 @@ let projectsSchema = new Schema({
         type: mongoose.Types.ObjectId,
         ref: "users"
     }],
+	colorCode: String,
 	isArchived: {
         type: Boolean,
         default: false

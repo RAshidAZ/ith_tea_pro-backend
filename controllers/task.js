@@ -253,7 +253,7 @@ const createPayloadAndEditTask = async function (data) {
 		console.log("================updatePayload due date, ",updatePayload.dueDate)
 		if (data.completedDate) {
 			console.log("=========update task",data.completedDate)
-			updatePayload.completedDate = data.completedDate
+			updatePayload.completedDate = new Date(data.completedDate)
 		}
 		if (data.priority) {
 			updatePayload.priority = data.priority

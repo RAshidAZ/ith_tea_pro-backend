@@ -220,7 +220,7 @@ const addNewUser = async (req, res, next) => {
     if (!data.name || !data.email|| !data.role) {
         return res.status(400).send(sendResponse(400, "", 'addNewUser', null, req.data.signature))
     }
-    if (["SUPER_ADMIN", "ADMIN"].includes(data.role)) {
+	if (["SUPER_ADMIN", "ADMIN"].includes(data.role)) {
         return res.status(400).send(sendResponse(400, "Not allowed to add this role", 'addNewUser', null, req.data.signature))
     }
     let emailRes = await checkEmailExists(data);
