@@ -794,10 +794,10 @@ const createPayloadAndArchiveProject = async function (data) {
 		}
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
 
-		let taskPayload = { projectId : data.projectId}
+		let taskPayload = { projectId : data.projectId, isDeleted : false}
 		let taskUpdatePayload = {
 			$set: {
-				isArchived : true,
+				isArchived : data.isArchived,
 				updatedAt: new Date()
 			}
 		}
