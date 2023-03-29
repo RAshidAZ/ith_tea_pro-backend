@@ -469,21 +469,21 @@ const createPayloadAndGetGroupByTask = async function (data) {
 		if (data.groupBy == 'default') {
 			// populate.push({ path: '_id.projectId', model: 'projects', select: 'name' })
 			populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
-			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name' })
+			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name profilePicture' })
 		}
 		if (data.groupBy == 'projectId') {
 			// populate.push({ path: '_id', model: 'projects', select: 'name' })
 			populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
-			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name' })
+			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name profilePicture' })
 		}
 		if (data.groupBy == 'createdBy') {
 			populate.push({ path: '_id.createdBy', model: 'users', select: 'name' })
 			populate.push({ path: 'tasks.projectId', model: 'projects', select: 'name' })
-			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name' })
+			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name profilePicture' })
 		}
 		if (data.groupBy == 'assignedTo') {
 			populate.push({ path: '_id.assignedTo', model: 'users', select: 'name' })
-			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name' })
+			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name profilePicture' })
 			populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
 			populate.push({ path: 'tasks.projectId', model: 'projects', select: 'name' })
 
@@ -491,7 +491,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 		if (data.groupBy == 'status' || data.groupBy == 'sections') {
 			populate.push({ path: 'tasks.projectId', model: 'projects', select: 'name' })
 			populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
-			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name' })
+			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name profilePicture' })
 		}
 
 		let populatedRes = await Project.projectPopulate(taskRes, populate)
