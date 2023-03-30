@@ -157,35 +157,35 @@ const createPayloadAndEditUserDetails = async function (data) {
             _id: data.userId,
         }
         let updatePayload = {}
-        if (data.name) {
+        if (JSON.stringify(data.name)) {
             updatePayload.name = data.name
         }
-        if (data.department) {
+        if (JSON.stringify(data.department)) {
             updatePayload.department = data.department
         }
-        if (data.wings) {
+        if (JSON.stringify(data.wings)) {
             updatePayload.wings = data.wings
         }
-		if (data.dob) {
+		if (JSON.stringify(data.dob)) {
             updatePayload.dob = data.dob
         }
-        if (data.designation) {
+        if (JSON.stringify(data.designation)) {
             updatePayload.designation = data.designation
         }
-        if (data.linkedInLink) {
+        if (JSON.stringify(data.linkedInLink)) {
             updatePayload.linkedInLink = data.linkedInLink
         }
-        if (data.githubLink) {
+        if (JSON.stringify(data.githubLink)) {
             updatePayload.githubLink = data.githubLink
         }
-		if (data.facebookLink) {
+		if (JSON.stringify(data.facebookLink)) {
             updatePayload.facebookLink = data.facebookLink
         }
-        if (data.twitterLink) {
+        if (JSON.stringify(data.twitterLink)) {
             updatePayload.twitterLink = data.twitterLink
         }
 
-		if(data.employeeId){
+		if(JSON.stringify(data.employeeId)){
 			updatePayload.employeeId = data.employeeId
 		}
 
@@ -193,11 +193,11 @@ const createPayloadAndEditUserDetails = async function (data) {
 			updatePayload.profilePicture = data.profilePicture
 		}
 
-		if (data.name && data.dob && data.department && data.designation && data.employeeId) {
-            updatePayload.profileCompleted = true
-        }else{
-			updatePayload.profileCompleted = false
-		}
+		// if (data.name && data.dob && data.department && data.designation && data.employeeId) {
+        //     updatePayload.profileCompleted = true
+        // }else{
+		// 	updatePayload.profileCompleted = false
+		// }
 
 		if (JSON.stringify(data.profileCompleted)) {
             updatePayload.profileCompleted = data.profileCompleted;

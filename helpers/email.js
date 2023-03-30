@@ -389,10 +389,27 @@ exports.sendTaskMail = sendTaskMail;
 const sendProjectAssignedMailToUser = function (data) {
 
 	return new Promise(async (resolve, reject) => {
-		let subject = `You're Assigned Task`;
+		let subject = `You're Assigned Project`;
 		let from = process.env.EMAIL_HOST || host;
 		let to = `${data.email}`;
-		// let message =htmlTemplates;
+		let message =`<!DOCTYPE html>
+		<html>
+		<head>
+			<meta charset="UTF-8">
+			<title>Project Assignment</title>
+		</head>
+		<body>
+			<p>Hi ${data.userName},</p>
+			<p>You are assigned a ${data.projectName} project, as ${data.assignedRole}.</p>
+			<p>Please find the details below:</p>
+			<ul>
+				<li>Project name: ${data.projectName}</li>
+				<li>Assigned as: ${data.assignedRole}</li>
+			</ul>
+			<p>Thank you,</p>
+			<p>TPro Team</p>
+		</body>
+		</html>`
 
 		let response = await sendMail(from, to, subject, message);
 		resolve(response);

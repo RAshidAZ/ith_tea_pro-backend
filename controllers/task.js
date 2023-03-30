@@ -181,9 +181,8 @@ const editUserTask = async (req, res, next) => {
 
 	if(data.status && data.status != taskRes.data.status){
 		actionTaken = 'TASK_STATUS_UPDATED'
-	}else if(data.dueDate && new Date(data.dueDate).getTime() != new Date(taskRes.data.dueDate).getTime()){
+	}else if((data.dueDate && new Date(data.dueDate).getTime() != new Date(taskRes.data.dueDate).getTime()) || (JSON.stringify(data.dueDate) && taskRes.data.dueDate)){
 
-		console.log("=========due dates========", new Date(data.dueDate), taskRes.data.dueDate)
 		actionTaken = 'TASK_DUEDATE_UPDATED'
 	}
 	let actionLogData = {
@@ -217,16 +216,16 @@ const createPayloadAndEditTask = async function (data) {
 		}
 
 		let updatePayload = {}
-		if (data.title) {
+		if (JSON.stringify(data.title)) {
 			updatePayload.title = data.title
 		}
 		if (data.attachments) {
 			updatePayload["attachments"] = data.attachments 
 		}
-		if (data.description) {
+		if (JSON.stringify(data.description)) {
 			updatePayload.description = data.description
 		}
-		if (data.status) {
+		if (JSON.stringify(data.status)) {
 			updatePayload.status = data.status
 			console.log(data.status == process.env.TASK_STATUS.split(",")[2])
 			if (data.status == process.env.TASK_STATUS.split(",")[2]) {
@@ -235,27 +234,36 @@ const createPayloadAndEditTask = async function (data) {
 				updatePayload.completedDate = null
 			}
 		}
-		if (data.section) {
+		if (JSON.stringify(data.section)) {
 			updatePayload.section = data.section
 		}
-		if (data.projectId) {
+		if (JSON.stringify(data.projectId)) {
 			updatePayload.projectId = data.projectId
 		}
-		if (data.assignedTo) {
+		if (JSON.stringify(data.assignedTo)) {
 			updatePayload.assignedTo = data.assignedTo
 		}
-		console.log("================data due date, ",data.dueDate)
-		if (data.dueDate) {
-			let dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 000))
+		if (JSON.stringify(data.dueDate)) {
+			let dueDate = data.dueDate
+			if(dueDate){
+				dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 000))
+			}else{
+				dueDate = null
+			}
 			data.dueDate = dueDate
 			updatePayload.dueDate = dueDate
 		}
 		console.log("================updatePayload due date, ",updatePayload.dueDate)
-		if (data.completedDate) {
-			console.log("=========update task",data.completedDate)
-			updatePayload.completedDate = new Date(data.completedDate)
+		if (JSON.stringify(data.completedDate)) {
+			let completedDate = data.completedDate
+			if(completedDate){
+				completedDate = new Date(data.completedDate)
+			}else{
+				completedDate = null
+			}
+			updatePayload.completedDate = completedDate
 		}
-		if (data.priority) {
+		if (JSON.stringify(data.priority)) {
 			updatePayload.priority = data.priority
 		}
 		if (data.tasklead) {

@@ -8,6 +8,8 @@ const { User } = queryController;
 
 const mongoose = require("mongoose");
 
+const emailUtitlities = require("../helpers/email");
+
 const ratingController = require('./rating')
 const { addCommnetIdInRatingById } = ratingController;
 const actionLogController = require("../controllers/actionLogs");
@@ -204,7 +206,7 @@ const createPayloadAndEditProject = async function (data) {
 		if (data.sections) {
 			updatePayload.sections = data.sections
 		}
-		if (data.colorCode) {
+		if (JSON.stringify(data.colorCode)) {
 			updatePayload.colorCode = data.colorCode
 		}
 		// let projectSectionRes = await Project.editProjectDetails(payload, updatePayload)
@@ -263,7 +265,6 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 
 		let allUsers = await User.getAllUsers(findUsers)
 		data.allUsers = allUsers
-		console.log("=======================all users data",allUsers)
 		allUsers = allUsers.length ? allUsers : []
 		let usersToAssign = allUsers.filter((el) => el.role == 'CONTRIBUTOR')
 		let leadsToAssign = allUsers.filter((el) => el.role == 'LEAD')
@@ -282,6 +283,7 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
 		data.projectRes = projectRes;
+		// let sendAssignedProjectMail = await sendUsersProjectAssignedMail(data)
 		return { data: projectRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndEditProject Error : ", err)
@@ -540,7 +542,6 @@ const createPayloadAndgetAllProjects = async function (data) {
 			}
 		)
 
-		console.log("==============is pipeline",pipeline)
 		let projectRes = await Project.projectAggregate(pipeline)
 		return { data: projectRes, error: false }
 	} catch (err) {
@@ -1092,17 +1093,22 @@ const getDueTaskCountForSection = async function (data) {
 
 const sendUsersProjectAssignedMail = async function (data) {
 	try {
+		console.log("=============assign project mail")
 		let allUsers = data.allUsers
 		let projectRes = data.projectRes
 
 		for(let i in allUsers){
 			let mailData= {
-				user : allUsers[i],
-				project : projectRes
+				email : allUsers[i].email,
+				assignedRole : allUsers[i].role,
+				userName : allUsers[i].name,
+				projectName : projectRes.name
 			}
 
-			let sendProjectAssignedMail = await sendProjectAssignedMail(mailData);
+			console.log("=============assign project mail data", mailData)
+			let sendProjectAssignedMail = await emailUtitlities.sendProjectAssignedMailToUser(mailData);
 			if(sendProjectAssignedMail.error){
+				console.log("============assigned project mail",sendProjectAssignedMail.error,sendProjectAssignedMail.data )
 				return { data: err, error: true }
 			}
 			if(parseInt(i)+1 ==  allUsers.length){
@@ -1163,6 +1169,7 @@ const createPayloadAndfindSpecificProjectUsers = async function (data) {
 
 		let allUsers = JSON.parse(JSON.stringify(projectRes.accessibleBy || []))
 		let allLeads = JSON.parse(JSON.stringify(projectRes.managedBy || []))
+		allLeads = allLeads.filter(el=> el.role == 'LEAD')
 
 		let sendData = [];
 		if(data.auth.role == 'LEAD'){
@@ -1172,11 +1179,12 @@ const createPayloadAndfindSpecificProjectUsers = async function (data) {
 			}else if(data.selectedLeadRole){
 				allLeads = []
 			}
-			// sendData = allUsers.concat(allLeads)
 
 		}else if(['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
-			allLeads = allLeads.filter(el=> el.role == 'LEAD')
-			// sendData = allUsers.concat(allLeads)
+			
+			// if(data.selectedLeadRole && data.selectedLeadRole == 'ADMIN'){
+			// 	allUsers = []
+			// }
 		}
 
 		sendData = allUsers.concat(allLeads)
@@ -1229,6 +1237,79 @@ const createPayloadAndfindSpecificProjectLeads = async function (data) {
 		return { data: leadList, error: false }
 	} catch (err) {
 		console.log("createPayloadAndAddProject Error : ", err)
+		return { data: err, error: true }
+	}
+}
+
+const assignProjectsToUser = async (req, res, next) => {
+	let data = req.data;
+	if (!data.projectIds || !data.userId) {
+		return res.status(400).send(sendResponse(400, "", 'assignProjectsToUser', null, req.data.signature))
+	}
+
+	let projectData = await Project.getAllProjects({ _id : { $in : data.projectIds }, $or : [{isArchived : true},{isActive : false}, {isDeleted : true}]});
+
+	if (projectData && projectData.length) {
+		return res.status(400).send(sendResponse(400, "Project Archived/Inactive, Can't assign lead/users ", 'assignProjectsToUser', null, req.data.signature))
+	}
+
+	let findUsers = {
+		_id : data.userId
+	}
+
+	let user = await User.userfindOneQuery(findUsers)
+	if(!user){
+		return res.status(400).send(sendResponse(400, "User not found", 'assignProjectsToUser', null, req.data.signature))
+	}
+	data.user = user
+
+	let projectRes = await createPayloadAndAssignProjectsToUser(data)
+	if (projectRes.error || !projectRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'assignProjectsToUser', null, req.data.signature))
+	}
+
+	let actionLogData = {
+		actionTaken: 'USERS_ASSIGNED',
+		actionBy: data.auth.id,
+		// projectId : data.projectId
+	}
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addProjectLog(data);
+
+	if (addActionLogRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'assignUserToProject', null, req.data.signature))
+	}
+	return res.status(200).send(sendResponse(200, "Project(s) assigned to user Successfully", 'assignProjectsToUser', null, req.data.signature))
+}
+exports.assignProjectsToUser = assignProjectsToUser
+
+const createPayloadAndAssignProjectsToUser = async function (data) {
+	try {
+		let payload = {
+			_id: { $in : data.projectIds || [] }
+		}
+
+		
+		let user = data.user
+		if(!user){
+			return { data: "User not found", error: true }
+		}
+
+		let updatePayload = { }
+		
+		if(user.role == 'CONTRIBUTOR'){
+			updatePayload = { $addToSet: { accessibleBy: user._id }}
+		}else{
+			updatePayload = { $addToSet: { managedBy: user._id }}
+		}
+
+		let projectRes = await Project.updateMany(payload, updatePayload)
+		data.projectRes = projectRes;
+		// console.log("============assign data, and resp",updatePayload, projectRes)
+		// let sendAssignedProjectMail = await sendUsersProjectAssignedMail(data)
+		return { data: projectRes, error: false }
+	} catch (err) {
+		console.log("createPayloadAndAssignProjectsToUser Error : ", err)
 		return { data: err, error: true }
 	}
 }
