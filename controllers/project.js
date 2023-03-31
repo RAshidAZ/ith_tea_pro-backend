@@ -283,7 +283,7 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
 		data.projectRes = projectRes;
-		// let sendAssignedProjectMail = await sendUsersProjectAssignedMail(data)
+		let sendAssignedProjectMail = sendUsersProjectAssignedMail(data)
 		return { data: projectRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndEditProject Error : ", err)
@@ -1093,7 +1093,6 @@ const getDueTaskCountForSection = async function (data) {
 
 const sendUsersProjectAssignedMail = async function (data) {
 	try {
-		console.log("=============assign project mail")
 		let allUsers = data.allUsers
 		let projectRes = data.projectRes
 

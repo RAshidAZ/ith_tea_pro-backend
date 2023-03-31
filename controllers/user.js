@@ -146,7 +146,7 @@ const editUserDetails = async (req, res, next) => {
         return res.status(500).send(sendResponse(500, 'Something Went Wrong', 'editUserDetails', null, req.data.signature))
     }
 
-    return res.status(200).send(sendResponse(200, 'User Edited', 'editUserDetails', userRes.data, req.data.signature))
+    return res.status(200).send(sendResponse(200, 'Profile updated', 'editUserDetails', userRes.data, req.data.signature))
 }
 exports.editUserDetails = editUserDetails
 

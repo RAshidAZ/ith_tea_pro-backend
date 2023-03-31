@@ -9,7 +9,6 @@ const emailUtitlities = require("../helpers/email");
 
 const { sendResponse } = require('../helpers/sendResponse')
 const { Auth, Credentials } = require('../query');
-const emailUtitlites = require("../helpers/email");
 
 const userRegistry = async (req, res, next) => {
 

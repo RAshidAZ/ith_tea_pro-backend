@@ -4,9 +4,7 @@ const { TaskLogs } = queryController;
 
 const getTaskLogs = async (req, res, next) => {
     let data = req.data;
-    // if (!data.taskId) {
-    //     return res.status(400).send(sendResponse(400, "", 'getTaskLogs', null, req.data.signature))
-    // }
+    
     let tasklogsRes = await createPayloadAndGetTaskLogs(data)
     if (tasklogsRes.error) {
         return res.status(500).send(sendResponse(500, '', 'getTaskLogs', null, req.data.signature))

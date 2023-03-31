@@ -14,7 +14,6 @@ module.exports = function () {
             let allProjectsAssigned = [];
             if (role == "LEAD") {
                 allProjectsAssigned = await Projects.distinct("_id", { managedBy: req.data.auth.id })
-				console.log("===============lead projects========",allProjectsAssigned)
             } else {
                 allProjectsAssigned = await Projects.distinct("_id", { accessibleBy: req.data.auth.id })
             }

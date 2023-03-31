@@ -44,6 +44,7 @@ router.get("/v1/status/analytics", [authenticator], getTaskStatusAnalytics);
 
 /*Get task list for homepage - According to role : SA/A(All tasks), User( Task assigned,createdby and Of Its assigned Project ), Lead (Assigned Projects) 
 */
+//for my work
 router.get("/v1/list/homepage",
     [authenticator, filterProjects],
     getTaskList)
@@ -91,6 +92,7 @@ router.get("/v1/comments",
     getUserTaskComments);
 module.exports = router;
 
+//get today tasks list for team work
 router.get("/v1/get/today/tasks",
     [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects],
     getTodayTasksList)

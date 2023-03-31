@@ -401,7 +401,6 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			console.log("=================sort order and type ====", data.sortType, sortOrder)
 			sortTaskOrder = sortOrder > 0 ? CONSTANTS.SORTBY_IN_INCREASING_ORDER[data.sortType] : CONSTANTS.SORTBY_IN_DECREASING_ORDER[data.sortType]
 		}
-		console.log("====================find check========",findData, filter, data.isArchived)
 		let aggregate = [
 			{
 				$match: findData
@@ -698,6 +697,18 @@ const rateUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
 	}
 
+	let currentDate = new Date();
+	let taskCompletedDate = task.data.completedDate;
+	if (!taskCompletedDate) {
+		return res.status(400).send(sendResponse(400, 'Task is not completed', 'rateUserTask', null, req.data.signature))
+	}
+	taskCompletedDate = new Date(taskCompletedDate);
+	
+	let timeDifference = ((currentDate.getTime()-taskCompletedDate.getTime()) || 1)/(1000 * 60 * 60)
+	if (timeDifference > 24) {
+		return res.status(400).send(sendResponse(400, 'Oops, You are late in rating..', 'rateUserTask', null, req.data.signature))
+	}
+
 	let taskDetails = task.data;
 	if (taskDetails.status != process.env.TASK_STATUS.split(",")[2]) {
 		return res.status(400).send(sendResponse(400, 'Task is not yet marked as completed', 'rateUserTask', null, req.data.signature))
@@ -733,7 +744,6 @@ const rateUserTask = async (req, res, next) => {
 		data.commentId = insertTaskCommentRes.data._id;
 	}
 	let updateTaskRating = await updateUserTaskRating(data);
-	console.log('updateTaskRating => ', updateTaskRating)
 
 	if (updateTaskRating.error || !updateTaskRating.data) {
 		return res.status(500).send(sendResponse(500, '', 'rateUserTask', null, req.data.signature))
@@ -1374,9 +1384,6 @@ const createPayloadAndGetTodayTaskLists = async function (data) {
 			isArchived :  false,
 			dueDate : { $gte : startDayTime, $lte : endDayTime }
 		};
-		
-		console.log("================task find data======",findData)
-
 		
 		let taskList = await Task.taskFindQuery(findData, {}, "");
 		return { data: taskList, error: false }

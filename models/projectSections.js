@@ -2,7 +2,7 @@ let mongoose = require("./db");
 let Schema = mongoose.Schema;
 
 let projectSectionSchema = new Schema({
-    name: { type: String, lowercase: true },
+    name: { type: String },
 	projectId: {
         type: mongoose.Types.ObjectId,
         ref: "projects"
