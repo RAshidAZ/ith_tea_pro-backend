@@ -12,7 +12,7 @@ const authenticator = require('../middlewares/authenticator')(clients, data);
 const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
-const { getProjectsAllUser, getAllProjects, assignProjectsToUser, getSpecificProjectLeads, getSpecificProjectUsers, getSpecificProject, addNewProject, editProject, archiveStatusSectionUpdate, deleteProject, deleteProjectSection, editProjectSection, archiveStatusProjectUpdate, assignUserToProject, getUserAssignedProjects, removeUserFromProject, getAllProjectsList, assignLeadToProject, removeLeadFromProject, getAllProjectSections, addProjectSection } = require('../controllers/project');
+const { getProjectsAllUser, getAllProjects, removeUsersFromProject, assignProjectsToUser, unassignProjectsToUser, getSpecificProjectLeads, getSpecificProjectUsers, getSpecificProject, addNewProject, editProject, archiveStatusSectionUpdate, deleteProject, deleteProjectSection, editProjectSection, archiveStatusProjectUpdate, assignUserToProject, getUserAssignedProjects, removeUserFromProject, getAllProjectsList, assignLeadToProject, removeLeadFromProject, getAllProjectSections, addProjectSection } = require('../controllers/project');
 //Add new Project
 router.post("/v1/add/new",
     [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])],
@@ -113,5 +113,13 @@ router.patch("/v1/assign/projects",
     [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])],
     assignProjectsToUser);
 
+//unassign projects of User
+router.patch("/v1/unassign/projects",
+[authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])],
+unassignProjectsToUser);
 module.exports = router;
 
+//Unassign/remove users from a project
+router.patch("/v1/remove/users",
+    [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])],
+    removeUsersFromProject);

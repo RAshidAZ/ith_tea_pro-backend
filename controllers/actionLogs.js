@@ -32,7 +32,6 @@ exports.addTaskLog = async function (data) {
         let payload = data.actionLogData;
 
         let insertLogResponse = await ActionLogs.insertTaskLog(payload);
-        console.log("insertTaskResponse => ", insertLogResponse)
         return { data: insertLogResponse, error: false }
     } catch (err) {
         return { data: err, error: true }
@@ -44,7 +43,6 @@ exports.addRatingLog = async function (data) {
         let payload = data.actionLogData;
 
         let insertLogResponse = await ActionLogs.insertRatingLog(payload);
-        console.log("addRatingLog => ", insertLogResponse)
         return { data: insertLogResponse, error: false }
     } catch (err) {
         return { data: err, error: true }

@@ -717,7 +717,7 @@ const rateUserTask = async (req, res, next) => {
 
 		console.log("Lead giving taks....", data.auth.role);
 
-		let checkIfAllowedToRateTask = taskDetails.lead.includes(data.auth.id) && data.filteredProjects.includes(taskDetails.projectId.toString());
+		let checkIfAllowedToRateTask = ((taskDetails.assignedTo.toString()) != data.auth.id.toString()) && taskDetails.lead.includes(data.auth.id) && data.filteredProjects.includes(taskDetails.projectId.toString());
 
 		if (!checkIfAllowedToRateTask) {
 			return res.status(400).send(sendResponse(400, 'Not allowed to rate task', 'rateUserTask', null, req.data.signature))

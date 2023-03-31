@@ -1176,7 +1176,7 @@ const createPayloadAndfindSpecificProjectUsers = async function (data) {
 			if(data.selectedLeadRole && data.selectedLeadRole == 'ADMIN'){
 				allUsers = []
 				allLeads = allLeads.filter(el=> el._id.toString() == data.auth.id.toString())
-			}else if(data.selectedLeadRole){
+			}else{
 				allLeads = []
 			}
 
@@ -1310,6 +1310,130 @@ const createPayloadAndAssignProjectsToUser = async function (data) {
 		return { data: projectRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndAssignProjectsToUser Error : ", err)
+		return { data: err, error: true }
+	}
+}
+
+const unassignProjectsToUser = async (req, res, next) => {
+	let data = req.data;
+	if (!data.projectIds || !data.userId) {
+		return res.status(400).send(sendResponse(400, "", 'unassignProjectsToUser', null, req.data.signature))
+	}
+
+	let projectData = await Project.getAllProjects({ _id : { $in : data.projectIds }, $or : [{isArchived : true},{isActive : false}, {isDeleted : true}]});
+
+	if (projectData && projectData.length) {
+		return res.status(400).send(sendResponse(400, "Project Archived/Inactive, Can't assign lead/users ", 'unassignProjectsToUser', null, req.data.signature))
+	}
+
+	let findUsers = {
+		_id : data.userId
+	}
+
+	let user = await User.userfindOneQuery(findUsers)
+	if(!user){
+		return res.status(400).send(sendResponse(400, "User not found", 'unassignProjectsToUser', null, req.data.signature))
+	}
+	data.user = user
+
+	let projectRes = await createPayloadAndUnAssignProjectsToUser(data)
+	if (projectRes.error || !projectRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'unassignProjectsToUser', null, req.data.signature))
+	}
+
+	let actionLogData = {
+		actionTaken: 'USER_UNASSIGNED',
+		actionBy: data.auth.id,
+		// projectId : data.projectId
+	}
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addProjectLog(data);
+
+	if (addActionLogRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'unassignProjectsToUser', null, req.data.signature))
+	}
+	return res.status(200).send(sendResponse(200, "Project(s) unassigned to user Successfully", 'unassignProjectsToUser', null, req.data.signature))
+}
+exports.unassignProjectsToUser = unassignProjectsToUser
+
+const createPayloadAndUnAssignProjectsToUser = async function (data) {
+	try {
+		let payload = {
+			_id: { $in : data.projectIds || [] }
+		}
+
+		
+		let user = data.user
+		if(!user){
+			return { data: "User not found", error: true }
+		}
+
+		let updatePayload = { }
+		
+		if(user.role == 'CONTRIBUTOR'){
+			updatePayload = { $pull: { accessibleBy: user._id }}
+		}else{
+			updatePayload = { $pull: { managedBy: user._id }}
+		}
+
+		let projectRes = await Project.updateMany(payload, updatePayload)
+		data.projectRes = projectRes;
+		// console.log("============assign data, and resp",updatePayload, projectRes)
+		// let sendAssignedProjectMail = await sendUsersProjectAssignedMail(data)
+		return { data: projectRes, error: false }
+	} catch (err) {
+		console.log("createPayloadAndUnAssignProjectsToUser Error : ", err)
+		return { data: err, error: true }
+	}
+}
+
+const removeUsersFromProject = async (req, res, next) => {
+	let data = req.data;
+	if (!data.projectId || !data.userIds) {
+		return res.status(400).send(sendResponse(400, "", 'removeUsersFromProject', null, req.data.signature))
+	}
+
+	let projectRes = await createPayloadAndRemoveUsersFromProject(data)
+	if (projectRes.error || !projectRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'removeUsersFromProject', null, req.data.signature))
+	}
+	return res.status(200).send(sendResponse(200, "Project's  Users Removed Successfully", 'removeUsersFromProject', null, req.data.signature))
+}
+exports.removeUsersFromProject = removeUsersFromProject
+
+const createPayloadAndRemoveUsersFromProject = async function (data) {
+	try {
+		let payload = {
+			_id: data.projectId
+		}
+
+		let findUsers = {
+			_id : { $in : data.userIds}
+		}
+
+		let allUsers = await User.getAllUsers(findUsers)
+		data.allUsers = allUsers
+		allUsers = allUsers.length ? allUsers : []
+		let usersToUnAssign = allUsers.filter((el) => el.role == 'CONTRIBUTOR')
+		let leadsToUnAssign = allUsers.filter((el) => el.role == 'LEAD')
+		console.log("=================assign user/lead data=========",usersToUnAssign, leadsToUnAssign)
+		if(usersToUnAssign.length && !usersToUnAssign[0].role){
+			usersToUnAssign = []
+		}
+		
+		if(leadsToUnAssign.length && !leadsToUnAssign[0].role){
+			leadsToUnAssign = []
+		}
+		let updatePayload = {
+			$pull: { accessibleBy: { $in: usersToUnAssign }, managedBy: { $in: leadsToUnAssign } }
+		}
+
+		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
+		data.projectRes = projectRes;
+		// let sendAssignedProjectMail = await sendUsersProjectAssignedMail(data)
+		return { data: projectRes, error: false }
+	} catch (err) {
+		console.log("createPayloadAndRemoveUsersFromProject Error : ", err)
 		return { data: err, error: true }
 	}
 }
