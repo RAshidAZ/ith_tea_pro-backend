@@ -348,7 +348,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 		}
 		if (data.sections) {
 			let sections = JSON.parse(data.sections)
-			findData["sections"] = { $in: sections.map(el => mongoose.Types.ObjectId(el)) }
+			filter["tasks.section"] = { $in: sections.map(el => mongoose.Types.ObjectId(el)) }
 		}
 		if (data.priority) {
 			let priorities = JSON.parse(data.priority)
