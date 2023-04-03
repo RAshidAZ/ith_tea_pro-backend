@@ -84,6 +84,7 @@ module.exports = function (clients, data) {
                         id: response?.userId?._id,
                         token: payload.token,
                         role: response?.userId?.role,
+						name : response?.userId?.name,
                         identifier
                     };
                     next();

@@ -417,3 +417,47 @@ const sendProjectAssignedMailToUser = function (data) {
 };
 exports.sendProjectAssignedMailToUser = sendProjectAssignedMailToUser;
 
+const sendProjectsAssignedMailToUser = function (data) {
+
+	return new Promise(async (resolve, reject) => {
+		let subject = `You're Assigned Projects`;
+		let from = process.env.EMAIL_HOST || host;
+		let to = `${data.email}`;
+		let projectList = data.projects || []
+		let projectCount = projectList.length
+
+		let html_list = ``
+		if (projectCount == 0) {
+			html_list = ``
+		}else if (projectCount == 1) {
+			let projectName = projectList[0]
+			html_list = `<ol><li> ${projectName} </li></ol>`
+		} else {
+			html_list = `<ol>`
+			for (i in projectList) {
+				let projectName = projectList[i]
+				html_list += `<li> ${projectName} </li>`
+			}
+			html_list += `</ol>`
+		}
+
+		let message = `<!DOCTYPE html>
+		<html>
+		<head>
+			<meta charset="UTF-8">
+			<title>Projects Assignment</title>
+		</head>
+		<body>
+			<p>Hi ${data.userName},</p>
+			<p>You have been invited for the following projects, as ${data.assignedRole} by ${data.assignedBy}:</p>
+			${html_list}
+			<p>Thank you,</p>
+			<p>TPro Team</p>
+		</body>
+		</html>`
+
+		let response = await sendMail(from, to, subject, message);
+		resolve(response);
+	})
+};
+exports.sendProjectsAssignedMailToUser = sendProjectsAssignedMailToUser;

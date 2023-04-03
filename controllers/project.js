@@ -1274,10 +1274,19 @@ const assignProjectsToUser = async (req, res, next) => {
 	}
 	data.actionLogData = actionLogData;
 	let addActionLogRes = await actionLogController.addProjectLog(data);
-
 	if (addActionLogRes.error) {
 		return res.status(500).send(sendResponse(500, '', 'assignUserToProject', null, req.data.signature))
 	}
+	let projectsRes = await Project.distinctProjects("name", { _id : { $in : data.projectIds }});
+	let mailData = {
+		projects : projectsRes,
+		email : user.email,
+		userName : user.name,
+		assignedRole : user.role,
+		assignedBy : data.auth.name
+	}
+	let sendProjectAssignedMail = emailUtitlities.sendProjectsAssignedMailToUser(mailData);
+
 	return res.status(200).send(sendResponse(200, "Project(s) assigned to user Successfully", 'assignProjectsToUser', null, req.data.signature))
 }
 exports.assignProjectsToUser = assignProjectsToUser
