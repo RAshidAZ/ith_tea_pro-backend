@@ -78,8 +78,9 @@ exports.getUserAssignedProjects = getUserAssignedProjects
 const createPayloadAndGetUserAssignedProjects = async function (data) {
 	try {
 		let payload = {
-			accessibleBy: data.userId,
-			"isDeleted": false
+			$or : [{accessibleBy: data.userId}, {managedBy: data.userId}],
+			"isDeleted": false,
+			isArchived : false
 		}
 		let projection = {
 			_id: 1
@@ -1183,6 +1184,8 @@ const createPayloadAndfindSpecificProjectUsers = async function (data) {
 			
 			// if(data.selectedLeadRole && data.selectedLeadRole == 'ADMIN'){
 			// 	allUsers = []
+			// }else{
+			// 	allLeads = []
 			// }
 		}
 

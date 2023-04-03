@@ -697,6 +697,11 @@ const rateUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
 	}
 
+	let rating = parseInt(data.rating)
+	if (rating > 6) {
+		return res.status(400).send(sendResponse(400, 'Rating should be less than 6', 'rateUserTask', null, req.data.signature))
+	}
+
 	let currentDate = new Date();
 	let taskCompletedDate = task.data.completedDate;
 	if (!taskCompletedDate) {
