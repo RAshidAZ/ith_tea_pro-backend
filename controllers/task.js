@@ -1385,7 +1385,8 @@ const createPayloadAndGetTodayTaskLists = async function (data) {
 			dueDate : { $gte : startDayTime, $lte : endDayTime }
 		};
 		
-		let taskList = await Task.taskFindQuery(findData, {}, "");
+		let populate = 'assignedTo'
+		let taskList = await Task.taskFindQuery(findData, {}, populate);
 		return { data: taskList, error: false }
 
 	} catch (err) {
