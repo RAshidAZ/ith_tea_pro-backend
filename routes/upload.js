@@ -110,7 +110,7 @@ router.put('/v1/user/file', [authenticator, authenticateRole([role.user]),upload
 });
 
 
-router.put('/v1/user/profilepicture', [authenticator, authenticateRole([role.admin,role.superadmin,role.user]),uploadFile.single('file')],function (req, res, next) {
+router.put('/v1/user/profilepicture', [authenticator, authenticateRole([role.admin,role.superadmin,role.contributor]),uploadFile.single('file')],function (req, res, next) {
     let data = req.body;
     data.req = req.data;
     data.url =  req.file.location

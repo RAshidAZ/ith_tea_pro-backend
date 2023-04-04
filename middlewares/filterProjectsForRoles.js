@@ -4,7 +4,7 @@ const Users = require("../models/users");
 const Projects = require("../models/projects");
 
 //roles from config
-const role = JSON.parse(process.env.role)
+const roles = JSON.parse(process.env.role)
 
 module.exports = function () {
 
@@ -12,7 +12,7 @@ module.exports = function () {
 
         let role = req.data.auth.role;
         console.log("Data in middle ware....", role)
-        if (![role.superadmin, role.admin].includes(role)) {
+        if (![roles.superadmin, roles.admin].includes(role)) {
 
             let allProjectsAssigned = [];
             if (role == role.lead) {

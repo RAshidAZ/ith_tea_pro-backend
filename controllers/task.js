@@ -325,6 +325,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			findData["isArchived"] = false
 		}
 		
+		console.log("==============filtered projects=======",data.filteredProjects)
 		if(data.filteredProjects){
 			findData._id = { $in : data.filteredProjects.map((el)=>mongoose.Types.ObjectId(el))}
 		}
@@ -468,6 +469,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			{ $sort: sortTaskOrder }
 		]
 
+		console.log("================================find and filter data for group by=====", findData, filter)
 
 		
 		let taskRes = await Project.projectAggregate(aggregate)
@@ -896,26 +898,6 @@ const getTaskList = async function (req, res, next) {
 }
 exports.getTaskList = getTaskList;
 
-const createPayloadAndGetAssignedProjects = async function (data) {
-	try {
-		let payload = {
-			isActive: true
-		}
-		if (![role.superadmin, role.admin].includes(data.auth.role)) {
-			payload["$or"] = [
-				{ accessibleBy: data.auth.id },
-				{ managedBy: data.auth.id },
-			]
-		}
-		let projection = {}
-		let projectRes = await Project.getAllProjects(payload, projection);
-		return { data: projectRes, error: false }
-	} catch (err) {
-		console.log("createPayloadAndgetAllProjects Error : ", err)
-		return { data: err, error: true }
-	}
-}
-
 //Get task lists for homepage - Set according to role
 const getTaskListWithPendingRating = async function (req, res, next) {
 
@@ -1004,7 +986,6 @@ const createPayloadAndGetTaskLists = async function (data) {
 		return { data: err, error: true }
 	}
 }
-
 
 //Delete task API Controller
 const deleteTask = async (req, res, next) => {

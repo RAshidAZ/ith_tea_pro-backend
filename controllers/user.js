@@ -33,12 +33,6 @@ const findAllUserWithPagination = async function (data) {
 			role: { $nin: [role.superadmin]}
         }
 
-		// if([role.lead, role.contributor, role.guest].includes(data.auth.role) && data.filteredProjects){
-		// 	let filteredProjectsUsers = await filteredDistinctProjectsUsers(data)
-		// 	if(filteredProjectsUsers && filteredProjectsUsers.data){
-		// 		payload._id  = { $in : filteredProjectsUsers.data}
-		// 	}
-		// }
         if (data.search) {
             payload["$or"] = [
                 { "name": { "$regex": data.search, "$options": "i" } },
@@ -370,46 +364,6 @@ const createPayloadAndRegisterUser = async function (data) {
 
         return {
             data: registerUser,
-            error: false
-        }
-    }
-    catch (error) {
-        return {
-            data: error,
-            error: true
-        }
-    }
-}
-
-const createPayloadAndInsertCredentials = async function (data) {
-    let { hash, salt } = data.generatedHashSalt;
-    if (!hash || !salt) {
-        return cb(responseUtilities.responseStruct(500, "no hash/salt", "registerUser", null, data.req.signature));
-    }
-    let findData = {
-        userId: data.registerUser._id
-    }
-    let updateData = {
-        userId: data.registerUser._id,
-        password: hash,
-        salt: salt,
-        accountId: data.accountId,
-        isActive: true,
-        isBlocked: false,
-        emailVerified: true
-    }
-
-    let options = {
-        upsert: true,
-        new: true,
-        setDefaultsOnInsert: true
-    }
-
-    try {
-        let insertCredentials = await Credentials.createCredentials(findData, updateData, options);
-        console.log("Create Credentials User Response => ", insertCredentials)
-        return {
-            data: insertCredentials,
             error: false
         }
     }

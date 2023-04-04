@@ -1,7 +1,7 @@
 const queryController = require('../query')
 const { ActionLogs } = queryController;
 
-
+//add action logs(for now it's used for team member added)
 exports.addActionLog = async function (data) {
     try {
         let payload = data.actionLogData;
@@ -12,6 +12,8 @@ exports.addActionLog = async function (data) {
         return { data: err, error: true }
     }
 }
+
+//add project logs
 exports.addProjectLog = async function (data) {
     try {
         let payload = data.actionLogData;
@@ -23,6 +25,7 @@ exports.addProjectLog = async function (data) {
     }
 }
 
+//add taks logs
 exports.addTaskLog = async function (data) {
     try {
         let payload = data.actionLogData;
@@ -34,6 +37,7 @@ exports.addTaskLog = async function (data) {
     }
 }
 
+//add rating logs
 exports.addRatingLog = async function (data) {
     try {
         let payload = data.actionLogData;

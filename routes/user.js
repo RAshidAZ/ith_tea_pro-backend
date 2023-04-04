@@ -13,13 +13,16 @@ const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
 const { getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng, getTeamAnalytics} = require('../controllers/user');
 
+//roles from config
+const role = JSON.parse(process.env.role)
+
 // Superadmin, Admin Add New Team Member
-router.post("/v1/add", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], addNewUser);
+router.post("/v1/add", [authenticator, authenticateRole([role.admin, role.superadmin])], addNewUser);
 
 //Superadmin, admin edit any user details ( provide userId )
 // Lead edit either self or any user details ( provide userId )
 // User, intern can edit only themself
-router.patch("/v1/edit", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "CONTRIBUTOR", "INTERN", "LEAD", "GUEST"])], editUserDetails);
+router.patch("/v1/edit", [authenticator, authenticateRole([role.admin, role.superadmin, role.lead, role.contributor, role.intern, role.guest])], editUserDetails);
 
 //get userby userId
 router.get("/v1/userId", [authenticator], getUserDetailsByUserId);
@@ -40,7 +43,7 @@ router.get("/v1/leads/list", [], getAllLeadsLisitng);
 router.get("/v1/unassigned/list", [], getUnAssignedUserLisitng);
 
 //Update User Status
-router.patch("/v1/edit/block/status", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], updateUserBlockStatus);
+router.patch("/v1/edit/block/status", [authenticator, authenticateRole([role.admin, role.superadmin])], updateUserBlockStatus);
 
 //get team analytics
 router.get("/v1/team/analytics", 

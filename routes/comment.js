@@ -12,6 +12,9 @@ const authenticator = require('../middlewares/authenticator')(clients, data);
 
 const { getCommentsOnRating, insertUserRatingComment, insertUserTaskComment } = require('../controllers/comment');
 
+//roles from config
+const role = JSON.parse(process.env.role)
+
 router.get("/v1/rating/", [authenticator], getCommentsOnRating);
 
 router.post("/v1/user/insert", [authenticator], insertUserRatingComment);

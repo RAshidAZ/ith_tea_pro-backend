@@ -13,6 +13,9 @@ const authenticateRole = require("../middlewares/authenticateRole");
 const { getAllUsers, editUserDetails } = require('../controllers/user');
 const Auth = require("../controllers/auth");
 
+//roles from config
+const role = JSON.parse(process.env.role)
+
 // router.get("/v1/user/", [], getUserRatingComment);
 
 router.get("/v1/all/", [], getAllUsers);
@@ -23,7 +26,7 @@ router.post("/v1/user/login", [], Auth.userLogin);
 
 //resend password setup link email
 router.post("/v1/resend/password/setup", 
-[authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "LEAD"])], 
+[authenticator, authenticateRole([role.admin, role.superadmin, role.lead])], 
 Auth.resendPasswordSetupLink);
 
 

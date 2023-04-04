@@ -6,6 +6,7 @@ const ratingController = require('./rating');
 const { addCommentIdInTaskById } = require('./task');
 const { addCommnetIdInRatingById, createPayloadAndGetComments } = ratingController;
 
+//fetch rating comments
 const getCommentsOnRating = async (req, res, next) => {
     let data = req.data;
     if (!data.ratingId) {
@@ -22,7 +23,7 @@ const getCommentsOnRating = async (req, res, next) => {
 exports.getCommentsOnRating = getCommentsOnRating;
 
 
-
+//function for handling added comment on rating
 const insertUserRatingComment = async (req, res, next) => {
     let data = req.data;
 
@@ -44,7 +45,7 @@ const insertUserRatingComment = async (req, res, next) => {
 }
 exports.insertUserRatingComment = insertUserRatingComment
 
-
+//add rating comments
 const createPayloadAndInsertComment = async function (data) {
     try {
         let payload = {
@@ -62,7 +63,7 @@ const createPayloadAndInsertComment = async function (data) {
 }
 exports.createPayloadAndInsertComment = createPayloadAndInsertComment
 
-
+//add task comment
 const insertUserTaskComment = async (req, res, next) => {
     let data = req.data;
 
@@ -77,7 +78,6 @@ const insertUserTaskComment = async (req, res, next) => {
         return res.status(500).send(sendResponse(500, '', 'insertUserTaskComment', null, req.data.signature))
     }
     data.commentId = commentRes.data._id
-    // console.log(addCommnetIdInRatingById , typeof addCommnetIdInRatingById)
     let taskRes = await addCommentIdInTaskById(data)
     if (taskRes.error || !taskRes.data) {
         return res.status(500).send(sendResponse(500, '', 'insertUserTaskComment', null, req.data.signature))

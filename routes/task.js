@@ -15,20 +15,22 @@ const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
 const { editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTaskStatusAnalytics, getTodayTasksList,  getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments } = require('../controllers/task');
 
+//roles from config
+const role = JSON.parse(process.env.role)
 
 //Insert task
 router.post("/v1/user/insert",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
+    [authenticator, authenticateRole([role.admin, role.superadmin, role.lead, role.contributor, role.intern]), filterProjects],
     insertUserTask);
 
 //edit task
 router.patch("/v1/edit",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
+    [authenticator, authenticateRole([role.admin, role.superadmin, role.lead, role.contributor, role.intern]), filterProjects],
     editUserTask);
 
 // Task Listing Main API
 router.get("/v1/groupby",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
+    [authenticator, authenticateRole([role.admin, role.superadmin, role.lead, role.contributor, role.intern]), filterProjects],
     getGroupByTasks);
 
 router.get("/v1/by/taskId", 
@@ -36,7 +38,7 @@ router.get("/v1/by/taskId",
 getTaskDetailsByTaskId);
 
 router.get("/v1/overdue/tasks", 
-[authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN"])], 
+[authenticator, authenticateRole([role.admin, role.superadmin])], 
 getOverDueTasks);
 
 router.get("/v1/status/analytics", [authenticator], getTaskStatusAnalytics);
@@ -57,23 +59,23 @@ router.get("/v1/list/pending/rating",
 
 /**Get Task by projectId && userId for a given Date */
 router.get("/v1/list/for/rating",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects],
+    [authenticator, authenticateRole([role.admin, role.superadmin, role.lead]), filterProjects],
     getTaskListToRate);
     
 /**Insert Task Rating */
 router.post("/v1/rate",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects],
+    [authenticator, authenticateRole([role.admin, role.superadmin, role.lead]), filterProjects],
     rateUserTask);
 
 
 //Delete task API
 router.patch("/v1/delete",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
+    [authenticator, authenticateRole([role.admin, role.superadmin, role.lead, role.contributor, role.intern]), filterProjects],
     deleteTask);
 
 //update task status
 router.patch("/v1/update/status",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
+    [authenticator, authenticateRole([role.admin, role.superadmin, role.lead, role.contributor, role.intern]), filterProjects],
     updateTaskStatus);
 
 /**Get all Tasks by projectId */
@@ -83,7 +85,7 @@ router.get("/v1/all/of/project",
 
 /**Insert Task comment */
 router.post("/v1/add/comment",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
+    [authenticator, authenticateRole([role.admin, role.superadmin, role.lead, role.contributor, role.intern]), filterProjects],
     commentUserTask);
 
 /**Get comments of taks and rating of user for given date*/
@@ -94,5 +96,5 @@ module.exports = router;
 
 //get today tasks list for team work
 router.get("/v1/get/today/tasks",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects],
+    [authenticator, authenticateRole([role.admin, role.superadmin, role.lead]), filterProjects],
     getTodayTasksList)

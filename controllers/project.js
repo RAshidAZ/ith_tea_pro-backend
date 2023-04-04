@@ -642,7 +642,7 @@ const addProjectSection = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "Missing params", 'addProjectSection', null, req.data.signature))
 	}
 
-	let sectionRes = await checkIfSectionEist(data)
+	let sectionRes = await checkIfSectionExist(data)
 	if (sectionRes.error) {
 		return res.status(500).send(sendResponse(500, '', 'addProjectSection', null, req.data.signature))
 	}
@@ -1011,6 +1011,7 @@ const createPayloadAndArchiveSection = async function (data) {
 }
 exports.createPayloadAndArchiveSection = createPayloadAndArchiveSection;
 
+//get task count for a project
 const getTaskCountForProject = async function (data) {
 	try {
 
@@ -1029,7 +1030,8 @@ const getTaskCountForProject = async function (data) {
 	}
 }
 
-const checkIfSectionEist = async function (data) {
+//check if project-section exist
+const checkIfSectionExist = async function (data) {
 	try {
 		let payload = {
 			name: data.name,
@@ -1041,11 +1043,12 @@ const checkIfSectionEist = async function (data) {
 		let projectSectionRes = await ProjectSections.findSection(payload)
 		return { data: projectSectionRes, error: false }
 	} catch (err) {
-		console.log("createPayloadAndAddProject Error : ", err)
+		console.log("checkIfSectionExist Error : ", err)
 		return { data: err, error: true }
 	}
 }
 
+//get due task count for a project
 const getDueTaskCountForProject = async function (data) {
 	try {
 
@@ -1064,6 +1067,7 @@ const getDueTaskCountForProject = async function (data) {
 	}
 }
 
+//check if project is unqiue based on name
 const checkUniqueProject = async function (data) {
 	try {
 		let payload = {
@@ -1084,6 +1088,7 @@ const checkUniqueProject = async function (data) {
 	}
 }
 
+//get due task count for a project-section
 const getDueTaskCountForSection = async function (data) {
 	try {
 
@@ -1102,6 +1107,7 @@ const getDueTaskCountForSection = async function (data) {
 	}
 }
 
+//send mail to user for project assigned
 const sendUsersProjectAssignedMail = async function (data) {
 	try {
 		let allUsers = data.allUsers
@@ -1115,10 +1121,8 @@ const sendUsersProjectAssignedMail = async function (data) {
 				projectName : projectRes.name
 			}
 
-			console.log("=============assign project mail data", mailData)
 			let sendProjectAssignedMail = await emailUtitlities.sendProjectAssignedMailToUser(mailData);
 			if(sendProjectAssignedMail.error){
-				console.log("============assigned project mail",sendProjectAssignedMail.error,sendProjectAssignedMail.data )
 				return { data: err, error: true }
 			}
 			if(parseInt(i)+1 ==  allUsers.length){
@@ -1132,17 +1136,7 @@ const sendUsersProjectAssignedMail = async function (data) {
 }
 exports.sendUsersProjectAssignedMail = sendUsersProjectAssignedMail
 
-const sendProjectAssignedMail = async function (data) {
-	try {
-		
-		return { data: null, error: false }
-	} catch (err) {
-		console.log("createPayloadAndUnAssignUser Error : ", err)
-		return { data: err, error: true }
-	}
-}
-exports.sendProjectAssignedMail = sendProjectAssignedMail
-
+//get project specific users
 const getSpecificProjectUsers = async (req, res, next) => {
 	let data = req.data;
 
@@ -1159,6 +1153,7 @@ const getSpecificProjectUsers = async (req, res, next) => {
 }
 exports.getSpecificProjectUsers = getSpecificProjectUsers;
 
+//create payload for getting project users
 const createPayloadAndfindSpecificProjectUsers = async function (data) {
 	try {
 		let payload = {
@@ -1209,6 +1204,7 @@ const createPayloadAndfindSpecificProjectUsers = async function (data) {
 	}
 }
 
+//get project specific leads
 const getSpecificProjectLeads = async (req, res, next) => {
 	let data = req.data;
 
@@ -1225,6 +1221,7 @@ const getSpecificProjectLeads = async (req, res, next) => {
 }
 exports.getSpecificProjectLeads = getSpecificProjectLeads;
 
+//create payload for getting project leads
 const createPayloadAndfindSpecificProjectLeads = async function (data) {
 	try {
 		let payload = {
@@ -1253,6 +1250,7 @@ const createPayloadAndfindSpecificProjectLeads = async function (data) {
 	}
 }
 
+//assign multilple projects to a user
 const assignProjectsToUser = async (req, res, next) => {
 	let data = req.data;
 	if (!data.projectIds || !data.userId) {
@@ -1306,6 +1304,7 @@ const assignProjectsToUser = async (req, res, next) => {
 }
 exports.assignProjectsToUser = assignProjectsToUser
 
+//create payload for assigning multiple projects to a user
 const createPayloadAndAssignProjectsToUser = async function (data) {
 	try {
 		let payload = {
@@ -1337,6 +1336,7 @@ const createPayloadAndAssignProjectsToUser = async function (data) {
 	}
 }
 
+//unassign multiple projects from a user
 const unassignProjectsToUser = async (req, res, next) => {
 	let data = req.data;
 	if (!data.projectIds || !data.userId) {
@@ -1379,6 +1379,7 @@ const unassignProjectsToUser = async (req, res, next) => {
 }
 exports.unassignProjectsToUser = unassignProjectsToUser
 
+//create payload for unassigning multiple projects to a user
 const createPayloadAndUnAssignProjectsToUser = async function (data) {
 	try {
 		let payload = {
@@ -1410,6 +1411,7 @@ const createPayloadAndUnAssignProjectsToUser = async function (data) {
 	}
 }
 
+//remove project users
 const removeUsersFromProject = async (req, res, next) => {
 	let data = req.data;
 	if (!data.projectId || !data.userIds) {
@@ -1424,6 +1426,7 @@ const removeUsersFromProject = async (req, res, next) => {
 }
 exports.removeUsersFromProject = removeUsersFromProject
 
+//create payload for removing users from project
 const createPayloadAndRemoveUsersFromProject = async function (data) {
 	try {
 		let payload = {

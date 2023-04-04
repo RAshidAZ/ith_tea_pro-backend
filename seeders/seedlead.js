@@ -130,4 +130,4 @@ let seedProjectSections = () => {
 };
 seedLeads();
 seedCredential();
-seedProjectSections();
+// seedProjectSections();   //not used now

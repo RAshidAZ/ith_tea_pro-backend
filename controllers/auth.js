@@ -13,6 +13,7 @@ const { Auth, Credentials } = require('../query');
 //roles from config
 const role = JSON.parse(process.env.role)
 
+//register user based on email/password
 const userRegistry = async (req, res, next) => {
 
     let data = req.data;
@@ -59,6 +60,7 @@ const userRegistry = async (req, res, next) => {
 };
 exports.userRegistry = userRegistry;
 
+//check if user exist based on email, and fecth user details
 const findUserExistence = async function (data) {
     try {
 
@@ -72,6 +74,7 @@ const findUserExistence = async function (data) {
     }
 }
 
+//find user details based on userId
 const findUserExistenceByUserId = async function (data) {
     try {
 
@@ -85,6 +88,7 @@ const findUserExistenceByUserId = async function (data) {
     }
 }
 
+//add/update registry details of user
 const createPayloadAndRegisterUser = async function (data) {
 
     let { hash, salt } = data.generatedHashSalt;
@@ -125,6 +129,7 @@ const createPayloadAndRegisterUser = async function (data) {
     }
 }
 
+//add user credentials
 const createPayloadAndInsertCredentials = async function (data) {
 
     let { hash, salt } = data.generatedHashSalt;
@@ -165,6 +170,7 @@ const createPayloadAndInsertCredentials = async function (data) {
     }
 }
 
+//create payload for user credentials
 const createPayloadAndInsertCredentialsForUser = async function (data) {
     let { hash, salt } = data.generatedHashSalt;
     if (!hash || !salt) {
@@ -204,7 +210,7 @@ const createPayloadAndInsertCredentialsForUser = async function (data) {
     }
 }
 
-//Login
+//for login
 const userLogin = async (req, res, next) => {
     let data = req.body;
     if (!data.email || !data.password) {
@@ -245,6 +251,7 @@ const userLogin = async (req, res, next) => {
 }
 exports.userLogin = userLogin;
 
+//fetch user credentials
 const findUserCredentials = async function (data) {
     try {
 
@@ -259,6 +266,7 @@ const findUserCredentials = async function (data) {
     }
 }
 
+//compare password
 const comparePassword = function (data) {
 
     console.log("comparePassword");
@@ -278,6 +286,8 @@ const comparePassword = function (data) {
     }
 };
 
+
+//encrypt user details
 const encryptData = function (data) {
 
     let timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -307,7 +317,7 @@ const encryptData = function (data) {
     }
 };
 
-
+//verify generated password link/token sent to user
 const verifyPasswordToken = async (req, res, next) => {
 
     let data = req.data;
@@ -341,6 +351,7 @@ const verifyPasswordToken = async (req, res, next) => {
 };
 exports.verifyPasswordToken = verifyPasswordToken;
 
+//fetch user based on password link/token
 const findUserByPasswordToken = async function (data) {
     try {
 
@@ -354,7 +365,7 @@ const findUserByPasswordToken = async function (data) {
     }
 }
 
-
+//add user credentials for password setup
 const setPassword = async (req, res, next) => {
     let data = req.body;
     if (!data.email || !data.password || !data.confirmPassword) {
@@ -395,6 +406,7 @@ const setPassword = async (req, res, next) => {
 }
 exports.setPassword = setPassword;
 
+//resend password setup link to user
 const resendPasswordSetupLink = async (req, res, next) => {
     let data = req.body;
 	// if(![role.superadmin, role.admin, role.lead].includes(data.auth.role)){
@@ -460,6 +472,7 @@ const resendPasswordSetupLink = async (req, res, next) => {
 }
 exports.resendPasswordSetupLink = resendPasswordSetupLink;
 
+//fetch user pasword setup links/tokens
 const findUserPasswordSetupTokens = async function (data) {
     try {
 
