@@ -168,6 +168,7 @@ const editUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
 	}
 
+	data.taskDetails = task.data
 	if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && task.data.isRated) {
 		return res.status(400).send(sendResponse(400, 'You are not permitted to edit task once it is rated', 'rateUserTask', null, req.data.signature))
 	}
@@ -276,8 +277,7 @@ const createPayloadAndEditTask = async function (data) {
 		}
 		if (JSON.stringify(data.status)) {
 			updatePayload.status = data.status
-			console.log(data.status == process.env.TASK_STATUS.split(",")[2])
-			if (data.status == process.env.TASK_STATUS.split(",")[2]) {
+			if (data.status == process.env.TASK_STATUS.split(",")[2] && (!data.taskDetails || !data.taskDetails.status || data.taskDetails.status != process.env.TASK_STATUS.split(",")[2]) ) {
 				updatePayload.completedDate = new Date()
 			} else {
 				updatePayload.completedDate = null
