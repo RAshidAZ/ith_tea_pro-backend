@@ -3,16 +3,19 @@ require("../config/index");
 const Users = require("../models/users");
 const Projects = require("../models/projects");
 
+//roles from config
+const role = JSON.parse(process.env.role)
+
 module.exports = function () {
 
     return async function (req, res, next) {
 
         let role = req.data.auth.role;
         console.log("Data in middle ware....", role)
-        if (!["SUPER_ADMIN", "ADMIN"].includes(role)) {
+        if (![role.superadmin, role.admin].includes(role)) {
 
             let allProjectsAssigned = [];
-            if (role == "LEAD") {
+            if (role == role.lead) {
                 allProjectsAssigned = await Projects.distinct("_id", { managedBy: req.data.auth.id })
             } else {
                 allProjectsAssigned = await Projects.distinct("_id", { accessibleBy: req.data.auth.id })

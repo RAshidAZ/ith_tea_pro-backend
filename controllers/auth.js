@@ -10,6 +10,9 @@ const emailUtitlities = require("../helpers/email");
 const { sendResponse } = require('../helpers/sendResponse')
 const { Auth, Credentials } = require('../query');
 
+//roles from config
+const role = JSON.parse(process.env.role)
+
 const userRegistry = async (req, res, next) => {
 
     let data = req.data;
@@ -30,7 +33,7 @@ const userRegistry = async (req, res, next) => {
         // let checkUserCredentials = 
     }
 
-    if (data.password !== data.confirmPassword) {
+    if (data.password != data.confirmPassword) {
         return res.status(400).send(sendResponse(400, "Password and Repeat Password must be same", "validatePassword", null, null))
     }
 
@@ -394,7 +397,7 @@ exports.setPassword = setPassword;
 
 const resendPasswordSetupLink = async (req, res, next) => {
     let data = req.body;
-	// if(!["SUPER_ADMIN", "ADMIN", "LEAD"].includes(data.auth.role)){
+	// if(![role.superadmin, role.admin, role.lead].includes(data.auth.role)){
     //     return res.status(401).send(sendResponse(401, "Not allowed to resend password setup link", 'resendPasswordSetupLink', null, req.data.signature))
 
 	// }
@@ -431,7 +434,6 @@ const resendPasswordSetupLink = async (req, res, next) => {
 	if(passwordTokens.length){
 		randomString = passwordTokens[0].token
 
-		console.log("================token found in log")
 	}else{
 		randomString = Math.random().toString(36).substring(2) + data.userId.toString().substring(15,24);
 		let payload = {

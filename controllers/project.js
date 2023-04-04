@@ -14,6 +14,9 @@ const ratingController = require('./rating')
 const { addCommnetIdInRatingById } = ratingController;
 const actionLogController = require("../controllers/actionLogs");
 
+//roles from config
+const role = JSON.parse(process.env.role)
+
 const getAllProjects = async (req, res, next) => {
 	let data = req.data;
 
@@ -274,8 +277,8 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 		let allUsers = await User.getAllUsers(findUsers)
 		data.allUsers = allUsers
 		allUsers = allUsers.length ? allUsers : []
-		let usersToAssign = allUsers.filter((el) => el.role == 'CONTRIBUTOR')
-		let leadsToAssign = allUsers.filter((el) => el.role == 'LEAD')
+		let usersToAssign = allUsers.filter((el) => el.role == role.contributor)
+		let leadsToAssign = allUsers.filter((el) => el.role == role.lead)
 		console.log("=================assign user/lead data=========",usersToAssign, leadsToAssign)
 		if(usersToAssign.length && !usersToAssign[0].role){
 			usersToAssign = []
@@ -471,7 +474,7 @@ const createPayloadAndgetAllProjects = async function (data) {
 		}
 
 		console.log("================finda data",findData)
-		if (!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
+		if (![role.superadmin, role.admin].includes(data.auth.role)) {
 			projectAccess["$match"] =
 			{
 				"$or": [
@@ -577,7 +580,7 @@ const createPayloadAndgetAllProjectsList = async function (data) {
 			isActive: true,
 			"isDeleted": false
 		}
-		if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+		if (![role.superadmin, role.admin].includes(data.auth.role)) {
 			console.log("Role other than SA/A...", data.auth.role)
 			payload["$or"] = [
 				{ accessibleBy: data.auth.id },
@@ -727,7 +730,7 @@ const createPayloadAndfindSpecificProject = async function (data) {
 		let populate = 'accessibleBy managedBy sections'
 
 		let projectRes = await Project.findSpecificProject(payload, projection, populate)
-		// if(data.auth.role =='LEAD' && projectRes && projectRes.accessibleBy){
+		// if(data.auth.role == role.lead && projectRes && projectRes.accessibleBy){
 
 		// 	let user = await User.userfindOneQuery({_id : data.auth.id})
 		// 	projectRes.accessibleBy.push(user)
@@ -1164,7 +1167,7 @@ const createPayloadAndfindSpecificProjectUsers = async function (data) {
 		}
 
 		let projection = {}
-		if(data.auth.role == 'CONTRIBUTOR'){
+		if(data.auth.role == role.contributor){
 			payload.accessibleBy = data.auth.id
 			projection['accessibleBy.$']  = 1
 			projection['managedBy']  = 0
@@ -1176,20 +1179,20 @@ const createPayloadAndfindSpecificProjectUsers = async function (data) {
 
 		let allUsers = JSON.parse(JSON.stringify(projectRes.accessibleBy || []))
 		let allLeads = JSON.parse(JSON.stringify(projectRes.managedBy || []))
-		allLeads = allLeads.filter(el=> el.role == 'LEAD')
+		allLeads = allLeads.filter(el=> el.role == role.lead)
 
 		let sendData = [];
-		if(data.auth.role == 'LEAD'){
-			if(data.selectedLeadRole && data.selectedLeadRole == 'ADMIN'){
+		if(data.auth.role == role.lead){
+			if(data.selectedLeadRole && data.selectedLeadRole == role.admin){
 				allUsers = []
 				allLeads = allLeads.filter(el=> el._id.toString() == data.auth.id.toString())
 			}else{
 				allLeads = []
 			}
 
-		}else if(['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+		}else if([role.superadmin, role.admin].includes(data.auth.role)){
 			
-			// if(data.selectedLeadRole && data.selectedLeadRole == 'ADMIN'){
+			// if(data.selectedLeadRole && data.selectedLeadRole == role.admin){
 			// 	allUsers = []
 			// }else{
 			// 	allLeads = []
@@ -1237,10 +1240,10 @@ const createPayloadAndfindSpecificProjectLeads = async function (data) {
 
 		let leadList = JSON.parse(JSON.stringify(projectRes.managedBy || []));
 
-		if(data.auth.role == 'CONTRIBUTOR'){
-			leadList = leadList.filter(el=>(el && el.role == 'LEAD'))
-		}else if(data.auth.role == 'LEAD'){
-			leadList = leadList.filter(el=> ((el._id.toString() == data.auth.id.toString()) || (el.role == 'ADMIN')))
+		if(data.auth.role == role.contributor){
+			leadList = leadList.filter(el=>(el && el.role == role.lead))
+		}else if(data.auth.role == role.lead){
+			leadList = leadList.filter(el=> ((el._id.toString() == data.auth.id.toString()) || (el.role == role.admin)))
 		}
 		
 		return { data: leadList, error: false }
@@ -1317,7 +1320,7 @@ const createPayloadAndAssignProjectsToUser = async function (data) {
 
 		let updatePayload = { }
 		
-		if(user.role == 'CONTRIBUTOR'){
+		if(user.role == role.contributor){
 			updatePayload = { $addToSet: { accessibleBy: user._id }}
 		}else{
 			updatePayload = { $addToSet: { managedBy: user._id }}
@@ -1390,7 +1393,7 @@ const createPayloadAndUnAssignProjectsToUser = async function (data) {
 
 		let updatePayload = { }
 		
-		if(user.role == 'CONTRIBUTOR'){
+		if(user.role == role.contributor){
 			updatePayload = { $pull: { accessibleBy: user._id }}
 		}else{
 			updatePayload = { $pull: { managedBy: user._id }}
@@ -1434,8 +1437,8 @@ const createPayloadAndRemoveUsersFromProject = async function (data) {
 		let allUsers = await User.getAllUsers(findUsers)
 		data.allUsers = allUsers
 		allUsers = allUsers.length ? allUsers : []
-		let usersToUnAssign = allUsers.filter((el) => el.role == 'CONTRIBUTOR')
-		let leadsToUnAssign = allUsers.filter((el) => el.role == 'LEAD')
+		let usersToUnAssign = allUsers.filter((el) => el.role == role.contributor)
+		let leadsToUnAssign = allUsers.filter((el) => el.role == role.lead)
 		console.log("=================assign user/lead data=========",usersToUnAssign, leadsToUnAssign)
 		if(usersToUnAssign.length && !usersToUnAssign[0].role){
 			usersToUnAssign = []

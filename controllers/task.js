@@ -12,15 +12,17 @@ const actionLogController = require("../controllers/actionLogs");
 //helper
 const emailUtitlities = require("../helpers/email");
 
+//roles from config
+const role = JSON.parse(process.env.role)
 
 //Insert Task
 const insertUserTask = async (req, res, next) => {
 	let data = req.data;
 
-	console.log("==============assigned to value",data.assignedTo)
-	if (data.auth.role == "Lead") {
-		data.tasklead = [process.env.ADMIN_ID]
-	}
+	//not used as lead may be self/admin
+	// if (data.auth.role == role.lead) {
+	// 	data.tasklead = [process.env.ADMIN_ID]
+	// }
 	if (!data.title || !data.section || !data.projectId || !data.tasklead || !data.tasklead.length) {
 		return res.status(400).send(sendResponse(400, "Please send all required Data fields", 'insertUserTask', null, req.data.signature))
 	}
@@ -66,7 +68,7 @@ const checkIfAllowedToAddTask = async function (data) {
 
 	try {
 		
-		if (["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) {
+		if ([role.superadmin, role.admin].includes(data.auth.role)) {
 			return { data: { allowed: true }, error: false }
 		}
 		let findData = {
@@ -106,7 +108,7 @@ const checkIfAllowedToAddTask = async function (data) {
 
 const createPayloadAndInsertTask = async function (data) {
 	try {
-		if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role)) {
+		if ([role.contributor, role.intern].includes(data.auth.role)) {
 			data.assignedTo = data.auth.id
 		};
 
@@ -168,7 +170,7 @@ const editUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
 	}
 
-	if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && task.data.isRated) {
+	if ([role.contributor, role.intern].includes(data.auth.role) && task.data.isRated) {
 		return res.status(400).send(sendResponse(400, 'You are not permitted to edit task once it is rated', 'rateUserTask', null, req.data.signature))
 	}
 
@@ -208,7 +210,7 @@ const createPayloadAndEditTask = async function (data) {
 		let findPayload = {
 			_id: data.taskId
 		}
-		if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role)) {
+		if ([role.contributor, role.intern].includes(data.auth.role)) {
 			findPayload["$or"] = [
 				{ createdBy: data.auth.id },
 				{ assignedTo: data.auth.id },
@@ -253,7 +255,6 @@ const createPayloadAndEditTask = async function (data) {
 			data.dueDate = dueDate
 			updatePayload.dueDate = dueDate
 		}
-		console.log("================updatePayload due date, ",updatePayload.dueDate)
 		if (JSON.stringify(data.completedDate)) {
 			let completedDate = data.completedDate
 			if(completedDate){
@@ -278,7 +279,6 @@ const createPayloadAndEditTask = async function (data) {
 			updatePayload.lead = data.tasklead
 		}
 		data.taskUpdatePayload = updatePayload;
-		console.log("=========update task",data.taskUpdatePayload,updatePayload )
 		let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload, {new : false})
 		return { data: taskRes, error: false }
 	} catch (err) {
@@ -591,23 +591,6 @@ exports.getTaskStatusAnalytics = getTaskStatusAnalytics;
 
 const payloadGetTaskStatusAnalytics = async function (data) {
 	try {
-		// let aggregate = [
-		//     {
-
-		//         $group: {
-		//             _id: { status: '$status', project: "$projectId" },
-		//             count: { $sum: 1 },
-		//         }
-		//     },
-		//     {
-		//         $group: {
-		//             _id: { project: '$_id.project' },
-		//             docs: { $push: "$$ROOT" },
-		//             //            totalCount : {$sum : "$$ROOT.count"}
-		//         }
-		//     },
-		// ]
-		// let taskRes = await Task.taskAggregate(aggregate)
 		let taskRes = await Task.taskFindQuery({"isDeleted": false}, { status: 1, projectId: 1, _id: 0, dueDate:1, completedDate:1 })
 		let sendData = {}
 		for (let i = 0; i < taskRes.length; i++) {
@@ -651,37 +634,6 @@ const payloadGetTaskStatusAnalytics = async function (data) {
 }
 exports.createPayloadAndGetGroupByTask = createPayloadAndGetGroupByTask;
 
-// const userGetTaskListForHomePage = async function (data) {
-
-//     var curr = new Date;
-//     var firstDateOfWeek = curr.getDate() - curr.getDay();
-//     var lastDateOfWeek = firstDateOfWeek + 6;
-
-//     let firstday = new Date(curr.setDate(firstDateOfWeek));
-//     let lastday = new Date(curr.setDate(lastDateOfWeek));
-//     console.log("--", firstday, lastday);
-
-//     data.firstday = firstday;
-//     data.lastday = lastday;
-//     let tasksLists = await createPayloadAndGetTaskListForUser(data);
-// }
-// exports.userGetTaskListForHomePage = userGetTaskListForHomePage;
-
-// const createPayloadAndGetTaskListForUser = async function (data) {
-//     try {
-
-//         let findData = {
-//             dueDate: {
-//                 $lte: data.lastday,
-//                 $gte: data.firstday
-//             }
-//         }
-//         let taskList = await Task.taskFindQuery(findData, {}, "");
-//         console.log("TaskList of Past Seven Days => ", taskList)
-//     } catch (error) {
-//         console.log("Error => ", error)
-//     }
-// }
 
 // Controller of adding rating to user task
 const rateUserTask = async (req, res, next) => {
@@ -729,9 +681,8 @@ const rateUserTask = async (req, res, next) => {
 
 	data.taskDetails = taskDetails;
 
-	if (!["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) {
+	if (![role.superadmin, role.admin].includes(data.auth.role)) {
 
-		console.log("Lead giving taks....", data.auth.role);
 
 		let checkIfAllowedToRateTask = ((taskDetails.assignedTo.toString()) != data.auth.id.toString()) && taskDetails.lead.includes(data.auth.id) && data.filteredProjects.includes(taskDetails.projectId.toString());
 
@@ -806,7 +757,6 @@ const createPayloadAndInsertTaskRatingComment = async function (data) {
 			comment: data.comment,
 			type : data.type
 		}
-		console.log("=======payload for comment=====",payload)
 		let commentRes = await Comments.insertRatingComment(payload)
 		return { data: commentRes, error: false }
 	} catch (err) {
@@ -951,7 +901,7 @@ const createPayloadAndGetAssignedProjects = async function (data) {
 		let payload = {
 			isActive: true
 		}
-		if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+		if (![role.superadmin, role.admin].includes(data.auth.role)) {
 			payload["$or"] = [
 				{ accessibleBy: data.auth.id },
 				{ managedBy: data.auth.id },
@@ -1012,20 +962,20 @@ const createPayloadAndGetTaskLists = async function (data) {
 			findData.status = data.status
 		}
 		//filter tasks of only those project which are assigned to LEAD, CONTRIBUTOR, INTERN
-		if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+		if (![role.superadmin, role.admin].includes(data.auth.role)) {
 			findData.projectId = { $in: data.filteredProjects }
 		}
 
 		if (data.projectId) {
 			findData.projectId = data.projectId
 		}
-		if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role)) {
+		if ([role.contributor, role.intern].includes(data.auth.role)) {
 
 			findData["$or"] = [
 				{ createdBy: data.auth.id },
 				{ assignedTo: data.auth.id }
 			]
-		} else if (["LEAD", "SUPER_ADMIN", "ADMIN"].includes(data.auth.role) && data.userId) {
+		} else if ([role.lead, role.superadmin, role.admin].includes(data.auth.role) && data.userId) {
 			findData.assignedTo = data.userId
 		}
 
@@ -1075,11 +1025,11 @@ const deleteTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, 'Task Already Rated', 'deleteTask', null, req.data.signature))
 	}
 
-	if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+	if (![role.superadmin, role.admin].includes(data.auth.role)) {
 		if (fetchTaskById.data.projectId && !data.filteredProjects.includes(fetchTaskById.data.projectId.toString())) {
 			return res.status(400).send(sendResponse(400, 'The Project of this task is no longer assigned to you', 'deleteTask', null, req.data.signature))
 		}
-		if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && (data.auth.id.toString() != fetchTaskById.data.createdBy.toString())) {
+		if ([role.contributor, role.intern].includes(data.auth.role) && (data.auth.id.toString() != fetchTaskById.data.createdBy.toString())) {
 			return res.status(400).send(sendResponse(400, 'You are not allowed to delete tasks created by others', 'deleteTask', null, req.data.signature))
 		}
 	}
@@ -1159,11 +1109,11 @@ const updateTaskStatus = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, 'Task Already Rated', 'updateTaskStatus', null, req.data.signature))
 	}
 
-	if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+	if (![role.superadmin, role.admin].includes(data.auth.role)) {
 		if (fetchTaskById.data.projectId && !data.filteredProjects.includes(fetchTaskById.data.projectId.toString())) {
 			return res.status(400).send(sendResponse(400, 'The Project of this task is no longer assigned to you', 'updateTaskStatus', null, req.data.signature))
 		}
-		if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && (data.auth.id.toString() != fetchTaskById.data.assignedTo.toString())) {
+		if ([role.contributor, role.intern].includes(data.auth.role) && (data.auth.id.toString() != fetchTaskById.data.assignedTo.toString())) {
 			return res.status(400).send(sendResponse(400, 'You are not allowed to update tasks status', 'updateTaskStatus', null, req.data.signature))
 		}
 	}
@@ -1241,7 +1191,7 @@ const commentUserTask = async (req, res, next) => {
 
 	data.taskDetails = taskDetails;
 
-	// if (!["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) {
+	// if (![role.superadmin, role.admin].includes(data.auth.role)) {
 
 	//     console.log("Lead/contributor adding comment....", data.auth.role);
 
@@ -1339,7 +1289,7 @@ const createPayloadAndGetTaskComments = async function (data) {
 		};
 
 		//filter tasks of only those project which are assigned to LEAD, CONTRIBUTOR, INTERN
-		if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+		if (![role.superadmin, role.admin].includes(data.auth.role)) {
 			findData.projectId = { $in: data.filteredProjects }
 		}
 
@@ -1377,9 +1327,6 @@ exports.getTodayTasksList = getTodayTasksList;
 
 const createPayloadAndGetTodayTaskLists = async function (data) {
 	try {
-
-		
-		let currentDate = new Date();
 		
 		let startDayTime =  new Date(new Date().setUTCHours(00, 00, 00, 000));
 		let endDayTime =  new Date(new Date().setUTCHours(23, 59, 59, 000));
@@ -1420,14 +1367,8 @@ const createPayloadAndGetOverDueTasks = async function (data) {
 		let findData = {
 			isDeleted: false,
 			isArchived :  false,
-			status : {$nin : ['ONHOLD','COMPLETED']}, dueDate : { $lte : new Date()},
-			// $or:
-			// [
-			// 	{ status : 'COMPLETED', $expr: { $lt: [ "$dueDate" , "$completedDate" ] } }
-			// ]
+			status : {$nin : ['ONHOLD','COMPLETED']}, dueDate : { $lte : new Date()}
 		};
-
-		// console.log("==========find data", findData['$or'])
 		
 		let populate = 'lead assignedTo'
 		let taskList = await Task.taskFindQuery(findData, {}, populate);
@@ -1450,18 +1391,18 @@ const createPayloadAndGetPendingRatingTasks = async function (data) {
 		};
 
 		//filter tasks of only those project which are assigned to LEAD, CONTRIBUTOR, INTERN
-		if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+		if (![role.superadmin, role.admin].includes(data.auth.role)) {
 			findData.projectId = { $in: data.filteredProjects }
 		}
 
-		if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role)) {
+		if ([role.contributor, role.intern].includes(data.auth.role)) {
 
 			findData["$or"] = [
 				{ createdBy: data.auth.id },
 				{ assignedTo: data.auth.id }
 			]
 		}
-		if (data.auth.role == 'LEAD') {
+		if (data.auth.role == role.lead) {
 			findData.lead = data.auth.id
 		}
 

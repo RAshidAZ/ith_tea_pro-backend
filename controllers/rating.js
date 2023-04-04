@@ -9,6 +9,9 @@ const commentController = require('./comment');
 
 const actionLogController = require("../controllers/actionLogs");
 
+//roles from config
+const role = JSON.parse(process.env.role)
+
 const getUserRating = async (req, res, next) => {
 	let data = req.data;
 
@@ -180,18 +183,15 @@ exports.addCommnetIdInRatingById = addCommnetIdInRatingById;
 
 const getAllUsersRatingForMonth = async function (data) {
 	try {
-		let roleFilter = ["SUPER_ADMIN", "ADMIN"]
-		if(data.auth.role == 'CONTRIBUTOR'){
-			roleFilter.push('LEAD')
+		let roleFilter = [role.superadmin, role.admin]
+		if(data.auth.role == role.contributor){
+			roleFilter.push(role.lead)
 		}
 		let findData = { role: { $nin: roleFilter } }
-		console.log("=================user rating**************************", data.userRating)
 		if(data.userRating){
-		console.log("=================user rating**************************", data.userRating)
-
 			findData._id = mongoose.Types.ObjectId(data.auth.id)
 		}
-		if (!data.userRating && ['LEAD', 'CONTRIBUTOR'].includes(data.auth.role) && data.filteredProjects) {
+		if (!data.userRating && [role.contributor, role.lead].includes(data.auth.role) && data.filteredProjects) {
 			let allProjectUsers = await filteredDistinctProjectsUsers(data)
 			if (allProjectUsers && allProjectUsers.data) {
 				findData._id = { $in: (allProjectUsers.data).map((el) => mongoose.Types.ObjectId(el)) }

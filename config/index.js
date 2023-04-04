@@ -9,8 +9,8 @@ const commonVariables = {
 	// CLIENT_URL: 'http://localhost:3000',
     SERVICE_RPC_PORT: '8500',
     STATUS: [200, 500, 400, 401],
-    ROLE: ["CONTRIBUTOR", "SUPER_ADMIN", "ADMIN", "LEAD", "GUEST"],          //contributor/GUEST ADD
-	role: '{"contributor":"CONTRIBUTOR", "superadmin":"SUPER_ADMIN", "admin" : "ADMIN", "lead" : "LEAD", "guest" : "GUEST"}',
+    ROLE: ["CONTRIBUTOR", "SUPER_ADMIN", "ADMIN", "LEAD", "GUEST", "INTERN"],          //contributor/GUEST ADD
+	role: '{"contributor":"CONTRIBUTOR", "superadmin":"SUPER_ADMIN", "admin" : "ADMIN", "lead" : "LEAD", "guest" : "GUEST", "intern" : "INTERN"}',
     TASK_STATUS: ["NOT_STARTED", "ONGOING", "COMPLETED", "CLOSED", "ONHOLD"],
 	PROJECT_STATUS : ["COMPLETED", "ONGOING", "UPCOMING"],
 	COMMENT_TYPE : ["TASK", "RATING"],

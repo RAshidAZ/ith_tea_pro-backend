@@ -9,6 +9,9 @@ const emailUtitlities = require("../helpers/email");
 
 const actionLogController = require("../controllers/actionLogs");
 
+//roles from config
+const role = JSON.parse(process.env.role)
+
 /**Get all users with Custom Pagination */
 const getAllUsers = async (req, res, next) => {
     let data = req.data;
@@ -27,10 +30,10 @@ const findAllUserWithPagination = async function (data) {
     try {
 		
 		let payload = {
-			role: { $nin: ["SUPER_ADMIN"]}
+			role: { $nin: [role.superadmin]}
         }
 
-		// if(['LEAD', 'CONTRIBUTOR', 'GUEST'].includes(data.auth.role) && data.filteredProjects){
+		// if([role.lead, role.contributor, role.guest].includes(data.auth.role) && data.filteredProjects){
 		// 	let filteredProjectsUsers = await filteredDistinctProjectsUsers(data)
 		// 	if(filteredProjectsUsers && filteredProjectsUsers.data){
 		// 		payload._id  = { $in : filteredProjectsUsers.data}
@@ -92,7 +95,7 @@ exports.getAllUsersListingNonPaginated = getAllUsersListingNonPaginated;
 const findAllUserNonPagination = async function (data) {
     try {
         let payload = {
-            role: { $nin: ["ADMIN", "SUPER_ADMIN"]}
+            role: { $nin: [role.superadmin, role.admin]}
         }
         if (data.search) {
             payload["$or"] = [
@@ -123,10 +126,10 @@ exports.findAllUserNonPagination = findAllUserNonPagination
 const editUserDetails = async (req, res, next) => {
     let data = req.data;
 
-    if (['CONTRIBUTOR', 'INTERN'].includes(data.auth.role)) {
+    if ([role.contributor, role.intern].includes(data.auth.role)) {
         data.userId = data.auth.id;
     }
-    if (['LEAD', 'SUPER_ADMIN', 'ADMIN'].includes(data.auth.role) && !data.userId) {
+    if ([role.superadmin, role.admin, role.lead].includes(data.auth.role) && !data.userId) {
         data.userId = data.auth.id;
     }
     if (!data.userId) {
@@ -193,11 +196,6 @@ const createPayloadAndEditUserDetails = async function (data) {
 			updatePayload.profilePicture = data.profilePicture
 		}
 
-		// if (data.name && data.dob && data.department && data.designation && data.employeeId) {
-        //     updatePayload.profileCompleted = true
-        // }else{
-		// 	updatePayload.profileCompleted = false
-		// }
 
 		if (JSON.stringify(data.profileCompleted)) {
             updatePayload.profileCompleted = data.profileCompleted;
@@ -220,7 +218,7 @@ const addNewUser = async (req, res, next) => {
     if (!data.name || !data.email|| !data.role) {
         return res.status(400).send(sendResponse(400, "", 'addNewUser', null, req.data.signature))
     }
-	if (["SUPER_ADMIN", "ADMIN"].includes(data.role)) {
+	if ([role.superadmin, role.admin].includes(data.role)) {
         return res.status(400).send(sendResponse(400, "Not allowed to add this role", 'addNewUser', null, req.data.signature))
     }
     let emailRes = await checkEmailExists(data);
@@ -400,9 +398,7 @@ const createPayloadAndInsertCredentials = async function (data) {
         isBlocked: false,
         emailVerified: true
     }
-    // if (data.employeeId) {
-    //     updateData.employeeId = data.employeeId
-    // }
+
     let options = {
         upsert: true,
         new: true,
@@ -433,12 +429,12 @@ const createPayloadAndAssignProjectToAddedUser = async function (data) {
         }
 
         let updatePayload = {};
-        if (data.role == "LEAD") {
+        if (data.role == role.lead) {
             updatePayload = {
                 $addToSet: { managedBy: mongoose.Types.ObjectId(data.registerUserId) }
             }
         }
-        if (["CONTRIBUTOR", "INTERN"].includes(data.role)) {
+        if ([role.contributor, role.intern].includes(data.role)) {
             updatePayload = {
                 $addToSet: { accessibleBy: mongoose.Types.ObjectId(data.registerUserId) }
             }
@@ -471,10 +467,7 @@ const createPayloadAndGetUserDetailsByUserId = async function (data) {
         let payload = {
             _id: data.userId || data.auth.id,
         }
-        let projection = {
-            // name: data.name,
-            // email: data.email,
-        }
+        let projection = {}
         let userRes = await User.userfindOneQuery(payload, projection)
         return { data: userRes, error: false }
     } catch (err) {
@@ -529,7 +522,7 @@ const createPayloadAndfindAllLeadsList = async function (data) {
     try {
 
         let findData = {
-            role: "LEAD"
+            role: role.lead
         }
         let projection = {};
 
@@ -545,7 +538,7 @@ const getAllUsersNonPaginated = async (req, res, next) => {
     let data = req.data;
 
     let findData = {
-        role: {$in : ['CONTRIBUTOR']}
+        role: {$in : [role.contributor]}
     }
     if (data.search) {
         findData["$or"] = [
@@ -631,7 +624,7 @@ const getUnAssignedUserLisitng = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, 'Missing Params', 'getUnAssignedUserLisitng', null, req.data.signature))
 	}
 
-	if(data.role && !['CONTRIBUTOR', 'LEAD'].includes(data.role)){
+	if(data.role && ![role.contributor, role.lead].includes(data.role)){
         return res.status(400).send(sendResponse(400, 'Invalid role passed', 'getUnAssignedUserLisitng', null, req.data.signature))
 	}
 	userRes = await createPayloadAndGetUnAssignedUserOfSpecificProject(data);
@@ -655,7 +648,7 @@ const createPayloadAndGetUnAssignedUserOfSpecificProject = async function (data)
 		let userRes = null;
         let projectRes = await Project.findSpecificProject(payload, projection);
 		
-		if(data.role == 'LEAD'){
+		if(data.role == role.lead){
 			userRes = (projectRes && projectRes.managedBy) || []
 		}else{
 			userRes = (projectRes && projectRes.accessibleBy) || []
@@ -673,9 +666,6 @@ const createPayloadAndGetUnAssignedUserOfSpecificProject = async function (data)
 			email : 1
 		}
 		let usersData = await User.getAllUsers(userPayload, projection, sortCriteria);
-        // userRes = userRes.filter((e) => {
-        //     return (e.isActive && (!e.isBlocked) && e.emailVerified)
-        // })
 
         return { data: usersData, error: false }
     } catch (err) {
@@ -705,7 +695,6 @@ const filteredDistinctProjectsUsers = async function (data) {
 		  ]
         let projectsUsers = await Project.projectAggregate(pipeline)
 		let allUsers = (projectsUsers[0] && projectsUsers[0].allUsers) || []
-		console.log("======================all users======",allUsers)
         return { data: allUsers, error: false }
     } catch (err) {
         console.log("createPayloadAndEditUserDetails Error : ", err)
