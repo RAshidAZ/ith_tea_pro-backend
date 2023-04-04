@@ -199,7 +199,13 @@ const createPayloadAndEditProject = async function (data) {
 			description: data.description,
 		}
 		if (data.selectedManagers) {
-			updatePayload.managedBy = data.selectedManagers
+			let adminId = process.env.ADMIN_ID
+			let selectedManagers = data.selectedManagers
+			if(!selectedManagers.includes(adminId)){
+				selectedManagers.push(adminId)
+			}
+
+			updatePayload.managedBy = selectedManagers
 		}
 		if (data.selectAccessibleBy) {
 			updatePayload.accessibleBy = data.selectAccessibleBy
@@ -210,7 +216,6 @@ const createPayloadAndEditProject = async function (data) {
 		if (JSON.stringify(data.colorCode)) {
 			updatePayload.colorCode = data.colorCode
 		}
-		// let projectSectionRes = await Project.editProjectDetails(payload, updatePayload)
 		let projectRes = await Project.editProjectDetails(payload, updatePayload)
 		return { data: projectRes, error: false }
 	} catch (err) {
@@ -241,7 +246,9 @@ const assignUserToProject = async (req, res, next) => {
 	let actionLogData = {
 		actionTaken: 'USERS_ASSIGNED',
 		actionBy: data.auth.id,
-		projectId : data.projectId
+		projectId : data.projectId,
+		// projectIds : [data.projectId],
+		// userIds : data.userIds
 	}
 	data.actionLogData = actionLogData;
 	let addActionLogRes = await actionLogController.addProjectLog(data);
@@ -1271,14 +1278,16 @@ const assignProjectsToUser = async (req, res, next) => {
 	}
 
 	let actionLogData = {
-		actionTaken: 'USERS_ASSIGNED',
+		actionTaken: 'PROJECTS_ASSIGNED',
 		actionBy: data.auth.id,
-		// projectId : data.projectId
+		// projectIds : [data.projectId],
+		// userIds : [data.userId]
 	}
 	data.actionLogData = actionLogData;
 	let addActionLogRes = await actionLogController.addProjectLog(data);
+
 	if (addActionLogRes.error) {
-		return res.status(500).send(sendResponse(500, '', 'assignUserToProject', null, req.data.signature))
+		return res.status(500).send(sendResponse(500, '', 'assignProjectsToUser', null, req.data.signature))
 	}
 	let projectsRes = await Project.distinctProjects("name", { _id : { $in : data.projectIds }});
 	let mailData = {
