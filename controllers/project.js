@@ -175,8 +175,11 @@ const editProject = async (req, res, next) => {
 	let actionLogData = {
 		actionTaken: 'PROJECT_UPDATED',
 		actionBy: data.auth.id,
-		projectId : projectRes.data._id
+		projectId : projectRes.data._id,
+		previous : projectRes.data,
+		new : data.updateProjectPayload || {}
 	}
+	
 	data.actionLogData = actionLogData;
 	let addActionLogRes = await actionLogController.addProjectLog(data);
 
@@ -204,6 +207,7 @@ const createPayloadAndEditProject = async function (data) {
 			if(!selectedManagers.includes(adminId)){
 				selectedManagers.push(adminId)
 			}
+			data.selectedManagers = selectedManagers
 
 			updatePayload.managedBy = selectedManagers
 		}
@@ -216,7 +220,8 @@ const createPayloadAndEditProject = async function (data) {
 		if (JSON.stringify(data.colorCode)) {
 			updatePayload.colorCode = data.colorCode
 		}
-		let projectRes = await Project.editProjectDetails(payload, updatePayload)
+		data.updateProjectPayload = updatePayload
+		let projectRes = await Project.editProjectDetails(payload, updatePayload, { new :false })
 		return { data: projectRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndEditProject Error : ", err)

@@ -3,11 +3,7 @@ let Schema = mongoose.Schema;
 
 let taskLogSchema = new Schema({
     actionTaken: {
-        type: String,
-        // enum: {
-        //     values: process.env.ACTION_TAKEN.split(","),  // ["RATING_CHANGED", "TASK_STATUS_CHANGE","TASK_DUE_DATE_CHANGE","PROJECT_NAME_CHANGED", "PROJECT_CATEGORY_CHANGED"]
-        //     message: "ACTION TAKEN ENUM FAILED",
-        // }
+        type: String
     },
     actionBy: {
         type: mongoose.Types.ObjectId,
@@ -17,13 +13,37 @@ let taskLogSchema = new Schema({
         type: mongoose.Types.ObjectId,
         ref: "tasks"
     },
+	commentId: {
+        type: mongoose.Types.ObjectId,
+        ref: "comments"
+    },
 	previous: { 
+		title: { type: String },
+		description: { type: String },
+		section: {
+			type: mongoose.Types.ObjectId,
+			ref: "projectSections"
+		},
+		assignedTo: {
+			type: mongoose.Types.ObjectId,
+			ref: "users"
+		},
 		status: { type: String },
 		dueDate: { type: Date },
 		completedDate : { type: Date },
 		priority: { type: String }
 	},
 	new : { 
+		title: { type: String },
+		description: { type: String },
+		section: {
+			type: mongoose.Types.ObjectId,
+			ref: "projectSections"
+		},
+		assignedTo: {
+			type: mongoose.Types.ObjectId,
+			ref: "users"
+		},
 		status: { type: String },
 		dueDate: { type: Date },
 		completedDate : { type: Date },

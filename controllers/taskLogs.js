@@ -21,10 +21,14 @@ const createPayloadAndGetTaskLogs = async function (data) {
 		if(data.taskId){
 			payload.taskId = data.taskId
 		}
-        let taskLogsRes = await TaskLogs.getTaskLogs(payload)
+		let sortCriteria = {
+			createdAt : -1
+		}
+		let populate = "actionBy commentId previous.section new.section previous.assignedTo new.assignedTo"
+        let taskLogsRes = await TaskLogs.getTaskLogs(payload, {}, populate, sortCriteria)
         return { data: taskLogsRes, error: false }
     } catch (err) {
-        console.log("createPayloadAndGetTaskLogs Error : ", err)
+        console.log("createPayloadAndGetTaskLogs Error : ", err.message)
         return { data: err, error: true }
     }
 }

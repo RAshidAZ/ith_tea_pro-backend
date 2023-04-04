@@ -16,9 +16,11 @@ exports.addProjectLog = async function (data) {
     try {
         let payload = data.actionLogData;
 
+		console.log("===============payload for project logs=======", payload)
         let insertLogResponse = await ActionLogs.insertProjectLog(payload);
         return { data: insertLogResponse, error: false }
     } catch (err) {
+		console.log("==============error====", err)
         return { data: err, error: true }
     }
 }

@@ -178,20 +178,69 @@ const editUserTask = async (req, res, next) => {
 	}
 
 	let actionTaken = 'TASK_UPDATED'
+	let ifDueDateChanged = false
 
 	if(data.status && data.status != taskRes.data.status){
 		actionTaken = 'TASK_STATUS_UPDATED'
-	}else if((data.dueDate && new Date(data.dueDate).getTime() != new Date(taskRes.data.dueDate).getTime()) || (JSON.stringify(data.dueDate) && taskRes.data.dueDate)){
+	}else if((data.dueDate && new Date(data.dueDate).getTime() != new Date(taskRes.data.dueDate).getTime()) || (!data.dueDate && JSON.stringify(data.dueDate) && taskRes.data.dueDate)){
 
 		actionTaken = 'TASK_DUEDATE_UPDATED'
+		ifDueDateChanged = true
+
 	}
 	let actionLogData = {
-		actionTaken: actionTaken,
 		actionBy: data.auth.id,
 		taskId : taskRes.data._id,
-		previous : task.data,
-		new : data.taskUpdatePayload
 	}
+	let previousTaskData = {}
+	let newTaskData = {}
+	let taskUpdatePayload = data.taskUpdatePayload
+	if(taskUpdatePayload){
+		if(taskUpdatePayload.title && taskUpdatePayload.title != task.data.title){
+			actionTaken = 'TASK_UPDATED'
+			previousTaskData.title = task.data.title
+			newTaskData.title = taskUpdatePayload.title
+		}
+		if(taskUpdatePayload.description && taskUpdatePayload.description != task.data.description){
+			actionTaken = 'TASK_UPDATED'
+			previousTaskData.description = task.data.description
+			newTaskData.description = taskUpdatePayload.description
+		}
+		if(taskUpdatePayload.section && taskUpdatePayload.section != task.data.section){
+			actionTaken = 'TASK_UPDATED'
+			previousTaskData.section = task.data.section
+			newTaskData.section = taskUpdatePayload.section
+		}
+		if(taskUpdatePayload.status && taskUpdatePayload.status != task.data.status){
+			previousTaskData.status = task.data.status
+			newTaskData.status = taskUpdatePayload.status
+		}
+		if(ifDueDateChanged){
+			previousTaskData.dueDate = task.data.dueDate
+			newTaskData.dueDate = taskUpdatePayload.dueDate
+		}
+		let currentDate = new Date()
+		if(new Date(data.completedDate || currentDate).getTime() != new Date(taskRes.data.completedDate || currentDate).getTime()){
+			previousTaskData.completedDate = task.data.completedDate
+			newTaskData.completedDate = taskUpdatePayload.completedDate
+		}
+		if(taskUpdatePayload.priority && taskUpdatePayload.priority != task.data.priority){
+			actionTaken = 'TASK_UPDATED'
+			previousTaskData.priority = task.data.priority
+			newTaskData.priority = taskUpdatePayload.priority
+		}
+		if(JSON.stringify(taskUpdatePayload.assignedTo) && (taskUpdatePayload.assignedTo || '') != task.data.assignedTo){
+			actionTaken = 'TASK_UPDATED'
+			previousTaskData.assignedTo = task.data.assignedTo
+			newTaskData.assignedTo = taskUpdatePayload.assignedTo
+		}
+	}
+
+
+	actionLogData.new = newTaskData
+	actionLogData.previous = previousTaskData
+	actionLogData.actionTaken = actionTaken
+
 	data.actionLogData = actionLogData;
 	let addActionLogRes = await actionLogController.addTaskLog(data);
 
@@ -253,7 +302,6 @@ const createPayloadAndEditTask = async function (data) {
 			data.dueDate = dueDate
 			updatePayload.dueDate = dueDate
 		}
-		console.log("================updatePayload due date, ",updatePayload.dueDate)
 		if (JSON.stringify(data.completedDate)) {
 			let completedDate = data.completedDate
 			if(completedDate){
@@ -278,7 +326,6 @@ const createPayloadAndEditTask = async function (data) {
 			updatePayload.lead = data.tasklead
 		}
 		data.taskUpdatePayload = updatePayload;
-		console.log("=========update task",data.taskUpdatePayload,updatePayload )
 		let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload, {new : false})
 		return { data: taskRes, error: false }
 	} catch (err) {
@@ -1241,18 +1288,6 @@ const commentUserTask = async (req, res, next) => {
 
 	data.taskDetails = taskDetails;
 
-	// if (!["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) {
-
-	//     console.log("Lead/contributor adding comment....", data.auth.role);
-
-	//     let checkIfAllowedToCommentTask = taskDetails.lead.includes(data.auth.id) && data.filteredProjects.includes(taskDetails.projectId.toString());
-
-	//     if (!checkIfAllowedToRateTask) {
-	//         return res.status(400).send(sendResponse(400, 'Not allowed to rate task', 'rateUserTask', null, req.data.signature))
-	//     }
-	//     console.log("If lead is allowed to rate this task....", checkIfAllowedToRateTask)
-	// }
-
 	if (data.comment) {
 		// data.type = process.env.ALLOWED_GROUP_BY.split(',')[0]
 		data.type = "TASK"
@@ -1265,6 +1300,19 @@ const commentUserTask = async (req, res, next) => {
 	let updateTaskComment = await updateUserTaskComment(data);
 
 	if (updateTaskComment.error || !updateTaskComment.data) {
+		return res.status(500).send(sendResponse(500, '', 'commentUserTask', null, req.data.signature))
+	}
+
+	let actionLogData = {
+		actionTaken: "TASK_COMMENT",
+		actionBy: data.auth.id,
+		taskId : data.taskId,
+		commentId : data.commentId
+	}
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addTaskLog(data);
+
+	if (addActionLogRes.error) {
 		return res.status(500).send(sendResponse(500, '', 'commentUserTask', null, req.data.signature))
 	}
 
