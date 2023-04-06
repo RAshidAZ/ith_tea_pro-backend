@@ -1435,8 +1435,13 @@ const createPayloadAndGetTodayTaskLists = async function (data) {
 		let findData = {
 			isDeleted: false,
 			isArchived :  false,
-			dueDate : { $gte : startDayTime, $lte : endDayTime }
+			dueDate : { $gte : startDayTime, $lte : endDayTime },
 		};
+		if(!['SUPER_ADMIN','ADMIN'].includes(data.auth.role)){
+			findData.projectId = { $in : data.filteredProjects || []}
+		}
+
+		console.log("===fin data==========",findData)
 		
 		let populate = 'assignedTo'
 		let taskList = await Task.taskFindQuery(findData, {}, populate);
