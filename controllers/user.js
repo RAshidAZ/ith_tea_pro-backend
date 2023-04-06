@@ -223,6 +223,10 @@ const addNewUser = async (req, res, next) => {
 	if (["SUPER_ADMIN", "ADMIN"].includes(data.role)) {
         return res.status(400).send(sendResponse(400, "Not allowed to add this role", 'addNewUser', null, req.data.signature))
     }
+	// if ((data.auth.role == "ADMIN" && ["SUPER_ADMIN", "ADMIN"].includes(data.role)) || data.role == 'SUPER_ADMIN') {
+    //     return res.status(400).send(sendResponse(400, "Not allowed to add this role", 'addNewUser', null, req.data.signature))
+    // }
+	
     let emailRes = await checkEmailExists(data);
     if (emailRes.error) {
         return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
