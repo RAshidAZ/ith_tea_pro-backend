@@ -173,6 +173,18 @@ const editUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, 'You are not permitted to edit task once it is rated', 'rateUserTask', null, req.data.signature))
 	}
 
+	if (data.tasklead && data.tasklead.length) {
+		let ifLeadAssigned = await checkIfLeadAssignedProject(data);
+		if (ifLeadAssigned.error) {
+			return res.status(500).send(sendResponse(500, '', 'createPayloadAndEditTask', null, req.data.signature))
+		}
+
+		if (!ifLeadAssigned.data.allowed) {
+			return res.status(400).send(sendResponse(400, 'Not Allowed to add given lead for this task', 'createPayloadAndEditTask', null, req.data.signature))
+		}
+		// updatePayload.lead = data.tasklead
+	}
+
 	let taskRes = await createPayloadAndEditTask(data)
 	if (taskRes.error || !taskRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'editUserTask', null, req.data.signature))
@@ -315,14 +327,16 @@ const createPayloadAndEditTask = async function (data) {
 			updatePayload.priority = data.priority
 		}
 		if (data.tasklead) {
-			let ifLeadAssigned = await checkIfLeadAssignedProject(data);
-			if (ifLeadAssigned.error) {
-				return res.status(500).send(sendResponse(500, '', 'createPayloadAndEditTask', null, req.data.signature))
-			}
+			// let ifLeadAssigned = await checkIfLeadAssignedProject(data);
+			// if (ifLeadAssigned.error) {
+			// 	// return { data: ifLeadAssigned.data, error: true }
+			// 	return res.status(500).send(sendResponse(500, '', 'createPayloadAndEditTask', null, req.data.signature))
+			// }
 
-			if (!ifLeadAssigned.data.allowed) {
-				return res.status(400).send(sendResponse(401, 'Not Allowed to add given lead for this task', 'createPayloadAndEditTask', null, req.data.signature))
-			}
+			// if (!ifLeadAssigned.data.allowed) {
+			// 	return { data: "Not Allowed to add given lead for this task", error: true }
+			// 	// return res.status(400).send(sendResponse(401, 'Not Allowed to add given lead for this task', 'createPayloadAndEditTask', null, req.data.signature))
+			// }
 			updatePayload.lead = data.tasklead
 		}
 		data.taskUpdatePayload = updatePayload;
@@ -1345,9 +1359,16 @@ const checkIfLeadAssignedProject = async function (data) {
 
 	try {
 
+		let findAdmins = {
+			_id : { $in : data.tasklead || []},
+			role : { $nin : ['ADMIN']}
+		}
+		let userRes = await User.getDistinct("_id",findAdmins)
 		let findData = {
-			_id: data.projectId,
-			managedBy: { $in: data.tasklead || [] }
+			_id: data.projectId
+		}
+		if(userRes && userRes.length){
+			findData.managedBy = { $in: userRes}
 		}
 		let getProject = await Project.findSpecificProject(findData);
 		if (getProject) {

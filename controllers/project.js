@@ -132,8 +132,8 @@ exports.addNewProject = addNewProject
 
 const createPayloadAndAddProject = async function (data) {
 	try {
-		let selectedManagers = data.selectedManagers || [];
-		selectedManagers.push(process.env.ADMIN_ID.toString());
+		// let selectedManagers = data.selectedManagers || [];
+		// selectedManagers.push(process.env.ADMIN_ID.toString());
 		let payload = {
 			name: data.name,
 			// sections: data.projectCategories,
@@ -202,14 +202,14 @@ const createPayloadAndEditProject = async function (data) {
 			description: data.description,
 		}
 		if (data.selectedManagers) {
-			let adminId = process.env.ADMIN_ID
-			let selectedManagers = data.selectedManagers
-			if(!selectedManagers.includes(adminId)){
-				selectedManagers.push(adminId)
-			}
-			data.selectedManagers = selectedManagers
+			// let adminId = process.env.ADMIN_ID
+			// let selectedManagers = data.selectedManagers
+			// if(!selectedManagers.includes(adminId)){
+			// 	selectedManagers.push(adminId)
+			// }
+			// data.selectedManagers = selectedManagers
 
-			updatePayload.managedBy = selectedManagers
+			updatePayload.managedBy = data.selectedManagers
 		}
 		if (data.selectAccessibleBy) {
 			updatePayload.accessibleBy = data.selectAccessibleBy
@@ -1242,12 +1242,12 @@ const createPayloadAndfindSpecificProjectLeads = async function (data) {
 		
 		let leadList = JSON.parse(JSON.stringify(projectRes.managedBy || []));
 		
-		// let findAdmins = {
-		// 	role : 'ADMIN'
-		// }
-		// let allAdminRes = await User.getAllUsers(findAdmins,{})
-		// leadList.concat(allAdminRes)
-		// console.log("==================admin resp",allAdminRes)
+		let findAdmins = {
+			role : 'ADMIN'
+		}
+		let allAdminRes = await User.getAllUsers(findAdmins,{})
+		leadList = leadList.concat(allAdminRes)
+
 
 		if(data.auth.role == 'CONTRIBUTOR'){
 			leadList = leadList.filter(el=>(el && el.role == 'LEAD'))

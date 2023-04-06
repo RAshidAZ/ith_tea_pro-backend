@@ -39,3 +39,7 @@ exports.getAllUsersRatingForMonth = async function (payload) {
 exports.userAggregate = async function (payload) {
     return Users.aggregate(payload)
 }
+
+exports.getDistinct = async function (field,payload) {
+    return Users.distinct(field, payload)
+}
