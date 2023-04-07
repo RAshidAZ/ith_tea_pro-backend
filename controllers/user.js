@@ -36,6 +36,11 @@ const findAllUserWithPagination = async function (data) {
 		// 		payload._id  = { $in : filteredProjectsUsers.data}
 		// 	}
 		// }
+
+		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+			payload.isDeleted = false
+		}
+
         if (data.search) {
             payload["$or"] = [
                 { "name": { "$regex": data.search, "$options": "i" } },
@@ -92,7 +97,8 @@ exports.getAllUsersListingNonPaginated = getAllUsersListingNonPaginated;
 const findAllUserNonPagination = async function (data) {
     try {
         let payload = {
-            role: { $nin: ["ADMIN", "SUPER_ADMIN"]}
+            role: { $nin: ["ADMIN", "SUPER_ADMIN"]},
+			isDeleted : false
         }
         if (data.search) {
             payload["$or"] = [
@@ -279,7 +285,7 @@ exports.addNewUser = addNewUser;
 const checkEmailExists = async (data) => {
     try {
         let payload = {
-            email: data.email,
+            email: data.email
         }
         let projection = { email: 1 }
         let userRes = await User.userfindOneQuery(payload, projection)
@@ -533,7 +539,8 @@ const createPayloadAndfindAllLeadsList = async function (data) {
     try {
 
         let findData = {
-            role: "LEAD"
+            role: "LEAD",
+			isDeleted : false
         }
         let projection = {};
 
@@ -549,7 +556,8 @@ const getAllUsersNonPaginated = async (req, res, next) => {
     let data = req.data;
 
     let findData = {
-        role: {$in : ['CONTRIBUTOR']}
+        role: {$in : ['CONTRIBUTOR']},
+		isDeleted : false
     }
     if (data.search) {
         findData["$or"] = [
@@ -573,6 +581,9 @@ const createPayloadAndfindAllUsersList = async function (data) {
 
         let projection = {};
         let payload = data.findData;
+		if(!payload.isDeleted){
+			payload.isDeleted = false
+		}
         let sortCriteria = { createdAt: -1 }
         let userRes = await User.getAllUsers(payload, projection, sortCriteria);
         return { data: userRes, error: false }
@@ -666,7 +677,8 @@ const createPayloadAndGetUnAssignedUserOfSpecificProject = async function (data)
 		}
 		let userPayload = {
 			_id : { $nin : userRes},
-			role : data.role
+			role : data.role,
+			isDeleted : false
 		}
 		let sortCriteria = {
 			createdAt : -1
@@ -738,7 +750,13 @@ exports.getTeamAnalytics = getTeamAnalytics;
 const createPayloadAndgetTeamAnalytics = async function (data) {
     try {
 
+		let findData = { }
+
+		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+			findData.isDeleted = false
+		}
         let payload = [
+			{ $match : findData },
 			{
 			  $lookup: {
 				from: "tasks",
@@ -807,3 +825,61 @@ const createPayloadAndgetTeamAnalytics = async function (data) {
         return { data: err, error: true }
     }
 }
+
+const deleteUser = async (req, res, next) => {
+    let data = req.data;
+
+    if (!data.userId) {
+        return res.status(400).send(sendResponse(400, 'Missing Params', 'deleteUser', null, req.data.signature))
+    }
+
+    let userDeleteRes = await createPayloadAndDeleteUser(data);
+    if (userDeleteRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'deleteUser', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'User deleted', 'deleteUser', null, req.data.signature))
+}
+exports.deleteUser = deleteUser
+
+const createPayloadAndDeleteUser = async (data) => {
+    try {
+        let findPayload = {
+            _id : data.userId
+        }
+
+		let updatePayload = {
+			isDeleted : true
+        }
+
+        let userRes = await User.editUserDetails(findPayload, updatePayload)
+		let projectPayload = { }
+
+		let updateProjectPayload = { }
+		
+		if(userRes.role == 'CONTRIBUTOR'){
+			updateProjectPayload = { $pull: { accessibleBy: userRes._id }}
+		}else{
+			updateProjectPayload = { $pull: { managedBy: userRes._id }}
+		}
+
+		// let projectRes = await Project.updateMany(projectPayload, updateProjectPayload)
+        return { data: userRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndDeleteUser Error : ", err)
+        return { data: err, error: true }
+    }
+}
+
+const createPayloadAndgetDeletedUsers = async function (data) {
+    try {
+
+        let payload = data.findDeletedUsers || { isDeleted : true };
+        let userRes = await User.getDistinct("_id", payload);
+        return { data: userRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndgetDeletedUsers Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.createPayloadAndgetDeletedUsers = createPayloadAndgetDeletedUsers

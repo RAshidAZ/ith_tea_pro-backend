@@ -215,6 +215,10 @@ const userLogin = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, "User not found", 'userLogin', null, req.data.signature))
     }
 
+	if (user.data.isDeleted) {
+        return res.status(401).send(sendResponse(401, "User deleted", 'userLogin', null, req.data.signature))
+    }
+
     data.user = user.data;
     console.log("User ", data.user)
     data.userId = user.data._id;

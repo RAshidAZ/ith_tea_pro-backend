@@ -273,7 +273,8 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 		}
 
 		let findUsers = {
-			_id : { $in : data.userIds}
+			_id : { $in : data.userIds},
+			isDeleted : false
 		}
 
 		let allUsers = await User.getAllUsers(findUsers)
@@ -1181,7 +1182,7 @@ const createPayloadAndfindSpecificProjectUsers = async function (data) {
 
 		let allUsers = JSON.parse(JSON.stringify(projectRes.accessibleBy || []))
 		let allLeads = JSON.parse(JSON.stringify(projectRes.managedBy || []))
-		allLeads = allLeads.filter(el=> el.role == 'LEAD')
+		allLeads = allLeads.filter(el=> (el.role == 'LEAD' && !el.isDeleted))
 
 		let sendData = [];
 		if(data.auth.role == 'LEAD'){
@@ -1243,16 +1244,19 @@ const createPayloadAndfindSpecificProjectLeads = async function (data) {
 		let leadList = JSON.parse(JSON.stringify(projectRes.managedBy || []));
 		
 		let findAdmins = {
-			role : 'ADMIN'
+			role : 'ADMIN',
+			isDeleted : false
 		}
 		let allAdminRes = await User.getAllUsers(findAdmins,{})
 		leadList = leadList.concat(allAdminRes)
 
 
 		if(data.auth.role == 'CONTRIBUTOR'){
-			leadList = leadList.filter(el=>(el && el.role == 'LEAD'))
+			leadList = leadList.filter(el=>(el && el.role == 'LEAD' && !el.isDeleted))
 		}else if(data.auth.role == 'LEAD'){
-			leadList = leadList.filter(el=> ((el._id.toString() == data.auth.id.toString()) || (el.role == 'ADMIN')))
+			leadList = leadList.filter(el=> (!el.isDeleted && ((el._id.toString() == data.auth.id.toString()) || (el.role == 'ADMIN'))))
+		}else{
+			leadList = leadList.filter(el=>(!el.isDeleted))
 		}
 		
 		return { data: leadList, error: false }
@@ -1275,7 +1279,8 @@ const assignProjectsToUser = async (req, res, next) => {
 	}
 
 	let findUsers = {
-		_id : data.userId
+		_id : data.userId,
+		isDeleted : false
 	}
 
 	let user = await User.userfindOneQuery(findUsers)

@@ -8,6 +8,7 @@ const { CONSTANTS } = require('../config/constants');
 const { Task, Rating, Project, Comments, TaskLogs, User } = queryController;
 
 const actionLogController = require("../controllers/actionLogs");
+const userController = require("../controllers/user");
 
 //helper
 const emailUtitlities = require("../helpers/email");
@@ -186,16 +187,16 @@ const editUserTask = async (req, res, next) => {
 	}
 
 	let taskRes = await createPayloadAndEditTask(data)
-	if (taskRes.error || !taskRes.data) {
+	if (taskRes.error) {
 		return res.status(500).send(sendResponse(500, '', 'editUserTask', null, req.data.signature))
 	}
 
 	let actionTaken = 'TASK_UPDATED'
 	let ifDueDateChanged = false
 
-	if(data.status && data.status != taskRes.data.status){
+	if(taskRes && taskRes.data && data.status && data.status != taskRes.data.status){
 		actionTaken = 'TASK_STATUS_UPDATED'
-	}else if((data.dueDate && new Date(data.dueDate).getTime() != new Date(taskRes.data.dueDate).getTime()) || (!data.dueDate && JSON.stringify(data.dueDate) && taskRes.data.dueDate)){
+	}else if(taskRes && taskRes.data && (data.dueDate && new Date(data.dueDate).getTime() != new Date(taskRes.data.dueDate).getTime()) || (!data.dueDate && JSON.stringify(data.dueDate) && taskRes.data.dueDate)){
 
 		actionTaken = 'TASK_DUEDATE_UPDATED'
 		ifDueDateChanged = true
@@ -203,12 +204,12 @@ const editUserTask = async (req, res, next) => {
 	}
 	let actionLogData = {
 		actionBy: data.auth.id,
-		taskId : taskRes.data._id,
+		taskId : data.taskId,
 	}
 	let previousTaskData = {}
 	let newTaskData = {}
 	let taskUpdatePayload = data.taskUpdatePayload
-	if(taskUpdatePayload){
+	if(taskRes && taskRes.data && taskUpdatePayload){
 		if(taskUpdatePayload.title && taskUpdatePayload.title != task.data.title){
 			actionTaken = 'TASK_UPDATED'
 			previousTaskData.title = task.data.title
@@ -250,15 +251,17 @@ const editUserTask = async (req, res, next) => {
 	}
 
 
-	actionLogData.new = newTaskData
-	actionLogData.previous = previousTaskData
-	actionLogData.actionTaken = actionTaken
-
-	data.actionLogData = actionLogData;
-	let addActionLogRes = await actionLogController.addTaskLog(data);
-
-	if (addActionLogRes.error) {
-		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
+	if(taskRes && taskRes.data){
+		actionLogData.new = newTaskData
+		actionLogData.previous = previousTaskData
+		actionLogData.actionTaken = actionTaken
+	
+		data.actionLogData = actionLogData;
+		let addActionLogRes = await actionLogController.addTaskLog(data);
+	
+		if (addActionLogRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
+		}
 	}
 
 	return res.status(200).send(sendResponse(200, 'Task Edited Successfully', 'editUserTask', null, req.data.signature))
@@ -270,10 +273,11 @@ const createPayloadAndEditTask = async function (data) {
 		let findPayload = {
 			_id: data.taskId
 		}
-		if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role)) {
+		if (!['SUPER_ADMIN','ADMIN'].includes(data.auth.role)) {
 			findPayload["$or"] = [
 				{ createdBy: data.auth.id },
 				{ assignedTo: data.auth.id },
+				{ lead: data.auth.id },
 			]
 		}
 
@@ -462,6 +466,13 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			console.log("=================sort order and type ====", data.sortType, sortOrder)
 			sortTaskOrder = sortOrder > 0 ? CONSTANTS.SORTBY_IN_INCREASING_ORDER[data.sortType] : CONSTANTS.SORTBY_IN_DECREASING_ORDER[data.sortType]
 		}
+
+		// let deletedUserIds = await userController.createPayloadAndgetDeletedUsers(data)
+		// deletedUserIds = deletedUserIds.data || []
+
+		// filter["tasks.assignedTo"] = { $nin : deletedUserIds}
+		// filter["tasks.createdBy"] = { $nin : deletedUserIds}
+
 		let aggregate = [
 			{
 				$match: findData
@@ -1107,6 +1118,14 @@ const createPayloadAndGetTaskLists = async function (data) {
 			findData.assignedTo = data.auth.id
 		}
 		let populate = 'lead assignedTo'
+
+		// let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
+		// if(deletedUserData.data){
+		// 	let deletedUserIds = deletedUserData.data || []
+		// 	findData.assignedTo = { $nin : deletedUserIds}
+		// 	findData.createdBy = { $nin : deletedUserIds}
+		// }
+
 		let taskList = await Task.taskFindQuery(findData, {}, populate);
 		return { data: taskList, error: false }
 
@@ -1367,8 +1386,12 @@ const checkIfLeadAssignedProject = async function (data) {
 		let findData = {
 			_id: data.projectId
 		}
+
 		if(userRes && userRes.length){
-			findData.managedBy = { $in: userRes}
+			data.findDeletedUsers = { _id : { $in : userRes }, isDeleted : true}
+			let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
+			let deletedUserIds = deletedUserData.data || []
+			findData.managedBy = { $in: userRes, $nin : deletedUserIds}
 		}
 		let getProject = await Project.findSpecificProject(findData);
 		if (getProject) {
@@ -1462,9 +1485,16 @@ const createPayloadAndGetTodayTaskLists = async function (data) {
 			findData.projectId = { $in : data.filteredProjects || []}
 		}
 
-		console.log("===fin data==========",findData)
 		
 		let populate = 'assignedTo'
+		
+		// let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
+		// if(deletedUserData.data){
+		// 	let deletedUserIds = deletedUserData.data || []
+		// 	findData.assignedTo = { $nin : deletedUserIds}
+		// 	findData.createdBy = { $nin : deletedUserIds}
+		// }
+		
 		let taskList = await Task.taskFindQuery(findData, {}, populate);
 		return { data: taskList, error: false }
 
@@ -1494,14 +1524,16 @@ const createPayloadAndGetOverDueTasks = async function (data) {
 		let findData = {
 			isDeleted: false,
 			isArchived :  false,
-			status : {$nin : ['ONHOLD','COMPLETED']}, dueDate : { $lte : new Date()},
-			// $or:
-			// [
-			// 	{ status : 'COMPLETED', $expr: { $lt: [ "$dueDate" , "$completedDate" ] } }
-			// ]
+			status : {$nin : ['ONHOLD','COMPLETED']}, dueDate : { $lte : new Date()}
 		};
+		
+		// let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
+		// if(deletedUserData.data){
+		// 	let deletedUserIds = deletedUserData.data || []
+		// 	findData.assignedTo = { $nin : deletedUserIds}
+		// 	findData.createdBy = { $nin : deletedUserIds}
+		// }
 
-		// console.log("==========find data", findData['$or'])
 		
 		let populate = 'lead assignedTo'
 		let taskList = await Task.taskFindQuery(findData, {}, populate);
@@ -1541,6 +1573,14 @@ const createPayloadAndGetPendingRatingTasks = async function (data) {
 
 		
 		let populate = 'lead assignedTo'
+
+		// let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
+		// if(deletedUserData.data){
+		// 	let deletedUserIds = deletedUserData.data || []
+		// 	findData.assignedTo = { $nin : deletedUserIds}
+		// 	findData.createdBy = { $nin : deletedUserIds}
+		// }
+
 		let taskList = await Task.taskFindQuery(findData, {}, populate);
 		return { data: taskList, error: false }
 

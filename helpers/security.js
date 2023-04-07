@@ -216,6 +216,14 @@ const readUserByCredentials = async function (data) {
             }
         }
 
+		if (userCredentials.userId.isDeleted) {
+
+            return {
+                data: "User Deleted",
+                error: true
+            }
+        }
+
         if (userCredentials.isBlocked || !userCredentials.isActive) {
             return {
                 data: "User is Blocked or Not active",
