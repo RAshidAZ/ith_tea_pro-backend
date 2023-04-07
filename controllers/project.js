@@ -1183,6 +1183,7 @@ const createPayloadAndfindSpecificProjectUsers = async function (data) {
 		let allUsers = JSON.parse(JSON.stringify(projectRes.accessibleBy || []))
 		let allLeads = JSON.parse(JSON.stringify(projectRes.managedBy || []))
 		allLeads = allLeads.filter(el=> (el.role == 'LEAD' && !el.isDeleted))
+		allUsers = allUsers.filter(el=> !el.isDeleted)
 
 		let sendData = [];
 		if(data.auth.role == 'LEAD'){
@@ -1279,14 +1280,18 @@ const assignProjectsToUser = async (req, res, next) => {
 	}
 
 	let findUsers = {
-		_id : data.userId,
-		isDeleted : false
+		_id : data.userId
 	}
 
 	let user = await User.userfindOneQuery(findUsers)
 	if(!user){
 		return res.status(400).send(sendResponse(400, "User not found", 'assignProjectsToUser', null, req.data.signature))
 	}
+
+	if(user.isDeleted){
+		return res.status(400).send(sendResponse(400, "User is deleted, project(s) not assigned", 'assignProjectsToUser', null, req.data.signature))
+	}
+
 	data.user = user
 
 	let projectRes = await createPayloadAndAssignProjectsToUser(data)
