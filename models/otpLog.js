@@ -16,7 +16,8 @@ let otpLogSchema = new Schema({
     device: String,
     purpose: String,
     isExpired: {type:Boolean, default:false},
-    isUsed: {type:Boolean, default:false}
+    isUsed: {type:Boolean, default:false},
+	tokenVerified: {type:Boolean, default:false}
 
 }, {timestamps : true});
 

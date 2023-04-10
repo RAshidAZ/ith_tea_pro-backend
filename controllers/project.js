@@ -581,7 +581,8 @@ const createPayloadAndgetAllProjectsList = async function (data) {
 	try {
 		let payload = {
 			isActive: true,
-			"isDeleted": false
+			"isDeleted": false,
+			isArchived : false
 		}
 		if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
 			console.log("Role other than SA/A...", data.auth.role)

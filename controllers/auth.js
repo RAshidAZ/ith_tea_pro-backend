@@ -8,7 +8,7 @@ const utilities = require('../helpers/security');
 const emailUtitlities = require("../helpers/email");
 
 const { sendResponse } = require('../helpers/sendResponse')
-const { Auth, Credentials } = require('../query');
+const { Auth, Credentials, User } = require('../query');
 
 const userRegistry = async (req, res, next) => {
 
@@ -498,20 +498,30 @@ const resetPassword = async (req, res, next) => {
 	let userCredentials = await utilities.readUserByCredentials(data)
 	
 	if(userCredentials.err){
-		return res.status(500).send(sendResponse(500, '', 'resetPassword', null, req.data.signature))
+		return res.status(400).send(sendResponse(400, userCredentials.data, 'resetPassword', null, req.data.signature))
 	}
 	
 	if(!userCredentials.data){
 		return res.status(400).send(sendResponse(400, "User Not Found", 'resetPassword', null, req.data.signature))
 	}
 	data.userCredentials = userCredentials.data
+
 	
 	//step 2
 	let PasswordComparsion = await comparePassword(data);
     if (PasswordComparsion.error) {
 		return res.status(401).send(sendResponse(401, "Password Mismatch", 'resetPassword', PasswordComparsion.data, req.data.signature))
     }
-	// return res.status(200).send(sendResponse(200, "Password changed", 'resetPassword', null, null))
+
+	//reset password log
+
+	data.device = req.device.type
+	data.ip = req.ip
+	// data.browser = parser(req.headers["user-agent"]).browser.name
+	let resetPasswordLog = await createResetPasswordRequest(data);
+	if(resetPasswordLog.err){
+		return res.status(500).send(sendResponse(500, '', 'resetPassword', null, req.data.signature))
+	}
 
 	//step 3
 	let generatedHashSalt = utilities.generatePassword(data.newPassword);
@@ -555,3 +565,246 @@ const updatePassword = async function (data) {
         }
     }
 }
+
+const createResetPasswordRequest = async function (data) {
+    let userCredentials = data.userCredentials
+    if (!userCredentials || !userCredentials.userId) {
+        return cb(responseUtilities.responseStruct(400, "User not found", "createResetPasswordRequest", null, data.req.signature));
+    }
+
+    let payload = {
+        email: userCredentials.userId.email,
+		device : data.device,
+		ip : data.ip,
+		browser : data.browser
+    }
+
+    try {
+        let createResetPasword = await Auth.createResetPaswordRequest(payload);
+        return {
+            data: createResetPasword,
+            error: false
+        }
+    }
+    catch (error) {
+        return {
+            data: error,
+            error: true
+        }
+    }
+}
+
+const forgotPassword = async (req, res, next) => {
+
+    let data = req.data;
+	if (!data.email) {
+        return res.status(400).send(sendResponse(400, "Email required", 'forgotPassword', null, req.data.signature))
+    }
+	data.purpose = 'Forgot-Password'
+    
+	//find user
+	let findUser = { email : data.email}
+	let userRes = User.userfindOneQuery(findUser);
+	if(!userRes){
+        return res.status(400).send(sendResponse(400, "User not found", 'forgotPassword', null, req.data.signature))
+	}
+
+	data.userId = mongoose.Types.ObjectId(userRes._id)
+
+	
+	//check user details
+	let userCredentials = await utilities.readUserByCredentials(data)
+	
+	if(userCredentials.err){
+		return res.status(500).send(sendResponse(400, userCredentials.data, 'forgotPassword', null, req.data.signature))
+	}
+	
+	if(!userCredentials.data){
+		return res.status(400).send(sendResponse(400, "User Not Found", 'forgotPassword', null, req.data.signature))
+	}
+	data.userCredentials = userCredentials.data
+
+	
+	//step 2
+	let generatedOtpData = await generateOTP(data);
+    if (generatedOtpData.error) {
+		return res.status(500).send(sendResponse(500, '', 'forgotPassword', null, req.data.signature))
+    }
+
+	let sendForgotPasswordOtp = emailUtitlities.sendOtpToUser(data)
+
+    return res.status(200).send(sendResponse(200, "Otp sent on email successfully", 'forgotPassword', null, null))
+};
+exports.forgotPassword = forgotPassword;
+
+const generateOTP = async function (data) {
+    if (!data.email) {
+        return cb(responseUtilities.responseStruct(400, "User not found", "generateOTP", null, data.req.signature));
+    }
+
+    let findOtpLog = {
+        email: data.email,
+		isUsed: false,
+        isExpired: false,
+        purpose: data.purpose || 'Signup'
+    }
+
+    try {
+        let otpLogRes = await Auth.findOtpLog(findOtpLog);
+		if(otpLogRes){
+			let payload = {_id : otpLogRes._id}
+			let updatePayload = {isUsed : true}
+			let updatedOtpLogRes = await Auth.findAndUpdateOtpLog(payload, updatePayload)
+		}
+
+		let generatedOTP
+        if (process.env.DEV == 'true' || process.env.DEV == true) {
+            generatedOTP = process.env.OTP_FIXED;
+        } else {
+			generatedOTP = Math.floor(1000 + Math.random() * 9000);
+		}
+		data.generatedOTP = generatedOTP
+        let insertData = {
+            email: data.email,
+            otp: generatedOTP,
+            otpExpiration: (new Date().getTime() + 1000 * 60 * 30),
+            purpose: data.purpose || "Signup"
+
+        }
+
+		let createOtpLog = await Auth.createOtpLog(insertData)
+        return {
+            data: createOtpLog,
+            error: false
+        }
+    }
+    catch (error) {
+        return {
+            data: error,
+            error: true
+        }
+    }
+}
+
+const otpVerify = async (req, res, next) => {
+
+    let data = req.data;
+	if (!data.email || !data.otp) {
+        return res.status(400).send(sendResponse(400, "Email/otp required", 'otpVerify', null, req.data.signature))
+    }
+	data.purpose = 'Forgot-Password'
+    
+	//find otp
+	let find_data = {
+        email: data.email,
+        otp: data.otp,
+        isUsed: false,
+        isExpired: false,
+		purpose : data.purpose || "Signup"
+    }
+
+	let otpLogRes = await Auth.findOtpLog(find_data);
+
+	if(!otpLogRes){
+        return res.status(400).send(sendResponse(400, "Wrong OTP/email or OTP already used!", 'otpVerify', null, req.data.signature))
+	}
+	
+
+	if (new Date().getTime() > otpLogRes.otpExpiration) {
+		let find_data = { _id : otpLogRes._id}
+		let updateOtpLog = { isExpired: true }
+		let updatedOtpLogRes = await Auth.findAndUpdateOtpLog(find_data, updateOtpLog);
+        return res.status(400).send(sendResponse(400, "OTP expired!", 'otpVerify', null, req.data.signature))
+	}
+
+
+	find_data = {
+		_id : otpLogRes._id,
+		email: data.email
+	}
+	let update_data = {
+		isUsed: true
+	}
+
+	let updatedOtpLogRes = await Auth.findAndUpdateOtpLog(find_data, update_data);
+
+	let sendData = {
+		emailVerified: true
+	}
+	if(data.purpose == 'Forgot-Password'){
+		sendData["otpLogId"] =  btoa(otpLogRes._id.toString());
+	}
+
+    return res.status(200).send(sendResponse(200, "Otp verified", 'forgotPassword', sendData, null))
+};
+exports.otpVerify = otpVerify;
+
+const forgotChangePassword = async (req, res, next) => {
+
+    let data = req.data;
+	if (!data.password || !data.repeat || !data.otpLogId) {
+        return res.status(400).send(sendResponse(400, "Missing params", 'forgotChangePassword', null, req.data.signature))
+    }
+
+	if (data.password != data.repeat) {
+        return res.status(400).send(sendResponse(400, "Password and repeat password do not match", 'forgotChangePassword', null, req.data.signature))
+    }
+
+	data.otpLogId = atob(data.otpLogId);
+
+	if (!mongoose.isValidObjectId(data.otpLogId)) {
+        return res.status(400).send(sendResponse(400, "Invalid request", 'forgotChangePassword', null, req.data.signature))
+	}
+
+	let findData = {
+		_id : data.otpLogId,
+		purpose : "Forgot-Password",
+		isUsed : true,
+		isExpired : false,
+		tokenVerified : false
+	}
+
+	let otpLogRes = await Auth.findOtpLog(findData);
+
+	console.log("=============otp log resp=============",findData, otpLogRes)
+	if(!otpLogRes){
+        return res.status(400).send(sendResponse(400, "Invalid request", 'forgotChangePassword', null, req.data.signature))
+	}
+
+	data.email = otpLogRes.email
+
+	let findUser = {email : otpLogRes.email}
+	let userRes = await User.userfindOneQuery(findUser);
+	if(!userRes){
+        return res.status(400).send(sendResponse(400, "User not found", 'forgotPassword', null, req.data.signature))
+	}
+
+	console.log("=========user details=========",findUser, userRes)
+	data.userId = mongoose.Types.ObjectId(userRes._id)
+
+	
+	//check user details
+	let userCredentials = await utilities.readUserByCredentials(data)
+	
+	if(userCredentials.err){
+		return res.status(500).send(sendResponse(400, userCredentials.data, 'forgotPassword', null, req.data.signature))
+	}
+	
+	if(!userCredentials.data){
+		return res.status(400).send(sendResponse(400, "User Not Found", 'forgotPassword', null, req.data.signature))
+	}
+	data.userCredentials = userCredentials.data
+
+	let generatedHashSalt = utilities.generatePassword(data.repeat);
+    data.generatedHashSalt = generatedHashSalt;
+
+	let updateUserPassword = await updatePassword(data);
+	if(updateUserPassword.err){
+		return res.status(500).send(sendResponse(500, '', 'resetPassword', null, req.data.signature))
+	}
+
+
+    return res.status(200).send(sendResponse(200, "Token verified", 'forgotPassword', null, null))
+
+}
+exports.forgotChangePassword = forgotChangePassword;

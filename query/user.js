@@ -16,7 +16,7 @@ exports.editUserDetails = function (findPayload, updatePayload) {
     return Users.findOneAndUpdate(findPayload, updatePayload)
 }
 
-exports.userfindOneQuery = function (findPayload, projection) {
+exports.userfindOneQuery = function (findPayload, projection = {}) {
     return Users.findOne(findPayload, projection)
 }
 

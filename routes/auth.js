@@ -33,13 +33,13 @@ router.get("/v1/verify/token", [], Auth.verifyPasswordToken);
 router.post("/v1/set/password", [], Auth.setPassword);
 
 //forgot password request
-router.post("/v1/user/forgot/password", [], Auth.setPassword);
+router.post("/v1/user/forgot/password", [], Auth.forgotPassword);
 
 //forgot password verify otp
-router.post("/v1/otp/verify/forgot/password", [], Auth.setPassword);
+router.post("/v1/otp/verify/forgot/password", [], Auth.otpVerify);
 
 //change password
-router.post("/v1/user/forgot/change/password", [], Auth.setPassword);
+router.post("/v1/user/forgot/change/password", [], Auth.forgotChangePassword);
 
 //resend otp for forgot password
 router.post("/v1/resend/forgot/password/otp", [], Auth.setPassword);
