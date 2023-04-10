@@ -233,7 +233,7 @@ const userLogin = async (req, res, next) => {
 
     data.userCredentials = userCredentials.data;
 
-    let PasswordComparsion = comparePassword(data);
+    let PasswordComparsion = await comparePassword(data);
     if (PasswordComparsion.error) {
         return res.status(401).send(sendResponse(401, "Password Mismatch", 'userLogin', PasswordComparsion.data, req.data.signature))
     }
@@ -260,7 +260,7 @@ const findUserCredentials = async function (data) {
     }
 }
 
-const comparePassword = function (data) {
+const comparePassword = async function (data) {
 
     console.log("comparePassword");
     let hash = null;
@@ -269,6 +269,11 @@ const comparePassword = function (data) {
     try {
         hash = data.userCredentials.password;
         salt = data.userCredentials.salt;
+
+		if (data.oldPassword) {
+			data.password = data.oldPassword;
+		}
+
         let comparePasswordResult = utilities.comparePassword(data.password, hash, salt);
         if (comparePasswordResult.error) {
             return { data: comparePasswordResult.data, error: true }
@@ -473,5 +478,80 @@ const findUserPasswordSetupTokens = async function (data) {
         return { data: passwordSetupTokens, error: false }
     } catch (error) {
         return { data: error, error: true }
+    }
+}
+
+const resetPassword = async (req, res, next) => {
+
+    let data = req.data;
+    if (!data.newPassword || !data.confirmPassword || !data.oldPassword) {
+        return res.status(400).send(sendResponse(400, "Params Missing", 'resetPassword', null, req.data.signature))
+    }
+
+	if (data.newPassword != data.confirmPassword) {
+        return res.status(400).send(sendResponse(400, "New/Confirm password do not match", 'resetPassword', null, req.data.signature))
+	}
+
+	data.userId = mongoose.Types.ObjectId(data.auth.id)
+
+	//step 1
+	let userCredentials = await utilities.readUserByCredentials(data)
+	
+	if(userCredentials.err){
+		return res.status(500).send(sendResponse(500, '', 'resetPassword', null, req.data.signature))
+	}
+	
+	if(!userCredentials.data){
+		return res.status(400).send(sendResponse(400, "User Not Found", 'resetPassword', null, req.data.signature))
+	}
+	data.userCredentials = userCredentials.data
+	
+	//step 2
+	let PasswordComparsion = await comparePassword(data);
+    if (PasswordComparsion.error) {
+		return res.status(401).send(sendResponse(401, "Password Mismatch", 'resetPassword', PasswordComparsion.data, req.data.signature))
+    }
+	// return res.status(200).send(sendResponse(200, "Password changed", 'resetPassword', null, null))
+
+	//step 3
+	let generatedHashSalt = utilities.generatePassword(data.newPassword);
+    data.generatedHashSalt = generatedHashSalt;
+	
+	//step 4
+
+	let updateUserPassword = await updatePassword(data);
+	if(updateUserPassword.err){
+		return res.status(500).send(sendResponse(500, '', 'resetPassword', null, req.data.signature))
+	}
+
+    return res.status(200).send(sendResponse(200, "Password changed successfully", 'resetPassword', null, null))
+};
+exports.resetPassword = resetPassword;
+
+const updatePassword = async function (data) {
+    let { hash, salt } = data.generatedHashSalt;
+    if (!hash || !salt) {
+        return cb(responseUtilities.responseStruct(500, "no hash/salt", "updatePassword", null, data.req.signature));
+    }
+    let findData = {
+        userId: data.userId
+    }
+    let updateData = {
+        password: hash,
+        salt: salt
+    }
+
+    try {
+        let updateCredentials = await Credentials.updateCredentials(findData, updateData);
+        return {
+            data: updateCredentials,
+            error: false
+        }
+    }
+    catch (error) {
+        return {
+            data: error,
+            error: true
+        }
     }
 }

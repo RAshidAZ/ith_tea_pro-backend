@@ -32,6 +32,23 @@ router.get("/v1/verify/token", [], Auth.verifyPasswordToken);
 
 router.post("/v1/set/password", [], Auth.setPassword);
 
+//forgot password request
+router.post("/v1/user/forgot/password", [], Auth.setPassword);
+
+//forgot password verify otp
+router.post("/v1/otp/verify/forgot/password", [], Auth.setPassword);
+
+//change password
+router.post("/v1/user/forgot/change/password", [], Auth.setPassword);
+
+//resend otp for forgot password
+router.post("/v1/resend/forgot/password/otp", [], Auth.setPassword);
+
+//reset password
+router.patch("/v1/user/reset/password",
+    [authenticator],
+    Auth.resetPassword);
+
 
 module.exports = router;
 
