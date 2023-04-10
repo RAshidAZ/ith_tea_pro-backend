@@ -465,7 +465,7 @@ exports.sendProjectsAssignedMailToUser = sendProjectsAssignedMailToUser;
 const sendOtpToUser = function (data) {
 
 	return new Promise(async (resolve, reject) => {
-		let subject = `Forgot Pawword OTP`;
+		let subject = `Forgot Password OTP`;
 		let from = process.env.EMAIL_HOST || host;
 		let to = `${data.email}`;
 
