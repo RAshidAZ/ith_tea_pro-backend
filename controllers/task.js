@@ -467,11 +467,26 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			sortTaskOrder = sortOrder > 0 ? CONSTANTS.SORTBY_IN_INCREASING_ORDER[data.sortType] : CONSTANTS.SORTBY_IN_DECREASING_ORDER[data.sortType]
 		}
 
-		// let deletedUserIds = await userController.createPayloadAndgetDeletedUsers(data)
-		// deletedUserIds = deletedUserIds.data || []
+		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+			let deletedUserIds = await userController.createPayloadAndgetDeletedUsers(data)
+			deletedUserIds = deletedUserIds.data || []
+	
+			if(data.assignedTo){
+				let assignedTo = JSON.parse(data.assignedTo)
 
-		// filter["tasks.assignedTo"] = { $nin : deletedUserIds}
-		// filter["tasks.createdBy"] = { $nin : deletedUserIds}
+				filter["tasks.assignedTo"] = { $nin : deletedUserIds, $in : assignedTo.map(el => mongoose.Types.ObjectId(el))}
+			}else{
+				filter["tasks.assignedTo"] = { $nin : deletedUserIds }
+			}
+
+			if(data.createdBy){
+				let createdBy = JSON.parse(data.createdBy)
+
+				filter["tasks.createdBy"] = { $nin : deletedUserIds, $in : createdBy.map(el => mongoose.Types.ObjectId(el))}
+			}else{
+				filter["tasks.createdBy"] = { $nin : deletedUserIds }
+			}
+		}
 
 		let aggregate = [
 			{
@@ -1083,6 +1098,7 @@ const createPayloadAndGetTaskLists = async function (data) {
 		if(data.status){
 			findData.status = data.status
 		}
+
 		//filter tasks of only those project which are assigned to LEAD, CONTRIBUTOR, INTERN
 		if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
 			findData.projectId = { $in: data.filteredProjects }
@@ -1119,12 +1135,19 @@ const createPayloadAndGetTaskLists = async function (data) {
 		}
 		let populate = 'lead assignedTo'
 
-		// let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
-		// if(deletedUserData.data){
-		// 	let deletedUserIds = deletedUserData.data || []
-		// 	findData.assignedTo = { $nin : deletedUserIds}
-		// 	findData.createdBy = { $nin : deletedUserIds}
-		// }
+		if(JSON.stringify(data.pendingRatingTasks) || !['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+			let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
+			if(deletedUserData.data){
+				let deletedUserIds = deletedUserData.data || []
+				if(findData.assignedTo){
+					let assignedTo = {$nin : deletedUserIds, $eq : findData.assignedTo }
+					findData.assignedTo = assignedTo
+				}else{
+					findData.assignedTo = { $nin : deletedUserIds}
+				}
+				findData.createdBy = { $nin : deletedUserIds}
+			}
+		}
 
 		let taskList = await Task.taskFindQuery(findData, {}, populate);
 		return { data: taskList, error: false }
@@ -1469,9 +1492,6 @@ exports.getTodayTasksList = getTodayTasksList;
 
 const createPayloadAndGetTodayTaskLists = async function (data) {
 	try {
-
-		
-		let currentDate = new Date();
 		
 		let startDayTime =  new Date(new Date().setUTCHours(00, 00, 00, 000));
 		let endDayTime =  new Date(new Date().setUTCHours(23, 59, 59, 000));
@@ -1488,12 +1508,14 @@ const createPayloadAndGetTodayTaskLists = async function (data) {
 		
 		let populate = 'assignedTo'
 		
-		// let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
-		// if(deletedUserData.data){
-		// 	let deletedUserIds = deletedUserData.data || []
-		// 	findData.assignedTo = { $nin : deletedUserIds}
-		// 	findData.createdBy = { $nin : deletedUserIds}
-		// }
+		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+			let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
+			if(deletedUserData.data){
+				let deletedUserIds = deletedUserData.data || []
+				findData.assignedTo = { $nin : deletedUserIds}
+				findData.createdBy = { $nin : deletedUserIds}
+			}
+		}
 		
 		let taskList = await Task.taskFindQuery(findData, {}, populate);
 		return { data: taskList, error: false }
@@ -1574,12 +1596,14 @@ const createPayloadAndGetPendingRatingTasks = async function (data) {
 		
 		let populate = 'lead assignedTo'
 
-		// let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
-		// if(deletedUserData.data){
-		// 	let deletedUserIds = deletedUserData.data || []
-		// 	findData.assignedTo = { $nin : deletedUserIds}
-		// 	findData.createdBy = { $nin : deletedUserIds}
-		// }
+		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+			let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
+			if(deletedUserData.data){
+				let deletedUserIds = deletedUserData.data || []
+				findData.assignedTo = { $nin : deletedUserIds}
+				findData.createdBy = { $nin : deletedUserIds}
+			}
+		}
 
 		let taskList = await Task.taskFindQuery(findData, {}, populate);
 		return { data: taskList, error: false }
