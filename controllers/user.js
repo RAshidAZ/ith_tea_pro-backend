@@ -833,6 +833,22 @@ const deleteUser = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, 'Missing Params', 'deleteUser', null, req.data.signature))
     }
 
+	let findPayload = {
+		_id : data.userId
+	}
+	let userRes = await User.userfindOneQuery(findPayload)
+	if (!userRes) {
+        return res.status(400).send(sendResponse(400, 'User Not Found', 'deleteUser', null, req.data.signature))
+    }
+	let userRole = userRes.role
+	if(data.auth.role == 'SUPER_ADMIN' && userRole == 'SUPER_ADMIN'){
+        return res.status(400).send(sendResponse(400, "Can't delete given user", 'deleteUser', null, req.data.signature))
+	}
+
+	if(data.auth.role == 'ADMIN' && ['ADMIN', 'SUPER_ADMIN'].includes(userRole)){
+        return res.status(400).send(sendResponse(400, "Not Allowed to delete given user", 'deleteUser', null, req.data.signature))
+	}
+
     let userDeleteRes = await createPayloadAndDeleteUser(data);
     if (userDeleteRes.error) {
         return res.status(500).send(sendResponse(500, '', 'deleteUser', null, req.data.signature))
@@ -852,7 +868,7 @@ const createPayloadAndDeleteUser = async (data) => {
 			isDeleted : true
         }
 
-        let userRes = await User.editUserDetails(findPayload, updatePayload)
+        userRes = await User.editUserDetails(findPayload, updatePayload)
 		let projectPayload = { }
 
 		let updateProjectPayload = { }
