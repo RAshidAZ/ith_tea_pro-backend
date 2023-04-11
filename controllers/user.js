@@ -51,7 +51,7 @@ const findAllUserWithPagination = async function (data) {
 
         let usersCount = await User.getAllUsersCountForPagination(payload);
 
-        let limit = process.env.PAGE_LIMIT;
+        let limit = parseInt(process.env.PAGE_LIMIT);
         if (data.limit) {
             limit = parseInt(data.limit);
         }
@@ -64,7 +64,40 @@ const findAllUserWithPagination = async function (data) {
         let sortCriteria = {
             createdAt: -1
         }
-        let userRes = await User.getAllUsersPagination(payload, projection, sortCriteria, skip, limit);
+        // let userRes = await User.getAllUsersPagination(payload, projection, sortCriteria, skip, limit);
+		let pipeline = [
+			{
+				$match : payload
+			},
+			{
+				$lookup: {
+								from: "credentials",
+								localField: "_id",
+								foreignField: "userId",
+								as: "credentials"
+							}
+				},
+				{
+					$unwind : {path:"$credentials",preserveNullAndEmptyArrays:true}
+				},
+				{
+					$project:{
+						"credentials.password":0,
+						"credentials.salt":0,
+						"credentials.accountId":0
+					}
+				},
+				{
+					$skip : parseInt(skip)
+				},
+				{
+					$limit : parseInt(limit)
+				},
+				{
+					$sort : sortCriteria
+				}
+		]
+		let userRes = await User.userAggregate(pipeline);
 
         let sendData = {
             users: userRes,

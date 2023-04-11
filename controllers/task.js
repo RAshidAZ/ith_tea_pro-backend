@@ -109,6 +109,7 @@ const createPayloadAndInsertTask = async function (data) {
 	try {
 		if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role)) {
 			data.assignedTo = data.auth.id
+			data.dueDate = data.dueDate || new Date()
 		};
 
 		let payload = {
@@ -119,11 +120,12 @@ const createPayloadAndInsertTask = async function (data) {
 			projectId: data.projectId,
 			createdBy: data?.auth?.id,    //TODO: Change after auth is updated
 			assignedTo: data.assignedTo,
-			dueDate: data.dueDate || new Date(new Date().setUTCHours(23, 59, 59, 000)),
+			// dueDate: data.dueDate || new Date(new Date().setUTCHours(23, 59, 59, 000)),
 			completedDate: data.completedDate,
 			priority: data.priority,
 			lead: data.tasklead
 		}
+		
 		if (data.dueDate) {
 			payload.dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 000))
 		}
@@ -167,6 +169,12 @@ const editUserTask = async (req, res, next) => {
 	let task = await getTaskById(data);
 	if (task.error || !task.data) {
 		return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
+	}
+
+	if(task.data.dueDate && data.status == 'COMPLETED'){
+		if(new Date(task.data.dueDate).getTime()< new Date().getTime()){
+			data.isDelayTask = true
+		}
 	}
 
 	data.taskDetails = task.data
@@ -302,6 +310,11 @@ const createPayloadAndEditTask = async function (data) {
 		if (JSON.stringify(data.section)) {
 			updatePayload.section = data.section
 		}
+
+		if (data.isDelayTask) {
+			updatePayload.isDelayTask = data.isDelayTask
+		}
+
 		if (JSON.stringify(data.projectId)) {
 			updatePayload.projectId = data.projectId
 		}
@@ -798,7 +811,8 @@ const rateUserTask = async (req, res, next) => {
 	
 	let timeDifference = ((currentDate.getTime()-taskCompletedDate.getTime()) || 1)/(1000 * 60 * 60)
 	if (timeDifference > 24) {
-		return res.status(400).send(sendResponse(400, 'Oops, You are late in rating..', 'rateUserTask', null, req.data.signature))
+		data.isDelayRated = true
+		// return res.status(400).send(sendResponse(400, 'Oops, You are late in rating..', 'rateUserTask', null, req.data.signature))
 	}
 
 	let taskDetails = task.data;
@@ -913,6 +927,9 @@ const updateUserTaskRating = async function (data) {
 			isRated: true,
 			ratedBy: data.auth.id,
 			$addToSet: { ratingComments: data.commentId }
+		}
+		if(data.isDelayRated){
+			updateData.isDelayRated = data.isDelayRated
 		}
 		let options = {
 			new: true
@@ -1095,6 +1112,9 @@ const createPayloadAndGetTaskLists = async function (data) {
 			isArchived :  false,
 		};
 
+		let sortCriteria = {
+
+		}
 		if(data.status){
 			findData.status = data.status
 		}
@@ -1130,8 +1150,17 @@ const createPayloadAndGetTaskLists = async function (data) {
 			findData.isRated = false
 		}
 		if (JSON.stringify(data.homePageTaskList)) {
+			sortCriteria.dueDate = 1
 			findData.status = { $ne: "COMPLETED" };
 			findData.assignedTo = data.auth.id
+			if(findData.dueDate){
+				let filterDueDate = { $eq : findData.dueDate, $lte : new Date(new Date().setUTCHours(23, 59, 59, 000)) }
+				findData.dueDate = filterDueDate
+
+			}else{
+
+				findData.dueDate = { $lte : new Date(new Date().setUTCHours(23, 59, 59, 000)) }
+			}
 		}
 		let populate = 'lead assignedTo'
 
@@ -1149,7 +1178,7 @@ const createPayloadAndGetTaskLists = async function (data) {
 			}
 		}
 
-		let taskList = await Task.taskFindQuery(findData, {}, populate);
+		let taskList = await Task.taskFindQuery(findData, {}, populate,sortCriteria);
 		return { data: taskList, error: false }
 
 	} catch (err) {
@@ -1258,6 +1287,12 @@ const updateTaskStatus = async (req, res, next) => {
 	if (!fetchTaskById.data) {
 		return res.status(400).send(sendResponse(400, 'No Task Found', 'updateTaskStatus', null, req.data.signature))
 	}
+
+	if(fetchTaskById.data.dueDate && data.status == 'COMPLETED'){
+		if(new Date(fetchTaskById.data.dueDate).getTime()< new Date().getTime()){
+			data.isDelayTask = true
+		}
+	}
 	if (fetchTaskById.data?.isRated) {
 		return res.status(400).send(sendResponse(400, 'Task Already Rated', 'updateTaskStatus', null, req.data.signature))
 	}
@@ -1308,12 +1343,11 @@ const createPayloadAndUpdateTaskStatus = async function (data) {
 		}
 
 		if(data.status == 'COMPLETED'){
-			updatePayload = {
-				$set: {
+			updatePayload['$set'] = {
 					status: data.status,
-					completedDate : new Date()
+					completedDate : new Date(),
+					isDelayTask : data.isDelayTask || false
 				}
-			}
 		}
 		let options = {
 			new: false

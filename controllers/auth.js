@@ -497,7 +497,7 @@ const resetPassword = async (req, res, next) => {
 	//step 1
 	let userCredentials = await utilities.readUserByCredentials(data)
 	
-	if(userCredentials.err){
+	if(userCredentials.error){
 		return res.status(400).send(sendResponse(400, userCredentials.data, 'resetPassword', null, req.data.signature))
 	}
 	
@@ -604,19 +604,17 @@ const forgotPassword = async (req, res, next) => {
     
 	//find user
 	let findUser = { email : data.email}
-	let userRes = User.userfindOneQuery(findUser);
+	let userRes = await User.userfindOneQuery(findUser);
 	if(!userRes){
         return res.status(400).send(sendResponse(400, "User not found", 'forgotPassword', null, req.data.signature))
 	}
 
 	data.userId = mongoose.Types.ObjectId(userRes._id)
-
-	
 	//check user details
 	let userCredentials = await utilities.readUserByCredentials(data)
 	
-	if(userCredentials.err){
-		return res.status(500).send(sendResponse(400, userCredentials.data, 'forgotPassword', null, req.data.signature))
+	if(userCredentials.error){
+		return res.status(400).send(sendResponse(400, userCredentials.data, 'forgotPassword', null, req.data.signature))
 	}
 	
 	if(!userCredentials.data){
@@ -766,7 +764,6 @@ const forgotChangePassword = async (req, res, next) => {
 
 	let otpLogRes = await Auth.findOtpLog(findData);
 
-	console.log("=============otp log resp=============",findData, otpLogRes)
 	if(!otpLogRes){
         return res.status(400).send(sendResponse(400, "Invalid request", 'forgotChangePassword', null, req.data.signature))
 	}
@@ -779,17 +776,15 @@ const forgotChangePassword = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, "User not found", 'forgotPassword', null, req.data.signature))
 	}
 
-	console.log("=========user details=========",findUser, userRes)
 	data.userId = mongoose.Types.ObjectId(userRes._id)
-
 	
 	//check user details
 	let userCredentials = await utilities.readUserByCredentials(data)
 	
-	if(userCredentials.err){
-		return res.status(500).send(sendResponse(400, userCredentials.data, 'forgotPassword', null, req.data.signature))
+	if(userCredentials.error){
+		return res.status(400).send(sendResponse(400, userCredentials.data, 'forgotPassword', null, req.data.signature))
 	}
-	
+
 	if(!userCredentials.data){
 		return res.status(400).send(sendResponse(400, "User Not Found", 'forgotPassword', null, req.data.signature))
 	}
@@ -803,8 +798,16 @@ const forgotChangePassword = async (req, res, next) => {
 		return res.status(500).send(sendResponse(500, '', 'resetPassword', null, req.data.signature))
 	}
 
+	let otpPyload = {
+		_id : data.otpLogId
+	}
+	let updatePayload = { tokenVerified : true }
+	let updatedOtpLog = await Auth.findAndUpdateOtpLog(otpPyload, updatePayload);
 
-    return res.status(200).send(sendResponse(200, "Token verified", 'forgotPassword', null, null))
+	if(updatedOtpLog.err){
+		return res.status(500).send(sendResponse(500, '', 'resetPassword', null, req.data.signature))
+	}
+    return res.status(200).send(sendResponse(200, "Password changed successfully", 'forgotPassword', null, null))
 
 }
 exports.forgotChangePassword = forgotChangePassword;

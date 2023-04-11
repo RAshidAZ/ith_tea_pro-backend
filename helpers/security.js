@@ -211,7 +211,7 @@ const readUserByCredentials = async function (data) {
         if (!userCredentials || userCredentials.userId.length == 0) {
 
             return {
-                data: "User Not found",
+                data: "User/credentials not found, contact admin to send password setup link",
                 error: true
             }
         }

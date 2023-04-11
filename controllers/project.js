@@ -769,6 +769,7 @@ const archiveStatusProjectUpdate = async (req, res, next) => {
 	}
 
 	if(data.isArchived == 'true' || data.isArchived == true){
+		data.isArchived = true
 
 		console.log("==============check task before archive project")
 		let dueTaskRes = await getDueTaskCountForProject(data)
@@ -808,11 +809,21 @@ const createPayloadAndArchiveProject = async function (data) {
 			_id: data.projectId
 		}
 		let updatePayload = {
-			$set: {
-				isArchived: data.isArchived,
-				isActive : data.isArchived,
+			
+		}
+		if(data.isArchived == 'true' || data.isArchived == true){
+			updatePayload['$set'] = {
+				isArchived: true,
+				isActive : false,
 				updatedAt: new Date()
 			}
+		}else{
+			updatePayload['$set'] = {
+				isArchived: false,
+				isActive : true,
+				updatedAt: new Date()
+			}
+
 		}
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
 

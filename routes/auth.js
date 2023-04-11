@@ -23,7 +23,7 @@ router.post("/v1/user/login", [], Auth.userLogin);
 
 //resend password setup link email
 router.post("/v1/resend/password/setup", 
-[authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "LEAD"])], 
+[authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], 
 Auth.resendPasswordSetupLink);
 
 
@@ -42,7 +42,7 @@ router.post("/v1/otp/verify/forgot/password", [], Auth.otpVerify);
 router.post("/v1/user/forgot/change/password", [], Auth.forgotChangePassword);
 
 //resend otp for forgot password
-router.post("/v1/resend/forgot/password/otp", [], Auth.setPassword);
+// router.post("/v1/resend/forgot/password/otp", [], Auth.setPassword);
 
 //reset password
 router.patch("/v1/user/reset/password",

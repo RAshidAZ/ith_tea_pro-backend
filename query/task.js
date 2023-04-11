@@ -16,8 +16,8 @@ exports.taskPopulate = function (res, populate) {
 exports.taskFindOneQuery = function (findData, projection, populate) {
     return Tasks.findOne(findData, projection).populate(populate)
 }
-exports.taskFindQuery = function (findData, projection, populate) {
-    return Tasks.find(findData, projection).populate(populate)
+exports.taskFindQuery = function (findData, projection, populate, sortCriteria = {}) {
+    return Tasks.find(findData, projection).populate(populate).sort(sortCriteria)
 }
 
 exports.taskCount = function (findData) {

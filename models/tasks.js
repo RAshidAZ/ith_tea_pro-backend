@@ -54,6 +54,14 @@ let tasksSchema = new Schema({
         type: Boolean,
         default: false
     },
+	isDelayTask: {
+        type: Boolean,
+        default: false
+    },
+	isDelayRated: {
+        type: Boolean,
+        default: false
+    },
     rating: {
         type: Number,
         min: 0,
