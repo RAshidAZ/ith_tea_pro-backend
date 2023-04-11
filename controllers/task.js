@@ -1142,7 +1142,7 @@ const createPayloadAndGetTaskLists = async function (data) {
 		}
 
 		if (data.dueDate) {
-			findData.dueDate = new Date(new Date().setUTCHours(23, 59, 59, 000))
+			findData.dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 000))
 		}
 
 		if (JSON.stringify(data.pendingRatingTasks)) {
@@ -1178,6 +1178,8 @@ const createPayloadAndGetTaskLists = async function (data) {
 			}
 		}
 
+
+		console.log("==============find data for tasks======",findData)
 		let taskList = await Task.taskFindQuery(findData, {}, populate,sortCriteria);
 		return { data: taskList, error: false }
 
