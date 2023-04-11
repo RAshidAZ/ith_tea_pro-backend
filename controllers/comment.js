@@ -86,3 +86,40 @@ const insertUserTaskComment = async (req, res, next) => {
 }
 exports.insertUserTaskComment = insertUserTaskComment
 
+//update comment
+const editComment = async (req, res, next) => {
+    let data = req.data;
+    if (!data.commentId) {
+        return res.status(400).send(sendResponse(400, "", 'editComment', null, req.data.signature))
+    }
+    let commentRes = await createPayloadAndUpdateComment(data)
+    if (commentRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'editComment', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, 'Comment updated', 'editComment', commentRes.data, req.data.signature))
+
+
+}
+exports.editComment = editComment;
+
+const createPayloadAndUpdateComment = async function (data) {
+    try {
+        let findData = {
+			_id : data.commentId
+        }
+		
+		let updatePayload = {}
+		if(data.comment){
+			updatePayload.comment = data.comment
+		}
+		if(data.taggedUsers){
+			updatePayload.taggedUsers = data.taggedUsers
+		}
+		let options = { new : true }
+        let commentRes = await Comments.updateComment(findData, updatePayload, options)
+        return { data: commentRes, error: false }
+    } catch (err) {
+        console.log("createPayloadAndUpdateComment Error : ", err)
+        return { data: err, error: true }
+    }
+}

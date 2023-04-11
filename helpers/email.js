@@ -461,3 +461,32 @@ const sendProjectsAssignedMailToUser = function (data) {
 	})
 };
 exports.sendProjectsAssignedMailToUser = sendProjectsAssignedMailToUser;
+
+const sendOtpToUser = function (data) {
+
+	return new Promise(async (resolve, reject) => {
+		let subject = `Forgot Password OTP`;
+		let from = process.env.EMAIL_HOST || host;
+		let to = `${data.email}`;
+
+		let message = `<!DOCTYPE html>
+		<html>
+		  <head>
+			<meta charset="utf-8">
+			<title>OTP for forgot password</title>
+		  </head>
+		  <body>
+			<h2>OTP Verification</h2>
+			<p>Hello,</p>
+			<p>Your OTP for verification is: <strong>${data.generatedOTP}</strong></p>
+			<p>Please enter this OTP on the verification page to complete the process.</p>
+			<p>Thank you,</p>
+			<p>TPro Team</p>
+		  </body>
+		</html>`
+
+		let response = await sendMail(from, to, subject, message);
+		resolve(response);
+	})
+};
+exports.sendOtpToUser = sendOtpToUser;

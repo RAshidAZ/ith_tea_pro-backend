@@ -26,7 +26,7 @@ router.post("/v1/user/login", [], Auth.userLogin);
 
 //resend password setup link email
 router.post("/v1/resend/password/setup", 
-[authenticator, authenticateRole([role.admin, role.superadmin, role.lead])], 
+[authenticator, authenticateRole([role.superadmin, role.admin])], 
 Auth.resendPasswordSetupLink);
 
 
@@ -34,6 +34,23 @@ Auth.resendPasswordSetupLink);
 router.get("/v1/verify/token", [], Auth.verifyPasswordToken);
 
 router.post("/v1/set/password", [], Auth.setPassword);
+
+//forgot password request
+router.post("/v1/user/forgot/password", [], Auth.forgotPassword);
+
+//forgot password verify otp
+router.post("/v1/otp/verify/forgot/password", [], Auth.otpVerify);
+
+//change password
+router.post("/v1/user/forgot/change/password", [], Auth.forgotChangePassword);
+
+//resend otp for forgot password
+// router.post("/v1/resend/forgot/password/otp", [], Auth.setPassword);
+
+//reset password
+router.patch("/v1/user/reset/password",
+    [authenticator],
+    Auth.resetPassword);
 
 
 module.exports = router;

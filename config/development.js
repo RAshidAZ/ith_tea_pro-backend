@@ -10,6 +10,8 @@ module.exports = development = {
     AWS_BUCKET: `aio-dev`,
 	AWS_SES_REGION: 'ap-south-1',
     //mailjet - mohit@ith.tech Account
+	DEV: true,
+	OTP_FIXED : 1234,
     EMAIL_HOST: "sudhansu@ith.tech",
     MAILJET_APIKEY_PUBLIC: 'c47de902fdfd2f36c8ec79e2613f5d73', // ScriptToAddContacts : UserAccountName
     MAILJET_APIKEY_PRIVATE: '2a6501a2791deb1ea480dc0ec69a55ea', // ScriptToAddContacts : UserAccountName

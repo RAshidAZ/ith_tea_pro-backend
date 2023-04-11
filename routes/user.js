@@ -11,7 +11,7 @@ const authenticator = require('../middlewares/authenticator')(clients, data);
 const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
-const { getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng, getTeamAnalytics} = require('../controllers/user');
+const { getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, deleteUser, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng, getTeamAnalytics} = require('../controllers/user');
 
 //roles from config
 const role = JSON.parse(process.env.role)
@@ -49,6 +49,11 @@ router.patch("/v1/edit/block/status", [authenticator, authenticateRole([role.adm
 router.get("/v1/team/analytics", 
 [authenticator], 
 getTeamAnalytics);
+
+//delete user
+router.patch("/v1/delete/user", 
+[authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], 
+deleteUser);
 
 
 module.exports = router;

@@ -12,6 +12,8 @@ const authenticator = require('../middlewares/authenticator')(clients, data);
 
 const { getTaskLogs } = require('../controllers/taskLogs');
 
-router.get("/v1/get", [authenticator], getTaskLogs);
+router.get("/v1/get", 
+[authenticator], 
+getTaskLogs);
 
 module.exports = router;

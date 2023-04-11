@@ -12,11 +12,10 @@ const authenticator = require('../middlewares/authenticator')(clients, data);
 const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
-const { getProjectsAllUser, getAllProjects, removeUsersFromProject, assignProjectsToUser, unassignProjectsToUser, getSpecificProjectLeads, getSpecificProjectUsers, getSpecificProject, addNewProject, editProject, archiveStatusSectionUpdate, deleteProject, deleteProjectSection, editProjectSection, archiveStatusProjectUpdate, assignUserToProject, getUserAssignedProjects, removeUserFromProject, getAllProjectsList, assignLeadToProject, removeLeadFromProject, getAllProjectSections, addProjectSection } = require('../controllers/project');
-
 //roles from config
 const role = JSON.parse(process.env.role)
 
+const { getProjectsAllUser, getAllProjects, removeUsersFromProject, getSpecificProjectUsersForRating, assignProjectsToUser, unassignProjectsToUser, getSpecificProjectLeads, getSpecificProjectUsers, getSpecificProject, addNewProject, editProject, archiveStatusSectionUpdate, deleteProject, deleteProjectSection, editProjectSection, archiveStatusProjectUpdate, assignUserToProject, getUserAssignedProjects, removeUserFromProject, getAllProjectsList, assignLeadToProject, removeLeadFromProject, getAllProjectSections, addProjectSection } = require('../controllers/project');
 //Add new Project
 router.post("/v1/add/new",
     [authenticator, authenticateRole([role.admin, role.superadmin])],
@@ -45,7 +44,7 @@ router.get("/v1/user/all",
 router.patch("/v1/delete", [authenticator, authenticateRole([role.admin, role.superadmin])], deleteProject);
 
 //change project archive status
-router.patch("/v1/update/archive", [authenticator, authenticateRole([role.admin, role.superadmin, role.lead])], archiveStatusProjectUpdate);
+router.patch("/v1/update/archive", [authenticator, authenticateRole([role.admin, role.superadmin])], archiveStatusProjectUpdate);
 
 //Assign Users to project
 router.patch("/v1/assign/users",
@@ -127,3 +126,8 @@ module.exports = router;
 router.patch("/v1/remove/users",
     [authenticator, authenticateRole([role.admin, role.superadmin])],
     removeUsersFromProject);
+
+// Get specific Projects - For Projects Module
+router.get("/v1/project/users/for/rating",
+[authenticator, authenticateRole([role.admin, role.superadmin, role.lead]), filterProjects],
+getSpecificProjectUsersForRating);

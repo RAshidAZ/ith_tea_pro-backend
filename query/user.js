@@ -16,7 +16,7 @@ exports.editUserDetails = function (findPayload, updatePayload) {
     return Users.findOneAndUpdate(findPayload, updatePayload)
 }
 
-exports.userfindOneQuery = function (findPayload, projection) {
+exports.userfindOneQuery = function (findPayload, projection = {}) {
     return Users.findOne(findPayload, projection)
 }
 
@@ -38,4 +38,8 @@ exports.getAllUsersRatingForMonth = async function (payload) {
 
 exports.userAggregate = async function (payload) {
     return Users.aggregate(payload)
+}
+
+exports.getDistinct = async function (field,payload) {
+    return Users.distinct(field, payload)
 }

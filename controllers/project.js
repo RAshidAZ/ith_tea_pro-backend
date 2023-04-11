@@ -135,8 +135,8 @@ exports.addNewProject = addNewProject
 
 const createPayloadAndAddProject = async function (data) {
 	try {
-		let selectedManagers = data.selectedManagers || [];
-		selectedManagers.push(process.env.ADMIN_ID.toString());
+		// let selectedManagers = data.selectedManagers || [];
+		// selectedManagers.push(process.env.ADMIN_ID.toString());
 		let payload = {
 			name: data.name,
 			// sections: data.projectCategories,
@@ -178,8 +178,11 @@ const editProject = async (req, res, next) => {
 	let actionLogData = {
 		actionTaken: 'PROJECT_UPDATED',
 		actionBy: data.auth.id,
-		projectId : projectRes.data._id
+		projectId : projectRes.data._id,
+		previous : projectRes.data,
+		new : data.updateProjectPayload || {}
 	}
+	
 	data.actionLogData = actionLogData;
 	let addActionLogRes = await actionLogController.addProjectLog(data);
 
@@ -202,13 +205,14 @@ const createPayloadAndEditProject = async function (data) {
 			description: data.description,
 		}
 		if (data.selectedManagers) {
-			let adminId = process.env.ADMIN_ID
-			let selectedManagers = data.selectedManagers
-			if(!selectedManagers.includes(adminId)){
-				selectedManagers.push(adminId)
-			}
+			// let adminId = process.env.ADMIN_ID
+			// let selectedManagers = data.selectedManagers
+			// if(!selectedManagers.includes(adminId)){
+			// 	selectedManagers.push(adminId)
+			// }
+			// data.selectedManagers = selectedManagers
 
-			updatePayload.managedBy = selectedManagers
+			updatePayload.managedBy = data.selectedManagers
 		}
 		if (data.selectAccessibleBy) {
 			updatePayload.accessibleBy = data.selectAccessibleBy
@@ -219,7 +223,8 @@ const createPayloadAndEditProject = async function (data) {
 		if (JSON.stringify(data.colorCode)) {
 			updatePayload.colorCode = data.colorCode
 		}
-		let projectRes = await Project.editProjectDetails(payload, updatePayload)
+		data.updateProjectPayload = updatePayload
+		let projectRes = await Project.editProjectDetails(payload, updatePayload, { new :false })
 		return { data: projectRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndEditProject Error : ", err)
@@ -271,7 +276,8 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 		}
 
 		let findUsers = {
-			_id : { $in : data.userIds}
+			_id : { $in : data.userIds},
+			isDeleted : false
 		}
 
 		let allUsers = await User.getAllUsers(findUsers)
@@ -578,7 +584,8 @@ const createPayloadAndgetAllProjectsList = async function (data) {
 	try {
 		let payload = {
 			isActive: true,
-			"isDeleted": false
+			"isDeleted": false,
+			isArchived : false
 		}
 		if (![role.superadmin, role.admin].includes(data.auth.role)) {
 			console.log("Role other than SA/A...", data.auth.role)
@@ -765,6 +772,7 @@ const archiveStatusProjectUpdate = async (req, res, next) => {
 	}
 
 	if(data.isArchived == 'true' || data.isArchived == true){
+		data.isArchived = true
 
 		console.log("==============check task before archive project")
 		let dueTaskRes = await getDueTaskCountForProject(data)
@@ -804,11 +812,21 @@ const createPayloadAndArchiveProject = async function (data) {
 			_id: data.projectId
 		}
 		let updatePayload = {
-			$set: {
-				isArchived: data.isArchived,
-				isActive : data.isArchived,
+			
+		}
+		if(data.isArchived == 'true' || data.isArchived == true){
+			updatePayload['$set'] = {
+				isArchived: true,
+				isActive : false,
 				updatedAt: new Date()
 			}
+		}else{
+			updatePayload['$set'] = {
+				isArchived: false,
+				isActive : true,
+				updatedAt: new Date()
+			}
+
 		}
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
 
@@ -1174,7 +1192,8 @@ const createPayloadAndfindSpecificProjectUsers = async function (data) {
 
 		let allUsers = JSON.parse(JSON.stringify(projectRes.accessibleBy || []))
 		let allLeads = JSON.parse(JSON.stringify(projectRes.managedBy || []))
-		allLeads = allLeads.filter(el=> el.role == role.lead)
+		allLeads = allLeads.filter(el=> (el.role == role.admin && !el.isDeleted))
+		allUsers = allUsers.filter(el=> !el.isDeleted)
 
 		let sendData = [];
 		if(data.auth.role == role.lead){
@@ -1234,13 +1253,23 @@ const createPayloadAndfindSpecificProjectLeads = async function (data) {
 		let populate = 'managedBy'
 
 		let projectRes = await Project.findSpecificProject(payload, projection, populate)
-
+		
 		let leadList = JSON.parse(JSON.stringify(projectRes.managedBy || []));
+		
+		let findAdmins = {
+			role : 'ADMIN',
+			isDeleted : false
+		}
+		let allAdminRes = await User.getAllUsers(findAdmins,{})
+		leadList = leadList.concat(allAdminRes)
+
 
 		if(data.auth.role == role.contributor){
-			leadList = leadList.filter(el=>(el && el.role == role.lead))
+			leadList = leadList.filter(el=>(el && el.role == role.lead && !el.isDeleted))
 		}else if(data.auth.role == role.lead){
-			leadList = leadList.filter(el=> ((el._id.toString() == data.auth.id.toString()) || (el.role == role.admin)))
+			leadList = leadList.filter(el=> (!el.isDeleted && ((el._id.toString() == data.auth.id.toString()) || (el.role == role.admin))))
+		}else{
+			leadList = leadList.filter(el=>(!el.isDeleted))
 		}
 		
 		return { data: leadList, error: false }
@@ -1271,6 +1300,11 @@ const assignProjectsToUser = async (req, res, next) => {
 	if(!user){
 		return res.status(400).send(sendResponse(400, "User not found", 'assignProjectsToUser', null, req.data.signature))
 	}
+
+	if(user.isDeleted){
+		return res.status(400).send(sendResponse(400, "User is deleted, project(s) not assigned", 'assignProjectsToUser', null, req.data.signature))
+	}
+
 	data.user = user
 
 	let projectRes = await createPayloadAndAssignProjectsToUser(data)
@@ -1460,6 +1494,55 @@ const createPayloadAndRemoveUsersFromProject = async function (data) {
 		return { data: projectRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndRemoveUsersFromProject Error : ", err)
+		return { data: err, error: true }
+	}
+}
+
+const getSpecificProjectUsersForRating = async (req, res, next) => {
+	let data = req.data;
+
+	if (!data.projectId) {
+		return res.status(400).send(sendResponse(400, "Missing params", 'getSpecificProject', null, req.data.signature))
+	}
+
+	let projectRes = await createPayloadAndfindSpecificProjectUsersForRating(data)
+
+	if (projectRes.error || !projectRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'getSpecificProject', null, req.data.signature))
+	}
+	return res.status(200).send(sendResponse(200, 'Projects users fetched for rating', 'getSpecificProject', projectRes.data, req.data.signature))
+}
+exports.getSpecificProjectUsersForRating = getSpecificProjectUsersForRating;
+
+const createPayloadAndfindSpecificProjectUsersForRating = async function (data) {
+	try {
+		let payload = {
+			_id: data.projectId,
+			"isDeleted": false
+		}
+
+		let projection = {}
+
+		let populate = 'accessibleBy managedBy'
+
+		let projectRes = await Project.findSpecificProject(payload, projection, populate)
+
+		let allUsers = JSON.parse(JSON.stringify(projectRes.accessibleBy || []))
+		let allLeads = JSON.parse(JSON.stringify(projectRes.managedBy || []))
+		allLeads = allLeads.filter(el=> (el.role == 'LEAD' && !el.isDeleted))
+		allUsers = allUsers.filter(el=> !el.isDeleted)
+
+		let sendData = [];
+		if(data.auth.role == 'LEAD'){
+			allLeads = []
+		}
+
+		sendData = allUsers.concat(allLeads)
+
+		
+		return { data: sendData, error: false }
+	} catch (err) {
+		console.log("createPayloadAndAddProject Error : ", err)
 		return { data: err, error: true }
 	}
 }

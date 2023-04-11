@@ -10,7 +10,7 @@ const clients = {
 const data = {}
 const authenticator = require('../middlewares/authenticator')(clients, data);
 
-const { getCommentsOnRating, insertUserRatingComment, insertUserTaskComment } = require('../controllers/comment');
+const { getCommentsOnRating, insertUserRatingComment, insertUserTaskComment, editComment } = require('../controllers/comment');
 
 //roles from config
 const role = JSON.parse(process.env.role)
@@ -21,8 +21,9 @@ router.post("/v1/user/insert", [authenticator], insertUserRatingComment);
 
 router.post("/v1/user/task/insert", [authenticator], insertUserTaskComment);
 
-
-
+router.patch("/v1/update",
+    [authenticator],
+    editComment);
 
 module.exports = router;
 

@@ -33,6 +33,10 @@ let userSchema = new Schema(
         linkedInLink: String,
         facebookLink: String,
         twitterLink: String,
+		isDeleted : {
+			type: Boolean,
+			default: false
+		},
     },
     { timestamps: true }
 );

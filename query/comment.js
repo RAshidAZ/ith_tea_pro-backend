@@ -8,3 +8,7 @@ exports.insertRatingComment = function (payload) {
 exports.updateRatingComment = function (findPayload, updatePayload) {
     return Comments.findOneAndUpdate(findPayload, updatePayload)
 }
+
+exports.updateComment = function (findPayload, updatePayload, options = {}) {
+    return Comments.findOneAndUpdate(findPayload, updatePayload, options)
+}
