@@ -1491,3 +1491,52 @@ const createPayloadAndRemoveUsersFromProject = async function (data) {
 		return { data: err, error: true }
 	}
 }
+
+const getSpecificProjectUsersForRating = async (req, res, next) => {
+	let data = req.data;
+
+	if (!data.projectId) {
+		return res.status(400).send(sendResponse(400, "Missing params", 'getSpecificProject', null, req.data.signature))
+	}
+
+	let projectRes = await createPayloadAndfindSpecificProjectUsersForRating(data)
+
+	if (projectRes.error || !projectRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'getSpecificProject', null, req.data.signature))
+	}
+	return res.status(200).send(sendResponse(200, 'Projects users fetched for rating', 'getSpecificProject', projectRes.data, req.data.signature))
+}
+exports.getSpecificProjectUsersForRating = getSpecificProjectUsersForRating;
+
+const createPayloadAndfindSpecificProjectUsersForRating = async function (data) {
+	try {
+		let payload = {
+			_id: data.projectId,
+			"isDeleted": false
+		}
+
+		let projection = {}
+
+		let populate = 'accessibleBy managedBy'
+
+		let projectRes = await Project.findSpecificProject(payload, projection, populate)
+
+		let allUsers = JSON.parse(JSON.stringify(projectRes.accessibleBy || []))
+		let allLeads = JSON.parse(JSON.stringify(projectRes.managedBy || []))
+		allLeads = allLeads.filter(el=> (el.role == 'LEAD' && !el.isDeleted))
+		allUsers = allUsers.filter(el=> !el.isDeleted)
+
+		let sendData = [];
+		if(data.auth.role == 'LEAD'){
+			allLeads = []
+		}
+
+		sendData = allUsers.concat(allLeads)
+
+		
+		return { data: sendData, error: false }
+	} catch (err) {
+		console.log("createPayloadAndAddProject Error : ", err)
+		return { data: err, error: true }
+	}
+}

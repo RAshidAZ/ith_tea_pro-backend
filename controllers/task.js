@@ -803,13 +803,13 @@ const rateUserTask = async (req, res, next) => {
 	}
 
 	let currentDate = new Date();
-	let taskCompletedDate = task.data.completedDate;
-	if (!taskCompletedDate) {
+	let taskDueDate = task.data.dueDate;
+	if (!task.data.completedDate) {
 		return res.status(400).send(sendResponse(400, 'Task is not completed', 'rateUserTask', null, req.data.signature))
 	}
-	taskCompletedDate = new Date(taskCompletedDate);
+	taskDueDate = new Date(taskDueDate);
 	
-	let timeDifference = ((currentDate.getTime()-taskCompletedDate.getTime()) || 1)/(1000 * 60 * 60)
+	let timeDifference = ((currentDate.getTime()-taskDueDate.getTime()) || 1)/(1000 * 60 * 60)
 	if (timeDifference > 24) {
 		data.isDelayRated = true
 		// return res.status(400).send(sendResponse(400, 'Oops, You are late in rating..', 'rateUserTask', null, req.data.signature))
