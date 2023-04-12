@@ -88,13 +88,13 @@ const findAllUserWithPagination = async function (data) {
 					}
 				},
 				{
+					$sort : sortCriteria
+				},
+				{
 					$skip : parseInt(skip)
 				},
 				{
 					$limit : parseInt(limit)
-				},
-				{
-					$sort : sortCriteria
 				}
 		]
 		let userRes = await User.userAggregate(pipeline);
