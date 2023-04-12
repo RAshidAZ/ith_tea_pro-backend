@@ -1232,6 +1232,7 @@ const deleteTask = async (req, res, next) => {
 	// 	return res.status(400).send(sendResponse(400, 'Task Already Rated', 'deleteTask', null, req.data.signature))
 	// }
 
+	console.log("==========task delete check")
 	if (!['SUPER_ADMIN'].includes(data.auth.role)) {
 		console.log("==========task delete check for non superadmin, project assinged",data.filteredProjects)
 		if (fetchTaskById.data.projectId && !data.filteredProjects.includes(fetchTaskById.data.projectId.toString())) {
@@ -1254,6 +1255,8 @@ const deleteTask = async (req, res, next) => {
 			}
 		}
 	
+	}else{
+		console.log("==========task delete by superadmin")
 	}
 
 
