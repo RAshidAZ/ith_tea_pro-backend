@@ -572,7 +572,7 @@ const createPayloadAndfindAllLeadsList = async function (data) {
     try {
 
         let findData = {
-            role: "LEAD",
+            role: { $in : ["LEAD", 'ADMIN']},
 			isDeleted : false
         }
         let projection = {};

@@ -11,6 +11,7 @@ const actionLogController = require("../controllers/actionLogs");
 const userController = require("../controllers/user");
 
 //helper
+const utilities = require("../helpers/security");
 const emailUtitlities = require("../helpers/email");
 
 
@@ -18,10 +19,6 @@ const emailUtitlities = require("../helpers/email");
 const insertUserTask = async (req, res, next) => {
 	let data = req.data;
 
-	console.log("==============assigned to value",data.assignedTo)
-	if (data.auth.role == "Lead") {
-		data.tasklead = [process.env.ADMIN_ID]
-	}
 	if (!data.title || !data.section || !data.projectId || !data.tasklead || !data.tasklead.length) {
 		return res.status(400).send(sendResponse(400, "Please send all required Data fields", 'insertUserTask', null, req.data.signature))
 	}
@@ -29,7 +26,15 @@ const insertUserTask = async (req, res, next) => {
 	let projectData = await Project.findSpecificProject({ _id : data.projectId});
 
 	if (!projectData || projectData.isArchived) {
-		return res.status(400).send(sendResponse(400, "Project Archived, Can't assign lead/users ", 'assignUserToProject', null, req.data.signature))
+		return res.status(400).send(sendResponse(400, "Project Archived, can't add task", 'insertUserTask', null, req.data.signature))
+	}
+
+	if (projectData.isDeleted) {
+		return res.status(400).send(sendResponse(400, "Project deleted, can't add task ", 'insertUserTask', null, req.data.signature))
+	}
+
+	if (!projectData.isActive) {
+		return res.status(400).send(sendResponse(400, "Project inactive, can't add task ", 'insertUserTask', null, req.data.signature))
 	}
 
 	let ifAllowedToAddTask = await checkIfAllowedToAddTask(data);
@@ -40,6 +45,18 @@ const insertUserTask = async (req, res, next) => {
 	if (!ifAllowedToAddTask.data.allowed) {
 		return res.status(400).send(sendResponse(401, 'Not Allowed to add task for this project', 'insertUserTask', null, req.data.signature))
 	}
+
+	if(data.tasklead && data.tasklead.length && data.assignedTo){
+		let ifAllowedToAddAssisgnee = await checkLeadAndAssigneeForTask(data);
+		if (ifAllowedToAddAssisgnee.error) {
+			return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
+		}
+
+		if (!ifAllowedToAddAssisgnee.data.allowed) {
+			return res.status(400).send(sendResponse(401, 'Not Allowed to add task for selected lead/assignee', 'insertUserTask', null, req.data.signature))
+		}
+	}
+
 
 	let taskRes = await createPayloadAndInsertTask(data)
 
@@ -67,15 +84,15 @@ const checkIfAllowedToAddTask = async function (data) {
 
 	try {
 		
-		if (["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) {
-			return { data: { allowed: true }, error: false }
-		}
 		let findData = {
-			_id: data.projectId,
-			"$or": [
+			_id: data.projectId
+		}
+		if (!["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) {
+			findData['$or'] = [
 				{ accessibleBy: data.auth.id },
 				{ managedBy: data.auth.id },
 			]
+			// return { data: { allowed: true }, error: false }
 		}
 		let getProject = await Project.findSpecificProject(findData);
 		
@@ -107,7 +124,7 @@ const checkIfAllowedToAddTask = async function (data) {
 
 const createPayloadAndInsertTask = async function (data) {
 	try {
-		if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role)) {
+		if (["CONTRIBUTOR"].includes(data.auth.role)) {
 			data.assignedTo = data.auth.id
 			data.dueDate = data.dueDate || new Date()
 		};
@@ -115,7 +132,7 @@ const createPayloadAndInsertTask = async function (data) {
 		let payload = {
 			title: data.title,
 			description: data.description,
-			status: data.status,
+			status: data.status ||  process.env.TASK_STATUS.split(",")[0],
 			section: data.section,
 			projectId: data.projectId,
 			createdBy: data?.auth?.id,    //TODO: Change after auth is updated
@@ -166,11 +183,14 @@ const editUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "", 'editUserTask', null, req.data.signature))
 	}
 
-	let task = await getTaskById(data);
+	let task = await getTaskDetails(data);
 	if (task.error || !task.data) {
-		return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
+		return res.status(400).send(sendResponse(400, 'Task Not found..', 'editUserTask', null, req.data.signature))
 	}
 
+	if(!['SUPER_ADMIN'].includes(data.auth.role) && task.data.status && task.data.status == process.env.TASK_STATUS.split(",")[2] ){
+		return res.status(400).send(sendResponse(400, "Can't edit completed task", 'editUserTask', null, req.data.signature))
+	}
 	if(task.data.dueDate && data.status == 'COMPLETED'){
 		if(new Date(task.data.dueDate).getTime()< new Date().getTime()){
 			data.isDelayTask = true
@@ -178,8 +198,31 @@ const editUserTask = async (req, res, next) => {
 	}
 
 	data.taskDetails = task.data
+
+
+	let ifAllowedToEditTask = await checkifAllowedToEditTask(data);
+
+	if (ifAllowedToEditTask.error) {
+		return res.status(500).send(sendResponse(500, '', 'createPayloadAndEditTask', null, req.data.signature))
+	}
+
+	if (!ifAllowedToEditTask.data.allowed) {
+		return res.status(400).send(sendResponse(401, 'Not Allowed edit task', 'createPayloadAndEditTask', null, req.data.signature))
+	}
+
 	if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && task.data.isRated) {
 		return res.status(400).send(sendResponse(400, 'You are not permitted to edit task once it is rated', 'rateUserTask', null, req.data.signature))
+	}
+
+	if(data.tasklead && data.tasklead.length && data.assignedTo){
+		let ifAllowedToAddAssisgnee = await checkLeadAndAssigneeForTask(data);
+		if (ifAllowedToAddAssisgnee.error) {
+			return res.status(500).send(sendResponse(500, '', 'createPayloadAndEditTask', null, req.data.signature))
+		}
+
+		if (!ifAllowedToAddAssisgnee.data.allowed) {
+			return res.status(400).send(sendResponse(401, 'Not Allowed to add task for selected lead/assignee', 'createPayloadAndEditTask', null, req.data.signature))
+		}
 	}
 
 	if (data.tasklead && data.tasklead.length) {
@@ -281,13 +324,6 @@ const createPayloadAndEditTask = async function (data) {
 		let findPayload = {
 			_id: data.taskId
 		}
-		if (!['SUPER_ADMIN','ADMIN'].includes(data.auth.role)) {
-			findPayload["$or"] = [
-				{ createdBy: data.auth.id },
-				{ assignedTo: data.auth.id },
-				{ lead: data.auth.id },
-			]
-		}
 
 		let updatePayload = {}
 		if (JSON.stringify(data.title)) {
@@ -299,14 +335,7 @@ const createPayloadAndEditTask = async function (data) {
 		if (JSON.stringify(data.description)) {
 			updatePayload.description = data.description
 		}
-		if (JSON.stringify(data.status)) {
-			updatePayload.status = data.status
-			if (data.status == process.env.TASK_STATUS.split(",")[2] && (!data.taskDetails || !data.taskDetails.status || data.taskDetails.status != process.env.TASK_STATUS.split(",")[2]) ) {
-				updatePayload.completedDate = new Date()
-			} else {
-				updatePayload.completedDate = null
-			}
-		}
+		
 		if (JSON.stringify(data.section)) {
 			updatePayload.section = data.section
 		}
@@ -325,11 +354,9 @@ const createPayloadAndEditTask = async function (data) {
 			let dueDate = data.dueDate
 			if(dueDate){
 				dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 000))
-			}else{
-				dueDate = null
+				data.dueDate = dueDate
+				updatePayload.dueDate = dueDate
 			}
-			data.dueDate = dueDate
-			updatePayload.dueDate = dueDate
 		}
 		if (JSON.stringify(data.completedDate)) {
 			let completedDate = data.completedDate
@@ -344,19 +371,10 @@ const createPayloadAndEditTask = async function (data) {
 			updatePayload.priority = data.priority
 		}
 		if (data.tasklead) {
-			// let ifLeadAssigned = await checkIfLeadAssignedProject(data);
-			// if (ifLeadAssigned.error) {
-			// 	// return { data: ifLeadAssigned.data, error: true }
-			// 	return res.status(500).send(sendResponse(500, '', 'createPayloadAndEditTask', null, req.data.signature))
-			// }
-
-			// if (!ifLeadAssigned.data.allowed) {
-			// 	return { data: "Not Allowed to add given lead for this task", error: true }
-			// 	// return res.status(400).send(sendResponse(401, 'Not Allowed to add given lead for this task', 'createPayloadAndEditTask', null, req.data.signature))
-			// }
 			updatePayload.lead = data.tasklead
 		}
 		data.taskUpdatePayload = updatePayload;
+		console.log("============udpate payload==========",updatePayload)
 		let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload, {new : false})
 		return { data: taskRes, error: false }
 	} catch (err) {
@@ -1179,7 +1197,6 @@ const createPayloadAndGetTaskLists = async function (data) {
 		}
 
 
-		console.log("==============find data for tasks======",findData)
 		let taskList = await Task.taskFindQuery(findData, {}, populate,sortCriteria);
 		return { data: taskList, error: false }
 
@@ -1197,7 +1214,7 @@ const deleteTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "", 'deleteTask', null, req.data.signature))
 	}
 
-	let fetchTaskById = await getTaskById(data);
+	let fetchTaskById = await getTaskDetails(data);
 	if (fetchTaskById.error) {
 		return res.status(500).send(sendResponse(500, '', 'deleteTask', null, req.data.signature))
 	}
@@ -1205,18 +1222,38 @@ const deleteTask = async (req, res, next) => {
 	if (!fetchTaskById.data) {
 		return res.status(400).send(sendResponse(400, 'No Task Found', 'deleteTask', null, req.data.signature))
 	}
-	if (fetchTaskById.data?.isRated) {
-		return res.status(400).send(sendResponse(400, 'Task Already Rated', 'deleteTask', null, req.data.signature))
+
+	if (!['SUPER_ADMIN'].includes(data.auth.role) && (fetchTaskById.data.status ==  process.env.TASK_STATUS.split(",")[2] || fetchTaskById.data.isRated)) {
+		return res.status(400).send(sendResponse(400, "Can't deleted completed/rated task", 'deleteTask', null, req.data.signature))
 	}
 
-	if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+	data.taskDetails = fetchTaskById.data
+	// if (fetchTaskById.data?.isRated) {
+	// 	return res.status(400).send(sendResponse(400, 'Task Already Rated', 'deleteTask', null, req.data.signature))
+	// }
+
+	if (!['SUPER_ADMIN'].includes(data.auth.role)) {
 		if (fetchTaskById.data.projectId && !data.filteredProjects.includes(fetchTaskById.data.projectId.toString())) {
 			return res.status(400).send(sendResponse(400, 'The Project of this task is no longer assigned to you', 'deleteTask', null, req.data.signature))
+		
+		// if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && (data.auth.id.toString() != fetchTaskById.data.createdBy.toString())) {
+		// 	return res.status(400).send(sendResponse(400, 'You are not allowed to delete tasks created by others', 'deleteTask', null, req.data.signature))
+		// }
+		}else{
+
+			let ifAllowedToDeleteTask = await checkifAllowedToDeleteTask(data);
+		
+			if (ifAllowedToDeleteTask.error) {
+				return res.status(500).send(sendResponse(500, '', 'deleteTask', null, req.data.signature))
+			}
+		
+			if (!ifAllowedToDeleteTask.data.allowed) {
+				return res.status(400).send(sendResponse(401, 'Not Allowed to delete task', 'deleteTask', null, req.data.signature))
+			}
 		}
-		if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && (data.auth.id.toString() != fetchTaskById.data.createdBy.toString())) {
-			return res.status(400).send(sendResponse(400, 'You are not allowed to delete tasks created by others', 'deleteTask', null, req.data.signature))
-		}
+	
 	}
+
 
 	let taskRes = await createPayloadAndDeleteTask(data)
 	if (taskRes.error) {
@@ -1281,7 +1318,7 @@ const updateTaskStatus = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "", 'updateTaskStatus', null, req.data.signature))
 	}
 
-	let fetchTaskById = await getTaskById(data);
+	let fetchTaskById = await getTaskDetails(data);
 	if (fetchTaskById.error) {
 		return res.status(500).send(sendResponse(500, '', 'updateTaskStatus', null, req.data.signature))
 	}
@@ -1289,6 +1326,22 @@ const updateTaskStatus = async (req, res, next) => {
 	if (!fetchTaskById.data) {
 		return res.status(400).send(sendResponse(400, 'No Task Found', 'updateTaskStatus', null, req.data.signature))
 	}
+	if (!fetchTaskById.data.assignedTo) {
+		return res.status(400).send(sendResponse(400, "Can't change status, task not assigned", 'updateTaskStatus', null, req.data.signature))
+	}
+
+	data.taskDetails = fetchTaskById.data;
+
+	let ifAllowedToUpdateTaskStatus = await checkifAllowedToUpdateTaskStatus(data);
+
+	if (ifAllowedToUpdateTaskStatus.error) {
+		return res.status(500).send(sendResponse(500, '', 'updateTaskStatus', null, req.data.signature))
+	}
+
+	if (!ifAllowedToUpdateTaskStatus.data.allowed) {
+		return res.status(400).send(sendResponse(401, 'Not Allowed update task status', 'updateTaskStatus', null, req.data.signature))
+	}
+
 
 	if(fetchTaskById.data.dueDate && data.status == 'COMPLETED'){
 		if(new Date(fetchTaskById.data.dueDate).getTime()< new Date().getTime()){
@@ -1299,14 +1352,14 @@ const updateTaskStatus = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, 'Task Already Rated', 'updateTaskStatus', null, req.data.signature))
 	}
 
-	if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
-		if (fetchTaskById.data.projectId && !data.filteredProjects.includes(fetchTaskById.data.projectId.toString())) {
-			return res.status(400).send(sendResponse(400, 'The Project of this task is no longer assigned to you', 'updateTaskStatus', null, req.data.signature))
-		}
-		if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && (data.auth.id.toString() != fetchTaskById.data.assignedTo.toString())) {
-			return res.status(400).send(sendResponse(400, 'You are not allowed to update tasks status', 'updateTaskStatus', null, req.data.signature))
-		}
-	}
+	// if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+	// 	if (fetchTaskById.data.projectId && !data.filteredProjects.includes(fetchTaskById.data.projectId.toString())) {
+	// 		return res.status(400).send(sendResponse(400, 'The Project of this task is no longer assigned to you', 'updateTaskStatus', null, req.data.signature))
+	// 	}
+	// 	if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && (fetchTaskById.data.assignedTo && data.auth.id.toString() != fetchTaskById.data.assignedTo.toString())) {
+	// 		return res.status(400).send(sendResponse(400, 'You are not allowed to update tasks status', 'updateTaskStatus', null, req.data.signature))
+	// 	}
+	// }
 
 	let taskRes = await createPayloadAndUpdateTaskStatus(data)
 	if (taskRes.error || !taskRes.data) {
@@ -1336,7 +1389,7 @@ exports.updateTaskStatus = updateTaskStatus;
 const createPayloadAndUpdateTaskStatus = async function (data) {
 	try {
 		let payload = {
-			_id: data.taskId
+			_id: data.taskId,
 		}
 		let updatePayload = {
 			$set: {
@@ -1648,6 +1701,220 @@ const createPayloadAndGetPendingRatingTasks = async function (data) {
 
 		let taskList = await Task.taskFindQuery(findData, {}, populate);
 		return { data: taskList, error: false }
+
+	} catch (err) {
+		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}
+
+const checkLeadAndAssigneeForTask = async function (data) {
+
+	try {
+
+		let findLead = {
+			_id : { $in : data.tasklead || []}
+		}
+		let leadRes = await User.userfindOneQuery(findLead)
+		if(!leadRes){
+			return { data: { allowed: false }, error: false }
+		}
+		let selectedLeadRole = leadRes.role
+
+		let findAssignee = {
+			_id : { $in : [data.assignedTo]}
+		}
+		let assigneeRes = await User.userfindOneQuery(findAssignee)
+		if(!assigneeRes){
+			return { data: { allowed: false }, error: false }
+		}
+		let selectedAssigneeRole = assigneeRes.role
+
+		let selectedLeadRolePriority = utilities.fetchRolePriority(selectedLeadRole)
+		if(selectedLeadRolePriority.error || !selectedLeadRolePriority.data){
+			return { data: { allowed: false }, error: false }
+		}
+		selectedLeadRolePriority = parseInt(selectedLeadRolePriority.data)
+
+		let selectedAssigneeRolePriority = utilities.fetchRolePriority(selectedAssigneeRole)
+		if(selectedAssigneeRolePriority.error || !selectedAssigneeRolePriority.data){
+			return { data: { allowed: false }, error: false }
+		}
+		selectedAssigneeRolePriority = parseInt(selectedAssigneeRolePriority.data)
+
+		let authRolePriority = utilities.fetchRolePriority(data.auth.role)
+		if(authRolePriority.error || !authRolePriority.data){
+			return { data: { allowed: false }, error: false }
+		}
+		authRolePriority = parseInt(authRolePriority.data)
+
+		console.log("============selected lead/asigned/auth=======",selectedLeadRolePriority,selectedAssigneeRolePriority, authRolePriority )
+
+		if(authRolePriority < selectedAssigneeRolePriority || selectedLeadRolePriority < selectedAssigneeRolePriority || leadRes._id.toString() == assigneeRes._id.toString() ){
+			return { data: { allowed: false }, error: false }
+		}
+	
+		return { data: { allowed: true }, error: false }
+
+
+	} catch (err) {
+		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}
+
+const getTaskDetails = async function (data) {
+	try {
+
+		let findData = {
+			_id: data.taskId,
+			isDeleted: false
+		}
+
+		let populate = 'createdBy assignedTo'
+		let taskDetails = await Task.taskFindOneQuery(findData, {}, populate);
+		return { data: taskDetails, error: false }
+	} catch (err) {
+		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}
+
+const checkifAllowedToEditTask = async function (data) {
+
+	try {
+
+		let taskDetails = data.taskDetails
+		let taskCreatedByRole = (taskDetails.createdBy && taskDetails.createdBy.role) || null
+		if(!taskCreatedByRole){
+			return { data: { allowed: false }, error: false }
+		}
+
+		let taskCreatedRolePriority = utilities.fetchRolePriority(taskCreatedByRole)
+		if(taskCreatedRolePriority.error || !taskCreatedRolePriority.data){
+			return { data: { allowed: false }, error: false }
+		}
+		taskCreatedRolePriority = parseInt(taskCreatedRolePriority.data)
+
+		let authRolePriority = utilities.fetchRolePriority(data.auth.role)
+		if(authRolePriority.error || !authRolePriority.data){
+			return { data: { allowed: false }, error: false }
+		}
+		authRolePriority = parseInt(authRolePriority.data)
+
+		console.log("============created/auth=======",taskCreatedRolePriority, authRolePriority )
+
+		if(authRolePriority < taskCreatedRolePriority){
+			return { data: { allowed: false }, error: false }
+		}
+	
+		return { data: { allowed: true }, error: false }
+
+
+	} catch (err) {
+		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}
+
+const checkifAllowedToUpdateTaskStatus = async function (data) {
+
+	try {
+
+		if(['SUPER_ADMIN'].includes(data.auth.role)){
+			return { data: { allowed: true }, error: false }
+		}
+
+		let findTask = {_id : data.taskId, isDeleted : false, isArchived : false, $or: [
+			{ createdBy: data.auth.id },
+			{ assignedTo: data.auth.id },
+			{ lead: data.auth.id }
+		]}
+
+		let taskDetails = await Task.taskFindOneQuery(findTask, {}, '');
+
+		if(!taskDetails){
+			return { data: { allowed: false }, error: false }
+		}
+ 
+		let taskAssigneeRole = (data.taskDetails && data.taskDetails.assignedTo && data.taskDetails.assignedTo.role) || null
+		if(!taskAssigneeRole){
+			return { data: { allowed: false }, error: false }
+		}
+
+		let taskAssigneeRolePriority = utilities.fetchRolePriority(taskAssigneeRole)
+		if(taskAssigneeRolePriority.error || !taskAssigneeRolePriority.data){
+			return { data: { allowed: false }, error: false }
+		}
+		taskAssigneeRolePriority = parseInt(taskAssigneeRolePriority.data)
+
+		let authRolePriority = utilities.fetchRolePriority(data.auth.role)
+		if(authRolePriority.error || !authRolePriority.data){
+			return { data: { allowed: false }, error: false }
+		}
+		authRolePriority = parseInt(authRolePriority.data)
+
+		console.log("============created/auth=======",taskAssigneeRolePriority, authRolePriority )
+
+		if(authRolePriority < taskAssigneeRolePriority){
+			return { data: { allowed: false }, error: false }
+		}
+	
+		return { data: { allowed: true }, error: false }
+
+
+	} catch (err) {
+		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}
+
+const checkifAllowedToDeleteTask = async function (data) {
+
+	try {
+
+		if(['SUPER_ADMIN'].includes(data.auth.role)){
+			return { data: { allowed: true }, error: false }
+		}
+
+		let findTask = {_id : data.taskId, isDeleted : false, isArchived : false, $or: [
+			{ createdBy: data.auth.id },
+			{ assignedTo: data.auth.id },
+			{ lead: data.auth.id }
+		]}
+
+		let taskAssignedDetail = await Task.taskFindOneQuery(findTask, {}, '');
+		let authRolePriority = utilities.fetchRolePriority(data.auth.role)
+		if(authRolePriority.error || !authRolePriority.data){
+			return { data: { allowed: false }, error: false }
+		}
+		authRolePriority = parseInt(authRolePriority.data)
+
+		
+		
+		let taskData = data.taskDetails
+		let createdBy = (taskData.createdBy && taskData.createdBy._id) || null
+		let creatorRole = (taskData.createdBy && taskData.createdBy.role) || null
+
+		let taskCreatorRolePriority = utilities.fetchRolePriority(creatorRole)
+		if(taskCreatorRolePriority.error || !taskCreatorRolePriority.data){
+			return { data: { allowed: false }, error: false }
+		}
+		taskCreatorRolePriority = parseInt(taskCreatorRolePriority.data)
+
+		//check delete authority
+		if(createdBy.toString() != data.auth.id){
+
+			if(authRolePriority > taskCreatorRolePriority){
+
+				return { data: { allowed: true }, error: false }
+			}else{
+				return { data: { allowed: false }, error: false }
+			}
+		}
+	
+		return { data: { allowed: true }, error: false }
+
 
 	} catch (err) {
 		console.log("Error => ", err);

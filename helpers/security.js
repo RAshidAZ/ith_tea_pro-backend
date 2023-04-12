@@ -282,3 +282,14 @@ exports.validateToken = async function (data, cb) {
 
     return cb(null, getUserCredentials.data);
 } 
+
+const fetchRolePriority = function (role) {
+
+	if(!role){
+		return { priority: null, error: true} 
+	}
+	const rolePriority = JSON.parse(process.env.rolePriority)
+
+  return { data: rolePriority[role], error: false} 
+};
+exports.fetchRolePriority = fetchRolePriority;

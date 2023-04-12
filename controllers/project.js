@@ -132,19 +132,21 @@ exports.addNewProject = addNewProject
 
 const createPayloadAndAddProject = async function (data) {
 	try {
-		// let selectedManagers = data.selectedManagers || [];
-		// selectedManagers.push(process.env.ADMIN_ID.toString());
+		
+		let findAdmins = {
+			$or: [
+				{_id : { $in : data.selectedManagers || []}},
+				{role : { $in : ['ADMIN']}}
+			]
+		}
+		let managerRes = await User.getDistinct("_id",findAdmins)
+		data.selectedManagers = managerRes
 		let payload = {
 			name: data.name,
-			// sections: data.projectCategories,
 			managedBy: data.selectedManagers,
 			accessibleBy: data.selectAccessibleBy || [],
-			// image : data.imagePath
 		}
 
-		if (data.sections) {
-			payload.sections = data.sections
-		}
 		if (data.description) {
 			payload.description = data.description
 		}
@@ -1185,7 +1187,7 @@ const createPayloadAndfindSpecificProjectUsers = async function (data) {
 		if(data.auth.role == 'CONTRIBUTOR'){
 			payload.accessibleBy = data.auth.id
 			projection['accessibleBy.$']  = 1
-			projection['managedBy']  = 0
+			// projection['managedBy']  = 0
 		}
 
 		let populate = 'accessibleBy managedBy'
@@ -1194,26 +1196,22 @@ const createPayloadAndfindSpecificProjectUsers = async function (data) {
 
 		let allUsers = JSON.parse(JSON.stringify(projectRes.accessibleBy || []))
 		let allLeads = JSON.parse(JSON.stringify(projectRes.managedBy || []))
-		allLeads = allLeads.filter(el=> (el.role == 'LEAD' && !el.isDeleted))
+		// allLeads = allLeads.filter(el=> (el.role == 'LEAD' && !el.isDeleted))
 		allUsers = allUsers.filter(el=> !el.isDeleted)
 
 		let sendData = [];
-		if(data.auth.role == 'LEAD'){
-			if(data.selectedLeadRole && data.selectedLeadRole == 'ADMIN'){
-				allUsers = []
-				allLeads = allLeads.filter(el=> el._id.toString() == data.auth.id.toString())
-			}else{
-				allLeads = []
-			}
-
-		}else if(['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
-			
-			// if(data.selectedLeadRole && data.selectedLeadRole == 'ADMIN'){
-			// 	allUsers = []
-			// }else{
-			// 	allLeads = []
-			// }
+		if(data.selectedLeadRole && data.selectedLeadRole == 'ADMIN'){
+			// allUsers = []
+			// allLeads = allLeads.filter(el=> el._id.toString() == data.auth.id.toString())
+		}else{
+			allLeads = allLeads.filter(el=> (el.role == 'LEAD' && !el.isDeleted))
+			// allLeads = []
 		}
+		// if(data.auth.role == 'LEAD'){
+
+		// }else if(['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+		// 	allLeads = allLeads.filter(el=> el._id.toString() != data.auth.id.toString())
+		// }
 
 		sendData = allUsers.concat(allLeads)
 

@@ -18,12 +18,12 @@ const { editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskD
 
 //Insert task
 router.post("/v1/user/insert",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"]), filterProjects],
     insertUserTask);
 
 //edit task
 router.patch("/v1/edit",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"]), filterProjects],
     editUserTask);
 
 // Task Listing Main API
@@ -68,12 +68,12 @@ router.post("/v1/rate",
 
 //Delete task API
 router.patch("/v1/delete",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"]), filterProjects],
     deleteTask);
 
 //update task status
 router.patch("/v1/update/status",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"]), filterProjects],
     updateTaskStatus);
 
 /**Get all Tasks by projectId */

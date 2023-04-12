@@ -12,7 +12,7 @@ module.exports = function () {
         if (!["SUPER_ADMIN", "ADMIN"].includes(role)) {
 
             let allProjectsAssigned = [];
-            if (role == "LEAD") {
+            if (role == "LEAD" || role == 'ADMIN') {
                 allProjectsAssigned = await Projects.distinct("_id", { managedBy: req.data.auth.id })
             } else {
                 allProjectsAssigned = await Projects.distinct("_id", { accessibleBy: req.data.auth.id })
