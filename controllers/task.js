@@ -1233,6 +1233,7 @@ const deleteTask = async (req, res, next) => {
 	// }
 
 	if (!['SUPER_ADMIN'].includes(data.auth.role)) {
+		console.log("==========task delete check for non superadmin, project assinged",data.filteredProjects)
 		if (fetchTaskById.data.projectId && !data.filteredProjects.includes(fetchTaskById.data.projectId.toString())) {
 			return res.status(400).send(sendResponse(400, 'The Project of this task is no longer assigned to you', 'deleteTask', null, req.data.signature))
 		
@@ -1240,6 +1241,7 @@ const deleteTask = async (req, res, next) => {
 		// 	return res.status(400).send(sendResponse(400, 'You are not allowed to delete tasks created by others', 'deleteTask', null, req.data.signature))
 		// }
 		}else{
+			console.log("=============project assigned==========")
 
 			let ifAllowedToDeleteTask = await checkifAllowedToDeleteTask(data);
 		
@@ -1877,19 +1879,13 @@ const checkifAllowedToDeleteTask = async function (data) {
 			return { data: { allowed: true }, error: false }
 		}
 
-		let findTask = {_id : data.taskId, isDeleted : false, isArchived : false, $or: [
-			{ createdBy: data.auth.id },
-			{ assignedTo: data.auth.id },
-			{ lead: data.auth.id }
-		]}
-
-		let taskAssignedDetail = await Task.taskFindOneQuery(findTask, {}, '');
 		let authRolePriority = utilities.fetchRolePriority(data.auth.role)
 		if(authRolePriority.error || !authRolePriority.data){
 			return { data: { allowed: false }, error: false }
 		}
 		authRolePriority = parseInt(authRolePriority.data)
 
+		console.log("============authRolePriority=========",authRolePriority)
 		
 		
 		let taskData = data.taskDetails
@@ -1901,10 +1897,12 @@ const checkifAllowedToDeleteTask = async function (data) {
 			return { data: { allowed: false }, error: false }
 		}
 		taskCreatorRolePriority = parseInt(taskCreatorRolePriority.data)
+		console.log("============creator id/role=========",createdBy, creatorRole, taskCreatorRolePriority)
 
 		//check delete authority
-		if(createdBy.toString() != data.auth.id){
+		if(createdBy.toString() != data.auth.id.toString()){
 
+			console.log("==========creator and editor not same")
 			if(authRolePriority > taskCreatorRolePriority){
 
 				return { data: { allowed: true }, error: false }
