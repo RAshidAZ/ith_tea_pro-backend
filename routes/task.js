@@ -36,7 +36,7 @@ router.get("/v1/by/taskId",
 getTaskDetailsByTaskId);
 
 router.get("/v1/overdue/tasks", 
-[authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN"])], 
+[authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN"]), filterProjects], 
 getOverDueTasks);
 
 router.get("/v1/status/analytics", [authenticator], getTaskStatusAnalytics);

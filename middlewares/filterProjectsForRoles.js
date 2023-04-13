@@ -9,13 +9,13 @@ module.exports = function () {
 
         let role = req.data.auth.role;
         console.log("Data in middle ware....", role)
-        if (!["SUPER_ADMIN", "ADMIN"].includes(role)) {
+        if (!["SUPER_ADMIN"].includes(role)) {
 
             let allProjectsAssigned = [];
             if (role == "LEAD" || role == 'ADMIN') {
-                allProjectsAssigned = await Projects.distinct("_id", { managedBy: req.data.auth.id })
+                allProjectsAssigned = await Projects.distinct("_id", { managedBy: req.data.auth.id, isDeleted : false })
             } else {
-                allProjectsAssigned = await Projects.distinct("_id", { accessibleBy: req.data.auth.id })
+                allProjectsAssigned = await Projects.distinct("_id", { accessibleBy: req.data.auth.id, isDeleted : false })
             }
             if (allProjectsAssigned.error) {
                 console.log(allProjectsAssigned.error);

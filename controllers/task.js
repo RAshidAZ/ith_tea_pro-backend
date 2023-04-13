@@ -87,7 +87,7 @@ const checkIfAllowedToAddTask = async function (data) {
 		let findData = {
 			_id: data.projectId
 		}
-		if (!["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) {
+		if (!["SUPER_ADMIN"].includes(data.auth.role)) {
 			findData['$or'] = [
 				{ accessibleBy: data.auth.id },
 				{ managedBy: data.auth.id },
@@ -351,8 +351,9 @@ const createPayloadAndEditTask = async function (data) {
 			updatePayload.assignedTo = data.assignedTo
 		}
 		if (JSON.stringify(data.dueDate)) {
-			let dueDate = data.dueDate
-			if(dueDate){
+			let dueDate = new Date(data.dueDate)
+			console.log("=========due date ",dueDate )
+			if(dueDate && !isNaN(dueDate)){
 				dueDate = new Date(new Date(data.dueDate).setUTCHours(23, 59, 59, 000))
 				data.dueDate = dueDate
 				updatePayload.dueDate = dueDate
@@ -374,7 +375,6 @@ const createPayloadAndEditTask = async function (data) {
 			updatePayload.lead = data.tasklead
 		}
 		data.taskUpdatePayload = updatePayload;
-		console.log("============udpate payload==========",updatePayload)
 		let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload, {new : false})
 		return { data: taskRes, error: false }
 	} catch (err) {
@@ -1147,7 +1147,7 @@ const createPayloadAndGetTaskLists = async function (data) {
 		}
 
 		//filter tasks of only those project which are assigned to LEAD, CONTRIBUTOR, INTERN
-		if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+		if (!['SUPER_ADMIN'].includes(data.auth.role)) {
 			findData.projectId = { $in: data.filteredProjects }
 		}
 
@@ -1362,6 +1362,11 @@ const updateTaskStatus = async (req, res, next) => {
 			data.isDelayTask = true
 		}
 	}
+
+	if(!fetchTaskById.data.dueDate && data.status == 'COMPLETED'){
+		return res.status(400).send(sendResponse(401, "Can't complete task without dueDate", 'updateTaskStatus', null, req.data.signature))
+	}
+
 	if (fetchTaskById.data?.isRated) {
 		return res.status(400).send(sendResponse(400, 'Task Already Rated', 'updateTaskStatus', null, req.data.signature))
 	}
@@ -1620,34 +1625,27 @@ const createPayloadAndGetTodayTaskLists = async function (data) {
 			let toDate = new Date(data.toDate)
 			toDate = new Date((toDate).setTime((toDate).getTime()+1000*60*30*11))
 			endDayTime =  new Date(new Date(toDate).setUTCHours(23, 59, 59, 000));
-			console.log("==========endday time, ",endDayTime)
 			dateFilter['$lte'] = endDayTime
 		}
 		
 		let findData = {
 			isDeleted: false,
 			isArchived :  false,
-			// dueDate : { $gte : startDayTime, $lte : endDayTime },
 		};
 
 		if(startDayTime || endDayTime){
 			findData.dueDate = dateFilter
 		}
 
-		console.log("===============date and other filter============",findData)
-		if(!['SUPER_ADMIN','ADMIN'].includes(data.auth.role)){
+		if(!['SUPER_ADMIN'].includes(data.auth.role)){
 			findData.projectId = { $in : data.filteredProjects || []}
+		}
+		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
 			findData["$or"] = [
 				{ createdBy: data.auth.id },
 				{ assignedTo: data.auth.id },
 				{ lead: data.auth.id }
 			]
-		}
-
-		
-		let populate = 'assignedTo'
-		
-		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
 			let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
 			if(deletedUserData.data){
 				let deletedUserIds = deletedUserData.data || []
@@ -1655,8 +1653,12 @@ const createPayloadAndGetTodayTaskLists = async function (data) {
 				findData.createdBy = { $nin : deletedUserIds}
 			}
 		}
+
 		
-		let taskList = await Task.taskFindQuery(findData, {}, populate);
+		let populate = 'assignedTo'
+		
+		let sortCriteria = { dueDate : 1}
+		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
 	} catch (err) {
@@ -1688,6 +1690,10 @@ const createPayloadAndGetOverDueTasks = async function (data) {
 			status : {$nin : ['ONHOLD','COMPLETED']}, dueDate : { $lte : new Date()}
 		};
 		
+		if(data.auth.role == 'ADMIN' && data.filteredProjects){
+			findData.projectId = { $in : data.filteredProjects }
+		}
+		console.log("===============find data for overdue tasks======",findData, data.auth.role, data.filteredProjects )
 		// let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
 		// if(deletedUserData.data){
 		// 	let deletedUserIds = deletedUserData.data || []
@@ -1717,7 +1723,7 @@ const createPayloadAndGetPendingRatingTasks = async function (data) {
 		};
 
 		//filter tasks of only those project which are assigned to LEAD, CONTRIBUTOR, INTERN
-		if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
+		if (!['SUPER_ADMIN'].includes(data.auth.role)) {
 			findData.projectId = { $in: data.filteredProjects }
 		}
 

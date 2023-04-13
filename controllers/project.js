@@ -489,7 +489,7 @@ const createPayloadAndgetAllProjects = async function (data) {
 		}
 
 		console.log("================finda data",findData)
-		if (!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
+		if (!['SUPER_ADMIN'].includes(data.auth.role)) {
 			projectAccess["$match"] =
 			{
 				"$or": [

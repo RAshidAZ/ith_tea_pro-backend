@@ -703,16 +703,18 @@ const createPayloadAndGetUnAssignedUserOfSpecificProject = async function (data)
 		let userRes = null;
         let projectRes = await Project.findSpecificProject(payload, projection);
 		
-		if(data.role == 'LEAD'){
-			userRes = (projectRes && projectRes.managedBy) || []
-		}else{
-			userRes = (projectRes && projectRes.accessibleBy) || []
-		}
 		let userPayload = {
-			_id : { $nin : userRes},
-			role : data.role,
 			isDeleted : false
 		}
+		if(data.role == 'LEAD'){
+			userPayload.role = { $in : ['LEAD', 'ADMIN'] }
+			userRes = (projectRes && projectRes.managedBy) || []
+		}else{
+			userPayload.role = { $in : [data.role] }
+			userRes = (projectRes && projectRes.accessibleBy) || []
+		}
+
+		userPayload._id = { $nin : userRes }
 		let sortCriteria = {
 			createdAt : -1
 		}
