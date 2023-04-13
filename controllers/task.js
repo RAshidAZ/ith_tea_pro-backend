@@ -1599,7 +1599,11 @@ const createPayloadAndGetTodayTaskLists = async function (data) {
 		let startDayTime;
 		let endDayTime;
 
-		console.log("=============from and to date=======", data.currentDate)
+		if(data.currentDate){
+			let currentDate = new Date(data.currentDate)
+			data.currentDate = new Date((currentDate).setTime((currentDate).getTime()+1000*60*30*11))
+		}
+
 		let currentDate = data.currentDate || new Date();
 		let dateFilter = {};
 		startDayTime =  new Date(new Date(currentDate).setUTCHours(00, 00, 00, 000));
@@ -1608,12 +1612,13 @@ const createPayloadAndGetTodayTaskLists = async function (data) {
 
 		if(data.fromDate){
 			let fromDate = new Date(data.fromDate)
+			fromDate = new Date((fromDate).setTime((fromDate).getTime()+1000*60*30*11))
 			startDayTime = new Date(new Date(fromDate).setUTCHours(00, 00, 00, 000));
 			dateFilter['$gte'] = startDayTime
 		}
 		if(data.toDate){
 			let toDate = new Date(data.toDate)
-			
+			toDate = new Date((toDate).setTime((toDate).getTime()+1000*60*30*11))
 			endDayTime =  new Date(new Date(toDate).setUTCHours(23, 59, 59, 000));
 			console.log("==========endday time, ",endDayTime)
 			dateFilter['$lte'] = endDayTime
