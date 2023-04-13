@@ -96,7 +96,8 @@ exports.createPayloadAndGetUserAssignedProjects = createPayloadAndGetUserAssigne
 
 const addNewProject = async (req, res, next) => {
 	let data = req.data;
-	if (!data.name || !data.selectedManagers || !data.selectedManagers.length) {
+
+	if (!data.name) {
 		return res.status(400).send(sendResponse(400, "", 'addNewProject', null, req.data.signature))
 	}
 
@@ -133,10 +134,19 @@ exports.addNewProject = addNewProject
 const createPayloadAndAddProject = async function (data) {
 	try {
 		
+		let selectedManagers =  data.selectedManagers || []
 		let findAdmins = {
-			$or: [
-				{_id : { $in : data.selectedManagers || []}},
+			isDeleted : false
+		}
+		if(data.auth.role == 'SUPER_ADMIN'){
+			findAdmins['$or'] = [
+				{_id : { $in : selectedManagers}},
 				{role : { $in : ['ADMIN']}}
+			]
+		}else if(data.auth.role == 'ADMIN'){
+			selectedManagers.push(data.auth.id)
+			findAdmins['$or'] = [
+				{_id : { $in : selectedManagers}}
 			]
 		}
 		let managerRes = await User.getDistinct("_id",findAdmins)
@@ -1254,12 +1264,12 @@ const createPayloadAndfindSpecificProjectLeads = async function (data) {
 		
 		let leadList = JSON.parse(JSON.stringify(projectRes.managedBy || []));
 		
-		let findAdmins = {
-			role : 'ADMIN',
-			isDeleted : false
-		}
-		let allAdminRes = await User.getAllUsers(findAdmins,{})
-		leadList = leadList.concat(allAdminRes)
+		// let findAdmins = {
+		// 	role : 'ADMIN',
+		// 	isDeleted : false
+		// }
+		// let allAdminRes = await User.getAllUsers(findAdmins,{})
+		// leadList = leadList.concat(allAdminRes)
 
 
 		if(data.auth.role == 'CONTRIBUTOR'){

@@ -410,7 +410,8 @@ const createPayloadAndGetGroupByTask = async function (data) {
 	try {
 		let findData = { "isDeleted": false }
 		let filter = {}
-		let sortTaskOrder = { "_id.projectId": 1, "_id.section": 1 }
+		let sortTaskOrder = { "_id.projectId": 1, "_id.section": 1, "tasks.dueDate" : 1 }
+		let taskOrder = { "tasks.dueDate" : 1 }
 		let allowedSortType = process.env.ALLOWED_SORT_BY.split(',')
 		let filterAnd = []
 
@@ -492,10 +493,17 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			filter["tasks.dueDate"] = filterDate;
 		}
 
-		if(data.sortType && allowedSortType.includes(data.sortType)){
-			let sortOrder = parseInt(data.sortOrder || 0)
-			console.log("=================sort order and type ====", data.sortType, sortOrder)
+		data.sortType = (data.sortType && allowedSortType.includes(data.sortType)) ? data.sortType : 'default'
+		if(data.sortType){
+			let sortOrder = data.sortOrder || 1
+			sortOrder = parseInt(sortOrder)
+			if(sortOrder && [1,-1].includes(sortOrder)){
+				sortOrder = parseInt(sortOrder)
+			}else{
+				sortOrder = 1
+			}
 			sortTaskOrder = sortOrder > 0 ? CONSTANTS.SORTBY_IN_INCREASING_ORDER[data.sortType] : CONSTANTS.SORTBY_IN_DECREASING_ORDER[data.sortType]
+			taskOrder = sortOrder > 0 ? CONSTANTS.SORTBY_IN_INCREASING_ORDER['due-date'] : CONSTANTS.SORTBY_IN_DECREASING_ORDER['due-date']
 		}
 
 		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
@@ -555,6 +563,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 				}
 			},
 			{ "$unwind": { "path": "$tasks", preserveNullAndEmptyArrays: preserveArrays } },
+			{ $sort: taskOrder },
 			{ $match: filter },
 			{
 				"$group": {
@@ -1587,14 +1596,40 @@ exports.getTodayTasksList = getTodayTasksList;
 const createPayloadAndGetTodayTaskLists = async function (data) {
 	try {
 		
-		let startDayTime =  new Date(new Date().setUTCHours(00, 00, 00, 000));
-		let endDayTime =  new Date(new Date().setUTCHours(23, 59, 59, 000));
+		let startDayTime;
+		let endDayTime;
+
+		console.log("=============from and to date=======", data.currentDate)
+		let currentDate = data.currentDate || new Date();
+		let dateFilter = {};
+		startDayTime =  new Date(new Date(currentDate).setUTCHours(00, 00, 00, 000));
+		endDayTime =  new Date(new Date(currentDate).setUTCHours(23, 59, 59, 000));
+		dateFilter = { $gte : startDayTime, $lte : endDayTime }
+
+		if(data.fromDate){
+			let fromDate = new Date(data.fromDate)
+			startDayTime = new Date(new Date(fromDate).setUTCHours(00, 00, 00, 000));
+			dateFilter['$gte'] = startDayTime
+		}
+		if(data.toDate){
+			let toDate = new Date(data.toDate)
+			
+			endDayTime =  new Date(new Date(toDate).setUTCHours(23, 59, 59, 000));
+			console.log("==========endday time, ",endDayTime)
+			dateFilter['$lte'] = endDayTime
+		}
 		
 		let findData = {
 			isDeleted: false,
 			isArchived :  false,
-			dueDate : { $gte : startDayTime, $lte : endDayTime },
+			// dueDate : { $gte : startDayTime, $lte : endDayTime },
 		};
+
+		if(startDayTime || endDayTime){
+			findData.dueDate = dateFilter
+		}
+
+		console.log("===============date and other filter============",findData)
 		if(!['SUPER_ADMIN','ADMIN'].includes(data.auth.role)){
 			findData.projectId = { $in : data.filteredProjects || []}
 			findData["$or"] = [
@@ -1902,6 +1937,14 @@ const checkifAllowedToDeleteTask = async function (data) {
 		taskCreatorRolePriority = parseInt(taskCreatorRolePriority.data)
 		console.log("============creator id/role=========",createdBy, creatorRole, taskCreatorRolePriority)
 
+
+		let findTask = {_id : data.taskId, isDeleted : false, isArchived : false, $or: [
+			{ createdBy: data.auth.id },
+			{ assignedTo: data.auth.id },
+			{ lead: data.auth.id }
+		]}
+
+		let taskAssignedDetail = await Task.taskFindOneQuery(findTask, {}, '');
 		//check delete authority
 		if(createdBy.toString() != data.auth.id.toString()){
 

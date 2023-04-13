@@ -96,3 +96,8 @@ module.exports = router;
 router.get("/v1/get/today/tasks",
     [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects],
     getTodayTasksList)
+
+//get today tasks list for team work
+// router.get("/v1/get/agenda/tasks",
+//     [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects],
+//     getTodayTasksList)
