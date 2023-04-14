@@ -180,22 +180,26 @@ exports.addCommnetIdInRatingById = addCommnetIdInRatingById;
 
 const getAllUsersRatingForMonth = async function (data) {
 	try {
-		let roleFilter = ["SUPER_ADMIN", "ADMIN"]
+		let roleFilter = ["SUPER_ADMIN"]
 		if(data.auth.role == 'CONTRIBUTOR'){
 			roleFilter.push('LEAD')
+			roleFilter.push('ADMIN')
+		}
+		if(data.auth.role == 'LEAD'){
+			roleFilter.push('ADMIN')
 		}
 		let findData = { role: { $nin: roleFilter } }
 		if(data.userRating){
 			findData._id = mongoose.Types.ObjectId(data.auth.id)
 		}
-		if (!data.userRating && ['LEAD', 'CONTRIBUTOR'].includes(data.auth.role) && data.filteredProjects) {
+		if (!data.userRating && ['LEAD', 'CONTRIBUTOR', 'ADMIN'].includes(data.auth.role) && data.filteredProjects) {
 			let allProjectUsers = await filteredDistinctProjectsUsers(data)
 			if (allProjectUsers && allProjectUsers.data) {
 				findData._id = { $in: (allProjectUsers.data).map((el) => mongoose.Types.ObjectId(el)) }
 			}
 		}
 
-		console.log("================find filter in month rating=============", findData)
+		console.log("================find filter in month rating=============", roleFilter)
 		let payload = [
 
 			{

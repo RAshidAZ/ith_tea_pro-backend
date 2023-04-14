@@ -13,7 +13,7 @@ const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
 
-const { editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTaskStatusAnalytics, getTodayTasksList,  getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments } = require('../controllers/task');
+const { editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTaskStatusAnalytics, getTodayTasksList,  getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments, getTeamTasksList } = require('../controllers/task');
 
 
 //Insert task
@@ -40,7 +40,6 @@ router.get("/v1/overdue/tasks",
 getOverDueTasks);
 
 router.get("/v1/status/analytics", [authenticator], getTaskStatusAnalytics);
-
 
 /*Get task list for homepage - According to role : SA/A(All tasks), User( Task assigned,createdby and Of Its assigned Project ), Lead (Assigned Projects) 
 */
@@ -97,7 +96,7 @@ router.get("/v1/get/today/tasks",
     [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects],
     getTodayTasksList)
 
-//get today tasks list for team work
-// router.get("/v1/get/agenda/tasks",
-//     [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects],
-//     getTodayTasksList)
+// get team-member tasks list
+router.get("/v1/get/team/task",
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects],
+    getTeamTasksList)

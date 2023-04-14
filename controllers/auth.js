@@ -235,7 +235,7 @@ const userLogin = async (req, res, next) => {
 
     let PasswordComparsion = await comparePassword(data);
     if (PasswordComparsion.error) {
-        return res.status(401).send(sendResponse(401, "Password Mismatch", 'userLogin', PasswordComparsion.data, req.data.signature))
+        return res.status(400).send(sendResponse(400, "Wrong password", 'userLogin', PasswordComparsion.data, req.data.signature))
     }
 
     let encryptUserData = encryptData(data);
