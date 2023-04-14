@@ -1263,17 +1263,9 @@ const createPayloadAndfindSpecificProjectLeads = async function (data) {
 		let projectRes = await Project.findSpecificProject(payload, projection, populate)
 		
 		let leadList = JSON.parse(JSON.stringify(projectRes.managedBy || []));
-		
-		// let findAdmins = {
-		// 	role : 'ADMIN',
-		// 	isDeleted : false
-		// }
-		// let allAdminRes = await User.getAllUsers(findAdmins,{})
-		// leadList = leadList.concat(allAdminRes)
-
 
 		if(data.auth.role == 'CONTRIBUTOR'){
-			leadList = leadList.filter(el=>(el && el.role == 'LEAD' && !el.isDeleted))
+			leadList = leadList.filter(el=>(el && !el.isDeleted))
 		}else if(data.auth.role == 'LEAD'){
 			leadList = leadList.filter(el=> (!el.isDeleted && ((el._id.toString() == data.auth.id.toString()) || (el.role == 'ADMIN'))))
 		}else{

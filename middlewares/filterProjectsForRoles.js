@@ -52,7 +52,7 @@ module.exports = function () {
                         success: false,
                         message: 'Unauthorized for this project'
                     };
-                    return res.status(400).send(response);
+                    return res.status(403).send(response);
                 } else {
                     req.data.filteredProjects = allProjectsAssigned;
                     next();
