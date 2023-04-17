@@ -3,7 +3,7 @@ const Tasks = require('../models/tasks')
 
 let updateUsers = () => {
 	let findDueDates = {
-		dueDate : {$nin : [null, '']}
+		dueDate : {$nin : [null, ''], $exists:true}
 	}
 	let updateDueDates = [{ $set: { dueDate: { $add: ["$dueDate", -1000*60*60*5.5] } } }]
     Tasks.updateMany(findDueDates,updateDueDates, (err, resp) => {
