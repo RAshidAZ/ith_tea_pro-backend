@@ -438,6 +438,10 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			let assignTo = JSON.parse(data.assignedTo)
 			filter["tasks.assignedTo"] = { $in: assignTo.map(el => mongoose.Types.ObjectId(el)) }
 		}
+		if (data.leads) {
+			let leads = JSON.parse(data.leads)
+			filter["tasks.lead"] = { $in: leads.map(el => mongoose.Types.ObjectId(el)) }
+		}
 		if (data.userTasks) {
 			let assignTo = data.auth.id
 			filter["tasks.assignedTo"] = mongoose.Types.ObjectId(assignTo)
