@@ -934,3 +934,88 @@ const createPayloadAndgetDeletedUsers = async function (data) {
     }
 }
 exports.createPayloadAndgetDeletedUsers = createPayloadAndgetDeletedUsers
+
+const getUserListing = async (req, res, next) => {
+    let data = req.data;
+
+    let userRes = await findAllUsers(data)
+
+    if (userRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getAllUsersListingNonPaginated', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'Users Fetched', 'getAllUsersListingNonPaginated', userRes.data, req.data.signature))
+}
+exports.getUserListing = getUserListing;
+
+const findAllUsers = async function (data) {
+    try {
+        let payload = {
+            role: { $nin: ["ADMIN"]}
+        }
+        if (data.search) {
+            payload["$or"] = [
+                { "name": { "$regex": data.search, "$options": "i" } },
+                { "email": { "$regex": data.search, "$options": "i" } },
+            ]
+        }
+        let projection = {
+			"label":"$name",
+			"value": "$_id",
+			_id : 0
+		};
+
+        let sortCriteria = {
+            createdAt: -1
+        }
+
+        let userRes = await User.getAllUsers(payload, projection, sortCriteria);
+
+        let sendData = {
+            users: userRes,
+        }
+        return { data: sendData, error: false }
+    } catch (err) {
+        console.log("findAllUserNonPagination Error : ", err)
+        return { data: err, error: true }
+    }
+}
+
+const getAllLeadsListing = async (req, res, next) => {
+    let data = req.data;
+
+    let userRes = await findAllLeads(data)
+
+    if (userRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getAllLeadsListing', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'Leads Fetched', 'getAllLeadsListing', userRes.data, req.data.signature))
+}
+exports.getAllLeadsListing = getAllLeadsListing;
+
+const findAllLeads = async function (data) {
+    try {
+        let payload = {
+            role: { $in: ['ADMIN', 'LEAD']},
+			isDeleted : false
+        }
+        let projection = {
+			name :1
+		};
+
+        let sortCriteria = {
+            createdAt: -1
+        }
+
+        let userRes = await User.getAllUsers(payload, projection, sortCriteria);
+
+        let sendData = {
+            users: userRes,
+        }
+        return { data: sendData, error: false }
+    } catch (err) {
+        console.log("findAllUserNonPagination Error : ", err)
+        return { data: err, error: true }
+    }
+}

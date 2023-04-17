@@ -11,7 +11,7 @@ const authenticator = require('../middlewares/authenticator')(clients, data);
 const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
-const { getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, deleteUser, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng, getTeamAnalytics} = require('../controllers/user');
+const { getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getUserListing, getAllLeadsListing, deleteUser, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng, getTeamAnalytics} = require('../controllers/user');
 
 // Superadmin, Admin Add New Team Member
 router.post("/v1/add", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], addNewUser);
@@ -52,6 +52,13 @@ router.patch("/v1/delete/user",
 [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], 
 deleteUser);
 
+// Get all users (except SA) - Non Paginated ( for dropdown )
+router.get("/v1/all/users", [authenticator], getUserListing);
+
+// Get all leads/admin ( for dropdown )
+router.get("/v1/all/leads", 
+[authenticator], 
+getAllLeadsListing);
 
 module.exports = router;
 

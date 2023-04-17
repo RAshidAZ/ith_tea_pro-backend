@@ -601,7 +601,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 		]
 
 
-		
+
 		let taskRes = await Project.projectAggregate(aggregate)
 
 		let populate = []
@@ -1673,7 +1673,7 @@ const createPayloadAndGetOverDueTasks = async function (data) {
 		let findData = {
 			isDeleted: false,
 			isArchived :  false,
-			status : {$nin : ['ONHOLD','COMPLETED']}, dueDate : { $lte : new Date().toUTCString()}
+			status : {$nin : ['ONHOLD','COMPLETED']}, dueDate : { $lte : new Date(new Date().toUTCString())}
 		};
 		
 		if(data.assignedTo){
@@ -1685,7 +1685,8 @@ const createPayloadAndGetOverDueTasks = async function (data) {
 		}
 		
 		let populate = 'lead assignedTo'
-		let taskList = await Task.taskFindQuery(findData, {}, populate);
+		let sortCriteria = { dueDate : 1}
+		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
 	} catch (err) {
@@ -1732,7 +1733,8 @@ const createPayloadAndGetPendingRatingTasks = async function (data) {
 			}
 		}
 
-		let taskList = await Task.taskFindQuery(findData, {}, populate);
+		let sortCriteria = { dueDate : 1}
+		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
 	} catch (err) {
@@ -1995,12 +1997,13 @@ exports.getTeamTasksList = getTeamTasksList;
 const createPayloadAndGetTeamTasksList = async function (data) {
 	try {
 
+		let currentDate =  (data.currentDate && new Date(data.currentDate)) || new Date(new Date().toUTCString())
 		let findData = {
 			isDeleted: false,
 			isArchived :  false,
-			dueDate : { $gte : new Date(new Date().toUTCString()) }
+			dueDate : { $gte : currentDate }
 		};
-
+		
 		if(data.assignedTo){
 			findData.assignedTo = data.assignedTo
 		}
@@ -2010,7 +2013,8 @@ const createPayloadAndGetTeamTasksList = async function (data) {
 		}
 
 		let populate = 'lead assignedTo'
-		let taskList = await Task.taskFindQuery(findData, {}, populate);
+		let sortCriteria = { dueDate : 1}
+		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
 	} catch (err) {
@@ -2040,7 +2044,8 @@ const createPayloadAndGetTeamPendingRatingTasks = async function (data) {
 		
 		let populate = 'lead assignedTo'
 
-		let taskList = await Task.taskFindQuery(findData, {}, populate);
+		let sortCriteria = { dueDate : 1}
+		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
 	} catch (err) {
@@ -2068,7 +2073,8 @@ const createPayloadAndGetTeamLateRatedTasksList = async function (data) {
 		}
 
 		let populate = 'lead assignedTo'
-		let taskList = await Task.taskFindQuery(findData, {}, populate);
+		let sortCriteria = { dueDate : 1}
+		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
 	} catch (err) {
@@ -2096,7 +2102,8 @@ const createPayloadAndGetTeamAdhocTasksList = async function (data) {
 		}
 
 		let populate = 'lead assignedTo'
-		let taskList = await Task.taskFindQuery(findData, {}, populate);
+		let sortCriteria = { dueDate : 1}
+		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
 	} catch (err) {
@@ -2104,3 +2111,35 @@ const createPayloadAndGetTeamAdhocTasksList = async function (data) {
 		return { data: err, error: true }
 	}
 }
+
+//Get task lists for homepage - Set according to role
+const getTeamTasksCountReport = async function (req, res, next) {
+
+	let data = req.data;
+
+	if (!data.userId) {
+		return res.status(400).send(sendResponse(400, `User required`, 'getTaskDetailsByTaskId', null, req.data.signature))
+	}
+	data.assignedTo = data.userId
+
+	let tasksLists = null;
+	if(data.todayTasks){
+		tasksLists = await createPayloadAndGetTeamTasksList(data);
+	}else if(data.overDueTasks){
+		tasksLists = await createPayloadAndGetOverDueTasks(data);
+	}else if(data.pendingRatingTasks){
+		tasksLists = await createPayloadAndGetTeamPendingRatingTasks(data);
+	}else if(data.isDelayRated){
+		tasksLists = await createPayloadAndGetTeamLateRatedTasksList(data);
+	}else if(data.adhocTasks){
+		tasksLists = await createPayloadAndGetTeamAdhocTasksList(data);
+	}
+
+	// if (tasksLists || tasksLists.error) {
+	// 	return res.status(500).send(sendResponse(500, '', 'getTaskListForHomePage', null, req.data.signature))
+	// }
+	let sendData = (tasksLists && tasksLists.data) || null
+
+	return res.status(200).send(sendResponse(200, 'Task Lists fetched', 'getTaskListForHomePage', sendData, req.data.signature));
+}
+exports.getTeamTasksCountReport = getTeamTasksCountReport;
