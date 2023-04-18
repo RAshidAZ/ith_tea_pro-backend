@@ -1174,7 +1174,7 @@ const createPayloadAndGetTaskLists = async function (data) {
 		}
 
 		if (data.dueDate) {
-			findData.dueDate = new Date(new Date(data.dueDate).setUTCHours(18, 29, 59, 000))
+			findData.dueDate = new Date(data.dueDate)
 		}
 
 		if (JSON.stringify(data.pendingRatingTasks)) {
@@ -1185,13 +1185,14 @@ const createPayloadAndGetTaskLists = async function (data) {
 			sortCriteria.dueDate = 1
 			findData.status = { $ne: "COMPLETED" };
 			findData.assignedTo = data.auth.id
+			let currentDate = (data.currentDate && new Date(data.currentDate)) || new Date(new Date().setUTCHours(18, 29, 59, 999))
 			if(findData.dueDate){
-				let filterDueDate = { $eq : findData.dueDate, $lte : new Date(new Date().setUTCHours(18, 29, 59, 000)) }
+				let filterDueDate = { $eq : findData.dueDate, $lte : currentDate }
 				findData.dueDate = filterDueDate
 
 			}else{
 
-				findData.dueDate = { $lte : new Date(new Date().setUTCHours(18, 29, 59, 000)) }
+				findData.dueDate = { $lte : currentDate }
 			}
 		}
 		let populate = 'lead assignedTo'
@@ -1211,6 +1212,7 @@ const createPayloadAndGetTaskLists = async function (data) {
 		}
 
 
+		console.log("============find data=========",findData)
 		let taskList = await Task.taskFindQuery(findData, {}, populate,sortCriteria);
 		return { data: taskList, error: false }
 
