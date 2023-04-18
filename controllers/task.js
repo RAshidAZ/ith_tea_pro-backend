@@ -136,7 +136,7 @@ const createPayloadAndInsertTask = async function (data) {
 
 		if (["CONTRIBUTOR"].includes(data.auth.role)) {
 			data.assignedTo = data.auth.id
-			data.dueDate = data.dueDate || new Date()
+			data.dueDate = data.dueDate || new Date(new Date().setUTCHours(18, 29, 59, 999))
 		};
 
 		let payload = {
