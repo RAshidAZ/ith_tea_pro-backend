@@ -481,6 +481,11 @@ const createPayloadAndgetAllProjects = async function (data) {
 			"isDeleted": false
 		}
 		
+		if(data.filteredProjects){
+			let filterProjects = data.filteredProjects.map(el=> mongoose.Types.ObjectId(el))
+			findData['_id'] = { $in : filterProjects}
+		}
+
 		if(JSON.stringify(data.isArchived)){
 			findData['isArchived'] = JSON.parse(data.isArchived)
 		}else{
@@ -488,7 +493,6 @@ const createPayloadAndgetAllProjects = async function (data) {
 			findData['isActive'] = true
 		}
 
-		console.log("================finda data",findData)
 		if (!['SUPER_ADMIN'].includes(data.auth.role)) {
 			projectAccess["$match"] =
 			{

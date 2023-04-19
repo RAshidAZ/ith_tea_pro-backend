@@ -24,6 +24,17 @@ const insertUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "Please send all required Data fields", 'insertUserTask', null, req.data.signature))
 	}
 
+	if(data.dueDate && !validator.isISO8601(data.dueDate) && validator.isDate(data.dueDate)){
+		delete data.dueDate
+	}
+
+	let currentDate = new Date()
+	let timeZoneOffsetMinutes = currentDate.getTimezoneOffset();
+	currentDate = new Date(currentDate.getTime()- timeZoneOffsetMinutes*1000*60)
+	if (data.dueDate && ((new Date(data.dueDate)).getDate() < currentDate)) {
+		return res.status(400).send(sendResponse(400, "Task due date can't be less than current day", 'insertUserTask', null, req.data.signature))
+	}
+
 	let projectData = await Project.findSpecificProject({ _id : data.projectId});
 
 	if (!projectData || projectData.isArchived) {
@@ -38,9 +49,6 @@ const insertUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "Project inactive, can't add task ", 'insertUserTask', null, req.data.signature))
 	}
 
-	if(data.dueDate && !validator.isISO8601(data.dueDate) && validator.isDate(data.dueDate)){
-		delete data.dueDate
-	}
 
 	let ifAllowedToAddTask = await checkIfAllowedToAddTask(data);
 	if (ifAllowedToAddTask.error) {
@@ -311,7 +319,7 @@ const editUserTask = async (req, res, next) => {
 			previousTaskData.priority = task.data.priority
 			newTaskData.priority = taskUpdatePayload.priority
 		}
-		if(JSON.stringify(taskUpdatePayload.assignedTo) && (taskUpdatePayload.assignedTo || '') != task.data.assignedTo){
+		if(JSON.stringify(taskUpdatePayload.assignedTo) && ((taskUpdatePayload.assignedTo && taskUpdatePayload.assignedTo.toString()) || 'r') != ((task.data.assignedTo && task.data.assignedTo._id.toString()) || 'random')){
 			actionTaken = 'TASK_UPDATED'
 			previousTaskData.assignedTo = task.data.assignedTo
 			newTaskData.assignedTo = taskUpdatePayload.assignedTo
@@ -842,7 +850,7 @@ const rateUserTask = async (req, res, next) => {
 	taskDueDate = new Date(taskDueDate);
 	
 	let timeDifference = ((currentDate.getTime()-taskDueDate.getTime()) || 1)/(1000 * 60 * 60)
-	if (timeDifference > 24) {
+	if (timeDifference > parseInt(process.env.ratingTimeAllowed)) {
 		data.isDelayRated = true
 		// return res.status(400).send(sendResponse(400, 'Oops, You are late in rating..', 'rateUserTask', null, req.data.signature))
 	}
@@ -1122,7 +1130,7 @@ const getTaskListToRate = async function (req, res, next) {
 
 	let data = req.data;
 
-	if (!data.projectId || !data.userId || !data.dueDate) {
+	if (!data.projectId || !data.userId || (!data.dueDate && (!data.fromDate || !data.toDate))) {
 		return res.status(400).send(sendResponse(400, 'Missing Params', 'getTaskListToRate', null, req.data.signature))
 	}
 	data.isRated = false;
@@ -1147,6 +1155,7 @@ const createPayloadAndGetTaskLists = async function (data) {
 		let sortCriteria = {
 
 		}
+		let dateFilters = []
 		if(data.status){
 			findData.status = data.status
 		}
@@ -1174,7 +1183,14 @@ const createPayloadAndGetTaskLists = async function (data) {
 		}
 
 		if (data.dueDate) {
-			findData.dueDate = new Date(data.dueDate)
+			dateFilters.push({dueDate : new Date(data.dueDate)})
+		}
+
+		if(data.fromDate){
+			dateFilters.push({dueDate : { $gte: new Date(data.fromDate)}})
+		}
+		if(data.toDate){
+			dateFilters.push({dueDate : { $lte: new Date(data.toDate)}})
 		}
 
 		if (JSON.stringify(data.pendingRatingTasks)) {
@@ -1186,14 +1202,7 @@ const createPayloadAndGetTaskLists = async function (data) {
 			findData.status = { $ne: "COMPLETED" };
 			findData.assignedTo = data.auth.id
 			let currentDate = (data.currentDate && new Date(data.currentDate)) || new Date(new Date().setUTCHours(18, 29, 59, 999))
-			if(findData.dueDate){
-				let filterDueDate = { $eq : findData.dueDate, $lte : currentDate }
-				findData.dueDate = filterDueDate
-
-			}else{
-
-				findData.dueDate = { $lte : currentDate }
-			}
+			dateFilters.push({dueDate : { $lte : currentDate }})
 		}
 		let populate = 'lead assignedTo'
 
@@ -1211,8 +1220,9 @@ const createPayloadAndGetTaskLists = async function (data) {
 			}
 		}
 
-
-		console.log("============find data=========",findData)
+		if(dateFilters.length){
+			findData['$and'] = dateFilters
+		}
 		let taskList = await Task.taskFindQuery(findData, {}, populate,sortCriteria);
 		return { data: taskList, error: false }
 
@@ -2091,18 +2101,19 @@ const createPayloadAndGetTeamAdhocTasksList = async function (data) {
 		let findData = {
 			isDeleted: false,
 			isArchived :  false,
-			status : 'COMPLETED',
-			projectId : process.env.adhocProjectId
+			status : 'COMPLETED'
 		};
 
+		let projectFilter = [{ projectId : process.env.adhocProjectId }]
 		if(data.assignedTo){
 			findData.assignedTo = data.assignedTo
 		}
 		
 		if(!['SUPER_ADMIN'].includes(data.auth.role) && data.filteredProjects){
-			findData.projectId = { $in : data.filteredProjects }
+			projectFilter.push({projectId : { $in : data.filteredProjects}})
 		}
-
+		
+		findData['$and'] = projectFilter
 		let populate = 'lead assignedTo'
 		let sortCriteria = { dueDate : 1}
 		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
