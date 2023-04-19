@@ -181,19 +181,22 @@ exports.addCommnetIdInRatingById = addCommnetIdInRatingById;
 const getAllUsersRatingForMonth = async function (data) {
 	try {
 		let roleFilter = ["SUPER_ADMIN"]
+		let findData = { }
 		if(data.auth.role == 'CONTRIBUTOR'){
+			findData.isDeleted  = false
 			roleFilter.push('LEAD')
 			roleFilter.push('ADMIN')
 		}
 		if(data.auth.role == 'LEAD'){
+			findData.isDeleted  = false
 			roleFilter.push('ADMIN')
 		}
-		let findData = { role: { $nin: roleFilter } }
+		findData.role  = { $nin: roleFilter }
 		if(data.userRating){
 			findData._id = mongoose.Types.ObjectId(data.auth.id)
 		}
 		if (!data.userRating && ['LEAD', 'CONTRIBUTOR', 'ADMIN'].includes(data.auth.role) && data.filteredProjects) {
-			let allProjectUsers = await filteredDistinctProjectsUsers(data)
+			let allProjectUsers = await filteredProjectsUsers(data)
 			if (allProjectUsers && allProjectUsers.data) {
 				findData._id = { $in: (allProjectUsers.data).map((el) => mongoose.Types.ObjectId(el)) }
 			}
@@ -398,3 +401,35 @@ const filteredDistinctProjectsUsers = async function (data) {
 
 }
 exports.filteredDistinctProjectsUsers = filteredDistinctProjectsUsers
+
+const filteredProjectsUsers = async function (data) {
+	try {
+
+		let pipeline = [
+			{
+				$group: {
+				  _id: null,
+				  users: { $push: { $concatArrays: ["$managedBy", "$accessibleBy"] } }
+				}
+			},
+			{
+				$project: {
+				  _id: 0,
+				  users: { $reduce: {
+					input: "$users",
+					initialValue: [],
+					in: { $setUnion: ["$$value", "$$this"] }
+				  } }
+				}
+			}
+		  ]
+		let projectsUsers = await Project.projectAggregate(pipeline)
+		let allUsers = (projectsUsers && projectsUsers.length && projectsUsers[0].users) || []
+		allUsers.push(data.auth.id)
+		return { data: allUsers, error: false }
+	} catch (err) {
+		console.log("filteredProjectsUsers Error : ", err)
+		return { data: err, error: true }
+	}
+
+}
