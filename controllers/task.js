@@ -31,7 +31,7 @@ const insertUserTask = async (req, res, next) => {
 	let currentDate = new Date()
 	let timeZoneOffsetMinutes = currentDate.getTimezoneOffset();
 	currentDate = new Date(currentDate.getTime()- timeZoneOffsetMinutes*1000*60)
-	if (data.dueDate && ((new Date(data.dueDate)).getDate() < currentDate)) {
+	if (data.dueDate && ((new Date(data.dueDate)).getDate() < currentDate.getDate())) {
 		return res.status(400).send(sendResponse(400, "Task due date can't be less than current day", 'insertUserTask', null, req.data.signature))
 	}
 
