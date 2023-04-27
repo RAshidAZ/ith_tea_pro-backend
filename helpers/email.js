@@ -33,7 +33,7 @@ let sendMail = async function (from, to, subject, message, cb) {
 
 			})
 			.catch((err) => {
-				console.log("Email send Error ==>> ", err);
+				console.log("Email send Error ==>> ", err.message);
 				resolve({
 					error: true,
 					data: err

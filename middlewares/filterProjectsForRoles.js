@@ -26,7 +26,7 @@ module.exports = function () {
                 return res.status(500).send(response);
             }
             allProjectsAssigned = allProjectsAssigned.map(e => e.toString());
-
+				
             let projectsToFilter = [];
             if (req.query?.projectId) {
                 projectsToFilter.push(req.query.projectId);
@@ -38,16 +38,16 @@ module.exports = function () {
                 projectsToFilter.push(req.body?.projectId);
             }
             if (req.query?.projectIds) {
-                projectsToFilter.push(...req.query?.projectId);
+                projectsToFilter.push(...JSON.parse(req.query?.projectIds));
             }
             if (req.body?.projectIds) {
-                projectsToFilter.push(...req.body?.projectId);
+                projectsToFilter.push(...req.body?.projectIds);
             }
 
             if (projectsToFilter && projectsToFilter.length) {
 
                 projectsToFilter = projectsToFilter.map(e => e.toString());
-                if (!(projectsToFilter.every(projectToCheck => allProjectsAssigned.includes(projectToCheck)))) {
+                if (!(projectsToFilter.every(projectToCheck => allProjectsAssigned.includes(projectToCheck.toString())))) {
                     var response = {
                         success: false,
                         message: 'Unauthorized for this project'
