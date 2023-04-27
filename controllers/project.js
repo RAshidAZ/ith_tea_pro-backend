@@ -647,6 +647,8 @@ const createPayloadAndgetAllProjectSections = async function (data) {
 			payload.projectId = data.projectId
 		}
 		let sortCriteria = {
+			"projectId.name" : 1,
+			name : 1,
 			createdAt: 1
 		}
 

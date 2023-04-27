@@ -27,7 +27,7 @@ exports.getProjectSections = async function (payload, projection, sortCriteria) 
         projection = { }
     }
     console.log("------------------------", payload, sortCriteria)
-    return ProjectSections.find(payload, projection).sort(sortCriteria)
+    return ProjectSections.find(payload, projection).populate('projectId').sort(sortCriteria)
 }
 
 exports.getProjectsAllUser = async function (payload, projection) {
