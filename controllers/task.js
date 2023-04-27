@@ -1705,6 +1705,9 @@ const createPayloadAndGetPendingRatingTasks = async function (data) {
 			isRated : false
 		};
 
+		if(data.memberId){
+			findData.assignedTo = data.memberId 
+		}
 		//filter tasks of only those project which are assigned to LEAD, CONTRIBUTOR, INTERN
 		if (!['SUPER_ADMIN'].includes(data.auth.role)) {
 			findData.projectId = { $in: data.filteredProjects }
