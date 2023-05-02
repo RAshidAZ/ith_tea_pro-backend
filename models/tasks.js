@@ -95,6 +95,10 @@ let tasksSchema = new Schema({
 	isDeleted: {
         type: Boolean,
         default: false
+    },
+	timeTaken: {
+        type: Object,
+        default:0
     }
 
 }, {
