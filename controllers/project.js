@@ -108,6 +108,11 @@ const addNewProject = async (req, res, next) => {
 	if(checkIfProjectNameExist.data.exist){
 		return res.status(400).send(sendResponse(400, "Project name already exist", 'addNewProject', null, req.data.signature))
 	}
+	let defaultSectionDetails = await fetchDefaultSection(data)	
+	if (defaultSectionDetails.error || !defaultSectionDetails.data) {
+		return res.status(500).send(sendResponse(500, '', 'Notes Does not Exist', null, req.data.signature))
+	}
+	data.defaultSectionId = defaultSectionDetails.data._id
 	let projectRes = await createPayloadAndAddProject(data)
 	if (projectRes.error || !projectRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
@@ -155,6 +160,7 @@ const createPayloadAndAddProject = async function (data) {
 			name: data.name,
 			managedBy: data.selectedManagers,
 			accessibleBy: data.selectAccessibleBy || [],
+			sections:[data.defaultSectionId]
 		}
 
 		if (data.description) {
@@ -1064,7 +1070,10 @@ const getTaskCountForProject = async function (data) {
 }
 
 const checkIfSectionEist = async function (data) {
+
 	try {
+		console.log("check =================>",data)
+
 		let payload = {
 			name: data.name,
 			isActive : true,
@@ -1073,6 +1082,25 @@ const checkIfSectionEist = async function (data) {
 		}
 		
 		let projectSectionRes = await ProjectSections.findSection(payload)
+		return { data: projectSectionRes, error: false }
+	} catch (err) {
+		console.log("createPayloadAndAddProject Error : ", err)
+		return { data: err, error: true }
+	}
+}
+const fetchDefaultSection = async function (data) {
+	try {
+		console.log("Fetch =================>",data)
+		let payload = {
+			name: process.env.DEFAULT_SECTION,
+			isActive : true,
+			isDeleted : false,
+			projectId : data.projectId
+		}
+		console.log('payy================>',payload)
+		let projectSectionRes = await ProjectSections.findSection(payload)
+		
+		console.log('payy22222222222================>',	projectSectionRes)
 		return { data: projectSectionRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndAddProject Error : ", err)
