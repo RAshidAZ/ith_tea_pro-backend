@@ -16,6 +16,49 @@ const encryptData = async function (data) {
             expiresIn: "12h", // 30 days validity
             algorithm: "HS256"
         };
+        // let refreshTokenSignOptions = {
+        //     issuer: "Authorization",
+        //     subject: "teapro@ith.tech",
+        //     audience: "teapro-refresh",
+        //     // expiresIn: "30d", // 30 days validity
+        //     expiresIn: "30d", // 30 days validity
+        //     algorithm: "HS256"
+        // };
+        let encryptedData = jwt.sign(data, process.env.ENCRYPT_SALT_STATIC, signOptions);
+        // let refreshTokenEncryptedData = jwt.sign(data, process.env.ENCRYPT_SALT_STATIC, refreshTokenSignOptions);
+
+        // console.log(encryptedData)
+        // console.log(refreshTokenEncryptedData)
+
+        // findData={
+        //     accountId:data.accountId
+        // }
+
+        // updateData={
+        //     refreshToken:refreshTokenEncryptedData
+        // }
+
+         // await Credentials.updateCredentials(findData,updateData)
+        // console.log(de)
+
+        return {
+            data:encryptedData,
+            error: false
+        }
+    } catch (e) {
+
+        return {
+            data: e,
+            error: true
+        }
+    }
+
+}
+exports.encryptData = encryptData;
+const encryptRefreshTokenData = async function (data) {
+
+    try {
+    
         let refreshTokenSignOptions = {
             issuer: "Authorization",
             subject: "teapro@ith.tech",
@@ -24,10 +67,8 @@ const encryptData = async function (data) {
             expiresIn: "30d", // 30 days validity
             algorithm: "HS256"
         };
-        let encryptedData = jwt.sign(data, process.env.ENCRYPT_SALT_STATIC, signOptions);
         let refreshTokenEncryptedData = jwt.sign(data, process.env.ENCRYPT_SALT_STATIC, refreshTokenSignOptions);
 
-        console.log(encryptedData)
         console.log(refreshTokenEncryptedData)
 
         findData={
@@ -42,10 +83,7 @@ const encryptData = async function (data) {
         // console.log(de)
 
         return {
-            data:{
-                encryptedData,
-                refreshTokenEncryptedData,
-            },   
+            data:refreshTokenEncryptedData,
             error: false
         }
     } catch (e) {
@@ -57,8 +95,20 @@ const encryptData = async function (data) {
     }
 
 }
-exports.encryptData = encryptData;
+exports.encryptRefreshTokenData = encryptRefreshTokenData;
 
+
+verifyRefreshToken: (refreshToken) => {
+    return new Promise ((resolve, reject) => {
+        jwt.verify(refreshToken, process.env.ENCRYPT_SALT_STATIC,(err, payload) =>{
+            if(err){  
+                return reject.sendStatus(403)
+            }
+        })
+    })
+}  
+
+exports.verifyRefreshToken = verifyRefreshToken
 
 const GenerateRefreshToken = function (data){
     
