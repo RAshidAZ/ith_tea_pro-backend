@@ -108,16 +108,23 @@ const addNewProject = async (req, res, next) => {
 	if(checkIfProjectNameExist.data.exist){
 		return res.status(400).send(sendResponse(400, "Project name already exist", 'addNewProject', null, req.data.signature))
 	}
+	let projectRes = await createPayloadAndAddProject(data)
+	console.log("==================================prjec=======>",projectRes)
+	if (projectRes.error || !projectRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
+	}
+	let payload = {
+		name:process.env.DEFAULT_SECTION,
+		isActive : true,
+		isDeleted : false,
+		projectId : projectRes.data._id
+	}
+	let projectSectionRes = await ProjectSections.createProjectSection(payload)
 	let defaultSectionDetails = await fetchDefaultSection(data)	
 	if (defaultSectionDetails.error || !defaultSectionDetails.data) {
 		return res.status(500).send(sendResponse(500, '', 'Notes Does not Exist', null, req.data.signature))
 	}
 	data.defaultSectionId = defaultSectionDetails.data._id
-	let projectRes = await createPayloadAndAddProject(data)
-	if (projectRes.error || !projectRes.data) {
-		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
-	}
-
 	let actionLogData = {
 		actionTaken: 'PROJECT_ADDED',
 		actionBy: data.auth.id,

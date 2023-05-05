@@ -42,10 +42,7 @@ const encryptData = async function (data) {
         // console.log(de)
 
         return {
-            data:{
-                encryptedData,
-                refreshTokenEncryptedData,
-            },   
+            data:encryptedData,
             error: false
         }
     } catch (e) {
