@@ -5,44 +5,21 @@ const jwt = require('jsonwebtoken');
 const { Auth, Credentials } = require('../query');
 
 // Data Encryption and Decryption 
-const encryptData = async function (data) {
+const encryptData = function (data) {
 
     try {
-        let signOptions = {
+        var signOptions = {
             issuer: "Authorization",
             subject: "teapro@ith.tech",
             audience: "teapro",
             // expiresIn: "30d", // 30 days validity
-            expiresIn: "12h", // 30 days validity
-            algorithm: "HS256"
-        };
-        let refreshTokenSignOptions = {
-            issuer: "Authorization",
-            subject: "teapro@ith.tech",
-            audience: "teapro-refresh",
-            // expiresIn: "30d", // 30 days validity
-            expiresIn: "30d", // 30 days validity
+            expiresIn: "1d", // 30 days validity
             algorithm: "HS256"
         };
         let encryptedData = jwt.sign(data, process.env.ENCRYPT_SALT_STATIC, signOptions);
-        let refreshTokenEncryptedData = jwt.sign(data, process.env.ENCRYPT_SALT_STATIC, refreshTokenSignOptions);
-
-        console.log(encryptedData)
-        console.log(refreshTokenEncryptedData)
-
-        findData={
-            accountId:data.accountId
-        }
-
-        updateData={
-            refreshToken:refreshTokenEncryptedData
-        }
-
-        await Credentials.updateCredentials(findData,updateData)
-        // console.log(de)
 
         return {
-            data:encryptedData,
+            data: encryptedData,
             error: false
         }
     } catch (e) {
@@ -56,24 +33,6 @@ const encryptData = async function (data) {
 }
 exports.encryptData = encryptData;
 
-
-const GenerateRefreshToken = function (data){
-    
-    findPayload = {
-    refreshToken:refreshTokenEncryptedData
-    }
-    let den = Credentials.findOneQuery(findPayload)
-    console.log(den)
-    if (!Credentials.findOneQuery(findPayload))
-    {
-        return res.sendStatus(403)
-    }
-    
-    let verifyRefreshToken = jwt.verify(data, process.env.ENCRYPT_SALT_STATIC)
-    console.log(verifyRefreshToken)
-    
-}
-exports.GenerateRefreshToken = GenerateRefreshToken;
 const decryptData = async function (encryptedData) {
 
     // console.log("decryptData1")

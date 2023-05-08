@@ -162,35 +162,6 @@ const createPayloadAndInsertCredentials = async function (data) {
     }
 }
 
-const reGenerateToken = async (req, res) => {
-        if (refreshToken == null){
-            return res.sendStatus(401)
-        } 
-        if (!credentials.includes(refreshToken))
-        {
-            return res.sendStatus(403)
-        }
-        
-        function generateAccessToken(user) {
-            return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15s' })
-        }
-        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-            
-            
-            if (err) return res.sendStatus(403)
-          const accessToken = generateAccessToken({ name: user.name })
-          res.json({ accessToken: accessToken })
-        })
-      
-    const refreshToken = req.data.token
-    let generateRefresh = await refreshEncryptData(data);
-    if (generateRefresh.error) {
-        return res.status(401).send(sendResponse(401, generateRefresh.data, 'userLogin', null, req.data.signature))
-    }
-    if (refreshToken == null){
-        return res.sendStatus(401)
-    } 
-  }
 const createPayloadAndInsertCredentialsForUser = async function (data) {
     let { hash, salt } = data.generatedHashSalt;
     if (!hash || !salt) {
@@ -267,7 +238,7 @@ const userLogin = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, "Wrong password", 'userLogin', PasswordComparsion.data, req.data.signature))
     }
 
-    let encryptUserData = await encryptData(data);
+    let encryptUserData = encryptData(data);
     if (encryptUserData.error) {
         return res.status(401).send(sendResponse(401, encryptUserData.data, 'userLogin', null, req.data.signature))
     }
@@ -275,21 +246,6 @@ const userLogin = async (req, res, next) => {
 }
 exports.userLogin = userLogin;
 
-const refreshEncryptData = async function (data){
-    let userData = {
-        id: data.user._id,
-        email: data.user.email,
-        accountId: data.userCredentials.accountId,
-		profileCompleted : data.user.profileCompleted,
-        // createdAt: timestamp,
-        tokenType: "auth",
-        role: data.user.role,
-        provider: data.user.provider
-    };
-    let refreshGenerateToken = await utilities.GenerateRefreshToken(userData);
-    console.log(refreshGenerateToken)
-    
-}
 const findUserCredentials = async function (data) {
     try {
 
@@ -328,7 +284,7 @@ const comparePassword = async function (data) {
     }
 };
 
-const encryptData = async function (data) {
+const encryptData = function (data) {
 
     let timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
     let userData = {
@@ -342,7 +298,7 @@ const encryptData = async function (data) {
         provider: data.user.provider
     };
 
-    let generateToken = await utilities.encryptData(userData);
+    let generateToken = utilities.encryptData(userData);
     if (generateToken.error) {
         return generateToken
     }
