@@ -84,6 +84,9 @@ const encryptRefreshTokenData = async function (data) {
 
         return {
             data:refreshTokenEncryptedData,
+
+            data:encryptedData,
+
             error: false
         }
     } catch (e) {
