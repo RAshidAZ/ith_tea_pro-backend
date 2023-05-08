@@ -20,8 +20,6 @@ router.patch("/v1/edit/", [], editUserDetails);
 
 //login
 router.post("/v1/user/login", [], Auth.userLogin);
-// refresh token - access token regeneration after expiry of access token
-router.post("/v1/user/refresh-token", [], Auth.reGenerateToken);
 
 //resend password setup link email
 router.post("/v1/resend/password/setup", 

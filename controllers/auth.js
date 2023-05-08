@@ -161,23 +161,36 @@ const createPayloadAndInsertCredentials = async function (data) {
         }
     }
 }
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const reGenerateToken = async (req, res) => {
-    let { refreshToken } = req.body
-
-        if (!refreshToken){
+        if (refreshToken == null){
             return res.sendStatus(401)
         } 
-
-        await utilities.verifyRefreshToken(refreshToken)
-
-        if (!Credentials.includes(refreshToken))
+        if (!credentials.includes(refreshToken))
         {
             return res.sendStatus(403)
-        }       
+        }
+        
+        function generateAccessToken(user) {
+            return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15s' })
+        }
+        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+            
+            
+            if (err) return res.sendStatus(403)
+          const accessToken = generateAccessToken({ name: user.name })
+          res.json({ accessToken: accessToken })
+        })
+      
+    const refreshToken = req.data.token
+    let generateRefresh = await refreshEncryptData(data);
+    if (generateRefresh.error) {
+        return res.status(401).send(sendResponse(401, generateRefresh.data, 'userLogin', null, req.data.signature))
+    }
+    if (refreshToken == null){
+        return res.sendStatus(401)
+    } 
   }
-  exports.reGenerateToken = reGenerateToken
 const createPayloadAndInsertCredentialsForUser = async function (data) {
     let { hash, salt } = data.generatedHashSalt;
     if (!hash || !salt) {
@@ -261,7 +274,7 @@ const userLogin = async (req, res, next) => {
     return res.status(200).send(sendResponse(200, "Successfully logged in", 'userLogin', encryptUserData.data, req.data.signature))
 }
 exports.userLogin = userLogin;
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 const refreshEncryptData = async function (data){
     let userData = {
         id: data.user._id,
@@ -330,15 +343,13 @@ const encryptData = async function (data) {
     };
 
     let generateToken = await utilities.encryptData(userData);
-    let generateRefreshToken = await utilities.encryptRefreshTokenData(userData);
     if (generateToken.error) {
-        return generateToken, generateRefreshToken
+        return generateToken
     }
 
     let sendData = {
         user: userData,
-        token: generateToken.data,
-        refreshToken: generateRefreshToken.data
+        token: generateToken.data
     }
     return {
         data: sendData,
