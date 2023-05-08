@@ -101,26 +101,45 @@ const addNewProject = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "", 'addNewProject', null, req.data.signature))
 	}
 
+	/* The below code is checking if a project name already exists in the database. */
 	let checkIfProjectNameExist = await checkUniqueProject(data)
 	if(checkIfProjectNameExist.error){
-		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
+		return res.status(500).send(sendResponse(500, '', 'addNewProject_checkUniqueProject', null, req.data.signature))
 	}
 	if(checkIfProjectNameExist.data.exist){
-		return res.status(400).send(sendResponse(400, "Project name already exist", 'addNewProject', null, req.data.signature))
-	}
-	let projectRes = await createPayloadAndAddProject(data)
-	if (projectRes.error || !projectRes.data) {
-		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
+		return res.status(400).send(sendResponse(400, "Project name already exist", 'addNewProject_checkUniqueProject', null, req.data.signature))
 	}
 
+	
+	// Adding projects in DB
+	let projectRes = await createPayloadAndAddProject(data)
+	if (projectRes.error || !projectRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'addNewProject_createPayloadAndAddProject', null, req.data.signature))
+	}
+	data.projectId = projectRes.data._id
+	
+	// Adding default project section.
+	data.defaultSection = true;
+	let projectSectionRes = await createPayloadAndAddProjectSection(data)
+	if (projectSectionRes.error || !projectSectionRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'addNewProject_createDefaultSection', null, req.data.signature))
+	}
+	
+	// Updating default section id in project.
+	data.projectSections = [projectSectionRes.data._id]
+	let updateProjectRes = await createPayloadAndUpdateProjectSection(data)
+	if (updateProjectRes.error || !updateProjectRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'addProjectSection_createPayloadAndUpdateProjectSection', null, req.data.signature))
+	}
+
+	// Adding project logs
 	let actionLogData = {
 		actionTaken: 'PROJECT_ADDED',
 		actionBy: data.auth.id,
-		projectId : projectRes.data._id
+		projectId : data.projectId
 	}
 	data.actionLogData = actionLogData;
 	let addActionLogRes = await actionLogController.addProjectLog(data);
-
 	if (addActionLogRes.error) {
 		console.log("===========error",addActionLogRes.data)
 		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
@@ -129,7 +148,6 @@ const addNewProject = async (req, res, next) => {
 	return res.status(200).send(sendResponse(200, "Project's Added Successfully", 'addNewProject', null, req.data.signature))
 }
 exports.addNewProject = addNewProject
-
 
 const createPayloadAndAddProject = async function (data) {
 	try {
@@ -693,7 +711,7 @@ exports.addProjectSection = addProjectSection
 const createPayloadAndAddProjectSection = async function (data) {
 	try {
 		let payload = {
-			name: data.name,
+			name: data.defaultSection ? process.env.DEFAULT_SECTION : data.name,
 			isActive : true,
 			isDeleted : false,
 			projectId : data.projectId

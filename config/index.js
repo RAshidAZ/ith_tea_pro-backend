@@ -24,7 +24,8 @@ const commonVariables = {
     ACTION_TAKEN : ["TASK_RATING", "TASK_STATUS_CHANGE","TASK_DUE_DATE_CHANGE","PROJECT_NAME_CHANGED", "PROJECT_CATEGORY_CHANGED", "TEAM_MEMBER_ADDED"],
 	ADMIN_ID : '601e3c6ef5eb242d4408dcc6',
 	adhocProjectId : '6411aa06012696d25365c862',
-	ratingTimeAllowed : 48 //48 hours
+	ratingTimeAllowed : 48, //48 hours
+    DEFAULT_SECTION:"Misc"
 }
 
 //setting the common variables
