@@ -14,6 +14,7 @@ const userController = require("../controllers/user");
 //helper
 const utilities = require("../helpers/security");
 const emailUtitlities = require("../helpers/email");
+const { getTaskLogs } = require('../query/taskLogs');
 
 
 //Insert Task
@@ -1380,6 +1381,30 @@ const updateTaskStatus = async (req, res, next) => {
 		}
 	}
 
+	// Task Completion time calculator
+	if(data.status == 'COMPLETED'){
+		let payload = {
+			taskId:data.taskId,
+			actionTaken:"TASK_STATUS_UPDATED",
+			new:{status:"ONGOING"}
+		}
+		
+		let previousTask = await getTaskLogs(payload,{},'',{createdAt:-1})
+		console.log(previousTask)
+
+		let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime() 
+		const totalSeconds = Math.floor(timetakenDate / 1000);
+		const totalMinutes = Math.floor(totalSeconds / 60);
+		const hours = Math.floor(totalMinutes / 60);
+		const minutes = totalMinutes % 60;
+
+		let timetook={
+			hours,
+			minutes
+		}
+		data.timeTaken =  timetook
+		}
+
 	if(!fetchTaskById.data.dueDate && data.status == 'COMPLETED'){
 		return res.status(400).send(sendResponse(401, "Can't complete task without dueDate", 'updateTaskStatus', null, req.data.signature))
 	}
@@ -1437,7 +1462,8 @@ const createPayloadAndUpdateTaskStatus = async function (data) {
 			updatePayload['$set'] = {
 					status: data.status,
 					completedDate : new Date(),
-					isDelayTask : data.isDelayTask || false
+					isDelayTask : data.isDelayTask || false,
+					timeTaken: data.timeTaken
 				}
 		}
 		let options = {
