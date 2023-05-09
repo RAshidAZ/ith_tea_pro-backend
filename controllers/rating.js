@@ -399,7 +399,7 @@ const createPayloadAndGetDayRating = async function (data) {
 		const year = data.year;
 		
 		let payload = {
-			userId: data.userId,
+			userId: data.auth.id,
 			date: day,
 			month: month, 
 			year: year
