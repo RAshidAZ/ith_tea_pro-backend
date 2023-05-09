@@ -399,13 +399,13 @@ const createPayloadAndGetDayRating = async function (data) {
 		const year = data.year;
 		
 		let payload = {
-			userId: data.auth.id,
+			userId: data.userId,
 			date: day,
 			month: month, 
 			year: year
 		}
 
-		let populate = "taskIds"
+		let populate = "comments taskIds"
 
 		let dayRating = await Rating.findUserRatingAndPopulate(payload, {}, populate)
 		return { data: dayRating, error: false }
