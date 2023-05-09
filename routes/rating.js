@@ -23,7 +23,10 @@ router.get("/v1/month/all/user",
 [authenticator, filterProjects], 
 rating.getMonthAllUserRating);
 
-router.get("/v1/week/rating", [authenticator], rating.getWeekRating);
+router.get("/v1/week/rating", [authenticator], rating.getWeekRating);   
+
+// Rating of the task by date  
+router.get("/v1/day/rating", [authenticator], rating.getRatingByDate);   
 
 module.exports = router;
 
