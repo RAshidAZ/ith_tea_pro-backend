@@ -399,7 +399,7 @@ const createPayloadAndGetDayRating = async function (data) {
 		const year = data.year;
 		
 		let payload = {
-			userId: data.auth.id,
+			userId: data.userId,
 			date: day,
 			month: month, 
 			year: year
@@ -412,7 +412,7 @@ const createPayloadAndGetDayRating = async function (data) {
 		{
 			path:"taskIds",
 			populate:{
-				path:"comments"
+				path:"ratingComments"
 			}
 		}]
 
