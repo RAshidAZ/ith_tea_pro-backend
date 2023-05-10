@@ -405,7 +405,17 @@ const createPayloadAndGetDayRating = async function (data) {
 			year: year
 		}
 
-		let populate = "comments taskIds"
+		let populate = "taskIds"
+		populate= [{
+			path:"taskIds"
+		},
+		{
+			path:"taskIds",
+			populate:{
+				path:"comments"
+			}
+		}]
+
 
 		let dayRating = await Rating.findUserRatingAndPopulate(payload, {}, populate)
 		return { data: dayRating, error: false }
