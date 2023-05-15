@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const moment = require('moment');
 const { sendResponse } = require('../helpers/sendResponse')
 const queryController = require('../query')
-const { Task, Rating, User, Project } = queryController;
+const { Rating, User, Project } = queryController;
 
 const commentController = require('./comment');
 
@@ -90,22 +90,6 @@ const updateUserRating = async (req, res, next) => {
 	return res.status(200).send(sendResponse(200, 'Rating Updated', 'updateUserRating', null, req.data.signature))
 }
 exports.updateUserRating = updateUserRating
-
-const updateUserTaskRating = async (req, res, next) => {
-	let data = req.data;
-
-	if (!data.rating) {
-		return res.status(400).send(sendResponse(400, "Insert Rating", 'updateUserRating', null, req.data.signature))
-	}
-
-	let updateRes = await createPayloadAndUpdateTaskRating(data)
-	if (updateRes.error) {
-		return res.status(500).send(sendResponse(500, '', 'updateUserRating', null, req.data.signature))
-	}
-	return res.status(200).send(sendResponse(200, 'Rating Updated', 'updateUserRating', updateRes, req.data.signature))
-}
-exports.updateUserTaskRating = updateUserTaskRating
-
 const getMonthAllUserRating = async (req, res, next) => {
 	let data = req.data;
 
@@ -149,21 +133,6 @@ const createPayloadAndUpdateRating = async function (data) {
 			rating: data.rating
 		}
 		let updateRes = await Rating.ratingFindOneAndUpdate(payload, updatePayload)
-		return { data: updateRes, error: false }
-	} catch (error) {
-		console.log("createPayloadAndUpdateRating Error : ", error)
-		return { data: error, error: true }
-	}
-}
-const createPayloadAndUpdateTaskRating = async function (data) {
-	try {
-		let payload = {
-			_id: data.taskId,
-		}
-		let updatePayload = {
-			rating: data.rating
-		}
-		let updateRes = await Task.findOneAndUpdate(payload, updatePayload)
 		return { data: updateRes, error: false }
 	} catch (error) {
 		console.log("createPayloadAndUpdateRating Error : ", error)
