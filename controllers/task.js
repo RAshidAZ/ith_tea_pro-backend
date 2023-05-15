@@ -838,6 +838,7 @@ const rateUserTask = async (req, res, next) => {
 	}
 
 	let task = await getTaskById(data);
+	console.log(task.data)
 	if (task.error || !task.data) {
 		return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
 	}
@@ -909,20 +910,35 @@ const rateUserTask = async (req, res, next) => {
 	if (updatedOverallRating.error || !updateTaskRating.data) {
 		return res.status(500).send(sendResponse(500, 'Rating couldnot be updated', 'rateUserTask', null, req.data.signature))
 	}
-
-	let actionLogData = {
-		actionTaken: 'RATE_TASK',
-		actionBy: data.auth.id,
-		userId : taskDetails.assignedTo,
-		taskId: data.taskId,
-		ratingId : updatedOverallRating.data._id
+	if(task.isRated = true){
+		let actionLogData = {
+			actionTaken: 'RERATE_TASK',
+			actionBy: data.auth.id,
+			userId : taskDetails.assignedTo,
+			taskId: data.taskId,
+			ratingId : updatedOverallRating.data._id
+		}
+		data.actionLogData = actionLogData;
+		let addActionLogRes = await actionLogController.addRatingLog(data);
+		if (addActionLogRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
+		}
+	}else{
+		let actionLogData = {
+			actionTaken: 'RATE_TASK',
+			actionBy: data.auth.id,
+			userId : taskDetails.assignedTo,
+			taskId: data.taskId,
+			ratingId : updatedOverallRating.data._id
+		}
+		data.actionLogData = actionLogData;
+		let addActionLogRes = await actionLogController.addRatingLog(data);
+		if (addActionLogRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
+		}
 	}
-	data.actionLogData = actionLogData;
-	let addActionLogRes = await actionLogController.addRatingLog(data);
+	
 
-	if (addActionLogRes.error) {
-		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
-	}
 
 	return res.status(200).send(sendResponse(200, 'Task Rated', 'rateUserTask', updatedOverallRating.data, req.data.signature));
 }

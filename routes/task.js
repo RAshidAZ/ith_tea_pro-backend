@@ -63,6 +63,10 @@ router.get("/v1/list/for/rating",
 router.post("/v1/rate",
     [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects],
     rateUserTask);
+    
+router.patch("/v1/rate/updateRating",
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects],
+    rateUserTask);
 
 
 //Delete task API
