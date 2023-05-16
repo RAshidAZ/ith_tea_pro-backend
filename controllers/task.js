@@ -856,7 +856,7 @@ const rateUserTask = async (req, res, next) => {
 	taskDueDate = new Date(taskDueDate);
 	
 	let timeDifference = ((currentDate.getTime()-taskDueDate.getTime()) || 1)/(1000 * 60 * 60)
-	if (timeDifference > parseInt(process.env.ratingTimeAllowed)) {
+	if (!task.isRated && timeDifference > parseInt(process.env.ratingTimeAllowed)) {
 		data.isDelayRated = true
 		// return res.status(400).send(sendResponse(400, 'Oops, You are late in rating..', 'rateUserTask', null, req.data.signature))
 	}

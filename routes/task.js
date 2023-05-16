@@ -61,9 +61,10 @@ router.get("/v1/list/for/rating",
     
 /**Insert Task Rating */
 router.post("/v1/rate",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects],
-    rateUserTask);
-    
+[authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects],
+rateUserTask);
+
+/**Edit Task Rating */
 router.patch("/v1/rate/updateRating",
     [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects],
     rateUserTask);
