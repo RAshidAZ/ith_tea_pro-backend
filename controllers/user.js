@@ -440,7 +440,12 @@ const addNewGuest = async (req, res, next) => {
     data.registerUser = registerUser.data;
     data.registerUserId = registerUser.data._id;
 
-
+    if (data.projectIds && data.projectIds.length) {
+        let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
+        if (assignProjectsToUserRes.error) {
+            return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+        }
+    }
     let passgeneratedHashAndSalt = generateHashAndSalt(data);
     if (passgeneratedHashAndSalt.error) {
 		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
@@ -452,6 +457,7 @@ const addNewGuest = async (req, res, next) => {
 		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
 	}
 
+    
     if (data.projectIds && data.projectIds.length) {
         let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
         if (assignProjectsToUserRes.error) {
@@ -583,7 +589,7 @@ const createPayloadAndRegisterUser = async function (data) {
 		// let updateUser = await Auth.findAndUpdateUser(findData, updateData);
 		let payload = {
 			email : data.email,
-            password:data.password,
+            // password:data.password,
 			token : randomString,
 			userId : registerUser._id
 		}
