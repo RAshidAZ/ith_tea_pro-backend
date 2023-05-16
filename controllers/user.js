@@ -1,6 +1,6 @@
 const queryController = require('../query')
 const { User, Auth, Credentials, Project } = queryController;
-
+const crypto = require('crypto');
 const mongoose = require("mongoose");
 const btoa = require('btoa')
 const { sendResponse } = require('../helpers/sendResponse');
@@ -8,6 +8,7 @@ const utilities = require('../helpers/security');
 const emailUtitlities = require("../helpers/email");
 
 const actionLogController = require("../controllers/actionLogs");
+const credentials = require('../models/credentials');
 
 /**Get all users with Custom Pagination */
 const getAllUsers = async (req, res, next) => {
@@ -27,7 +28,7 @@ const findAllUserWithPagination = async function (data) {
     try {
 		
 		let payload = {
-			role: { $nin: ["SUPER_ADMIN"]}
+			role: { $nin: ["SUPER_ADMIN","GUEST"]}
         }
 
 		// if(['LEAD', 'CONTRIBUTOR', 'GUEST'].includes(data.auth.role) && data.filteredProjects){
@@ -112,6 +113,103 @@ const findAllUserWithPagination = async function (data) {
     }
 }
 exports.findAllUserWithPagination = findAllUserWithPagination
+
+/**Get all Guest with Custom Pagination */
+const getAllGuest = async (req, res, next) => {
+    let data = req.data;
+
+    let userRes = await findAllGuestWithPagination(data)
+
+    if (userRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getAllUsers', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'Users Fetched', 'getAllUsers', userRes.data, req.data.signature))
+}
+exports.getAllGuest = getAllGuest;
+
+const findAllGuestWithPagination = async function (data) {
+    try {
+		
+		let payload = {
+			role: { $nin: ["SUPER_ADMIN","ADMIN","LEAD","CONTRIBUTOR"]}
+        }
+
+
+		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+			payload.isDeleted = false
+		}
+
+        if (data.search) {
+            payload["$or"] = [
+                { "name": { "$regex": data.search, "$options": "i" } },
+                { "email": { "$regex": data.search, "$options": "i" } },
+            ]
+        }
+        let projection = {};
+
+        let usersCount = await User.getAllUsersCountForPagination(payload);
+
+        let limit = parseInt(process.env.PAGE_LIMIT);
+        if (data.limit) {
+            limit = parseInt(data.limit);
+        }
+
+        let skip = 0;
+        if (data.currentPage) {
+            skip = (data.currentPage - 1) * limit
+        }
+
+        let sortCriteria = {
+            createdAt: -1
+        }
+		let pipeline = [
+			{
+				$match : payload
+			},
+			{
+				$lookup: {
+								from: "credentials",
+								localField: "_id",
+								foreignField: "userId",
+								as: "credentials"
+							}
+				},
+				{
+					$unwind : {path:"$credentials",preserveNullAndEmptyArrays:true}
+				},
+				{
+					$project:{
+						"credentials.password":0,
+						"credentials.salt":0,
+						"credentials.accountId":0
+					}
+				},
+				{
+					$sort : sortCriteria
+				},
+				{
+					$skip : parseInt(skip)
+				},
+				{
+					$limit : parseInt(limit)
+				}
+		]
+		let userRes = await User.userAggregate(pipeline);
+
+        let sendData = {
+            users: userRes,
+            totalCount: usersCount,
+            currentPage: data.currentPage,
+            limit: data.limit
+        }
+        return { data: sendData, error: false }
+    } catch (err) {
+        console.log("findAllUserWithPagination Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.findAllGuestWithPagination = findAllGuestWithPagination
 
 
 const getAllUsersListingNonPaginated = async (req, res, next) => {
@@ -315,6 +413,70 @@ const addNewUser = async (req, res, next) => {
 }
 exports.addNewUser = addNewUser;
 
+const addNewGuest = async (req, res, next) => {
+    let data = req.data;
+    if (!data.name || !data.email|| !data.role || data.role!="GUEST") {
+        return res.status(400).send(sendResponse(400, "", 'addNewGuest', null, req.data.signature))
+    }
+
+	if ((data.auth.role == "ADMIN" && ["SUPER_ADMIN", "ADMIN"].includes(data.role)) || data.role == 'SUPER_ADMIN') {
+        return res.status(400).send(sendResponse(400, "Not allowed to add this role", 'addNewGuest', null, req.data.signature))
+    }
+	
+    let emailRes = await checkEmailExists(data);
+    if (emailRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'addNewGuest', null, req.data.signature))
+    }
+    if (emailRes.data) {
+        return res.status(400).send(sendResponse(400, 'Email Already Exists', 'addNewGuest', null, req.data.signature))
+    }
+    let generatePasswordForGuest = crypto.randomBytes(8).toString('base64');
+        data.password = generatePasswordForGuest
+
+    let registerUser = await createPayloadAndRegisterUser(data);
+	if (registerUser.error) {
+		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
+	}
+    data.registerUser = registerUser.data;
+    data.registerUserId = registerUser.data._id;
+
+
+    let passgeneratedHashAndSalt = generateHashAndSalt(data);
+    if (passgeneratedHashAndSalt.error) {
+		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
+	}
+    data.generatedHashAndSalt = passgeneratedHashAndSalt.data 
+
+    let insertGuestCredentials = await createPayloadAndInsertCredentials(data);
+    if (insertGuestCredentials.error) {
+		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
+	}
+
+    if (data.projectIds && data.projectIds.length) {
+        let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
+        if (assignProjectsToUserRes.error) {
+            return res.status(500).send(sendResponse(500, '', 'addNewGuest', null, req.data.signature))
+        }
+    }
+    let actionLogData = {
+        actionType: "GUEST",
+        actionTaken: "GUEST_ADDED",
+        actionBy: data.auth.id,
+        addedUserId: registerUser.data._id
+    }
+    console.log(actionLogData)
+    data.actionLogData = actionLogData;
+    let addActionLogRes = await actionLogController.addActionLog(data);
+
+    if (addActionLogRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'addNewGuest',addActionLogRes , req.data.signature))
+    }
+
+    let sendWelcomeEmailRes = await emailUtitlities.sendWelcomeEmailToGuest(data);
+    return res.status(200).send(sendResponse(200, 'Users Created', 'addNewGuest', null, req.data.signature))
+}
+exports.addNewGuest = addNewGuest;
+
 const checkEmailExists = async (data) => {
     try {
         let payload = {
@@ -325,6 +487,19 @@ const checkEmailExists = async (data) => {
         return { data: userRes, error: false }
     } catch (err) {
         console.log("createPayloadAndEditUserDetails Error : ", err)
+        return { data: err, error: true }
+    }
+}
+
+const generateHashAndSalt =  (data) =>{
+
+    try{
+        let hashedPasswordAndSalt =  utilities.generatePassword(data.password);
+
+
+        return { data: hashedPasswordAndSalt, error: false }
+
+    }catch(err){
         return { data: err, error: true }
     }
 }
@@ -408,6 +583,7 @@ const createPayloadAndRegisterUser = async function (data) {
 		// let updateUser = await Auth.findAndUpdateUser(findData, updateData);
 		let payload = {
 			email : data.email,
+            password:data.password,
 			token : randomString,
 			userId : registerUser._id
 		}
@@ -427,8 +603,8 @@ const createPayloadAndRegisterUser = async function (data) {
 }
 
 const createPayloadAndInsertCredentials = async function (data) {
-    let { hash, salt } = data.generatedHashSalt;
-    if (!hash || !salt) {
+    let generatedPass = data.generatedHashAndSalt;
+    if (!generatedPass.hash || !generatedPass.salt) {
         return cb(responseUtilities.responseStruct(500, "no hash/salt", "registerUser", null, data.req.signature));
     }
     let findData = {
@@ -436,8 +612,8 @@ const createPayloadAndInsertCredentials = async function (data) {
     }
     let updateData = {
         userId: data.registerUser._id,
-        password: hash,
-        salt: salt,
+        password: generatedPass.hash,
+        salt: generatedPass.salt,
         accountId: data.accountId,
         isActive: true,
         isBlocked: false,
@@ -481,7 +657,7 @@ const createPayloadAndAssignProjectToAddedUser = async function (data) {
                 $addToSet: { managedBy: mongoose.Types.ObjectId(data.registerUserId) }
             }
         }
-        if (["CONTRIBUTOR", "INTERN"].includes(data.role)) {
+        if (["CONTRIBUTOR", "INTERN","GUEST"].includes(data.role)) {
             updatePayload = {
                 $addToSet: { accessibleBy: mongoose.Types.ObjectId(data.registerUserId) }
             }
