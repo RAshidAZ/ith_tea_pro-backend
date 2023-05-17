@@ -1075,6 +1075,101 @@ const deleteUser = async (req, res, next) => {
 }
 exports.deleteUser = deleteUser
 
+const activeGuest = async (req, res, next) => {
+    let data = req.data;
+
+    if (!data.userId) {
+        return res.status(400).send(sendResponse(400, 'Missing Params', 'deleteUser', null, req.data.signature))
+    }
+
+	let findPayload = {
+		_id : data.userId
+	}
+	let userRes = await User.userfindOneQuery(findPayload)
+	if (!userRes) {
+        return res.status(400).send(sendResponse(400, 'User Not Found', 'activeGuest', null, req.data.signature))
+    }
+
+	let userRole = userRes.role
+	if(data.auth.role == 'SUPER_ADMIN' && userRole == 'SUPER_ADMIN'){
+        return res.status(400).send(sendResponse(400, "Can't set given user", 'activeGuest', null, req.data.signature))
+	}
+
+	if(data.auth.role == 'ADMIN' && ['ADMIN', 'SUPER_ADMIN'].includes(userRole)){
+        return res.status(400).send(sendResponse(400, "Not Allowed to update given ", 'activeGuest', null, req.data.signature))
+	}
+    let guestUpdateRes = await createPayloadAndupdateStatus(data);
+    console.log(guestUpdateRes)
+    if (guestUpdateRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'activeGuest', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, 'Guest is now active', 'activeGuest', null, req.data.signature))
+}
+exports.activeGuest = activeGuest
+
+const createPayloadAndupdateStatus = async (data) => {
+
+    let findPayload = {
+	  userId: data.userId
+	}
+    let updatePayload = {
+        isActive: true
+    }
+
+    let updateStatusRes = await Credentials.updateCredentials(findPayload,updatePayload)
+     console.log(updateStatusRes)
+
+    return { data: updateStatusRes , error: false }
+}
+
+
+const deactivateGuest = async (req, res, next) => {
+    let data = req.data;
+
+    if (!data.userId) {
+        return res.status(400).send(sendResponse(400, 'Missing Params', 'deactivateGuest', null, req.data.signature))
+    }
+
+	let findPayload = {
+		_id : data.userId
+	}
+	let userRes = await User.userfindOneQuery(findPayload)
+	if (!userRes) {
+        return res.status(400).send(sendResponse(400, 'User Not Found', 'deactivateGuest', null, req.data.signature))
+    }
+
+	let userRole = userRes.role
+	if(data.auth.role == 'SUPER_ADMIN' && userRole == 'SUPER_ADMIN'){
+        return res.status(400).send(sendResponse(400, "Can't set given user", 'deactivateGuest', null, req.data.signature))
+	}
+
+	if(data.auth.role == 'ADMIN' && ['ADMIN', 'SUPER_ADMIN'].includes(userRole)){
+        return res.status(400).send(sendResponse(400, "Not Allowed to update given ", 'deactivateGuest', null, req.data.signature))
+	}
+    let guestUpdateRes = await createPayloadAndDeactivateStatus(data);
+    console.log(guestUpdateRes)
+    if (guestUpdateRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'deactivateGuest', null, req.data.signature))
+    }
+    return res.status(200).send(sendResponse(200, 'Guest is now active', 'deactivateGuest', null, req.data.signature))
+}
+exports.deactivateGuest = deactivateGuest
+
+const createPayloadAndDeactivateStatus = async (data) => {
+
+    let findPayload = {
+	  userId: data.userId
+	}
+    let updatePayload = {
+        isActive: false
+    }
+
+    let updateStatusRes = await Credentials.updateCredentials(findPayload,updatePayload)
+     console.log(updateStatusRes)
+
+    return { data: updateStatusRes , error: false }
+}
+
 const createPayloadAndDeleteUser = async (data) => {
     try {
         let findPayload = {

@@ -11,7 +11,7 @@ const authenticator = require('../middlewares/authenticator')(clients, data);
 const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
-const {addNewGuest, getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getUserListing, getAllLeadsListing, deleteUser, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng, getTeamAnalytics,getAllGuest} = require('../controllers/user');
+const {deactivateGuest,activeGuest,addNewGuest, getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getUserListing, getAllLeadsListing, deleteUser, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng, getTeamAnalytics,getAllGuest} = require('../controllers/user');
 
 // Superadmin, Admin Add New Team Member
 router.post("/v1/add", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], addNewUser);
@@ -57,6 +57,16 @@ getTeamAnalytics);
 router.patch("/v1/delete/user", 
 [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], 
 deleteUser);
+
+// Active Guest
+router.patch("/v1/active/guest", 
+[authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], 
+activeGuest);
+
+// InActive Guest
+router.patch("/v1/inactive/guest", 
+[authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], 
+deactivateGuest);
 
 // Get all users (except SA) - Non Paginated ( for dropdown )
 router.get("/v1/all/users", [authenticator], getUserListing);
