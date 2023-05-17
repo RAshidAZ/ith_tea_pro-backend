@@ -833,7 +833,7 @@ const rateUserTask = async (req, res, next) => {
 
 	let data = req.data;
 
-	if (!data.taskId || !data.rating) {
+	if (!data.taskId || data.rating == null) {
 		return res.status(400).send(sendResponse(400, "Please send all required Data fields", 'rateUserTask', null, req.data.signature))
 	}
 
