@@ -452,6 +452,11 @@ const addNewGuest = async (req, res, next) => {
 	}
     data.generatedHashAndSalt = passgeneratedHashAndSalt.data 
 
+    // generate acc id.....
+    let accountId = await utilities.generateAccountId();
+    data.accountId = accountId;
+    console.log("Password accountId => ", data.accountId);
+
     let insertGuestCredentials = await createPayloadAndInsertCredentials(data);
     if (insertGuestCredentials.error) {
 		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
