@@ -169,11 +169,11 @@ const findAllGuestWithPagination = async function (data) {
 			},
 			{
 				$lookup: {
-								from: "credentials",
-								localField: "_id",
-								foreignField: "userId",
-								as: "credentials"
-							}
+                    from: "projects",
+                    localField: "_id",
+                    foreignField: "accessibleBy",
+                    as: "projects"
+                }
 				},
 				{
 					$unwind : {path:"$credentials",preserveNullAndEmptyArrays:true}
