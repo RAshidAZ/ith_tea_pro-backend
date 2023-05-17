@@ -6,7 +6,7 @@ const { populate } = require('../models/ratings');
 const queryController = require('../query');
 const { CONSTANTS } = require('../config/constants');
 
-const { Task, Rating, Project, Comments, TaskLogs, User } = queryController;
+const { Task, Rating, Project, Comments, TaskLogs, User,ProjectSections } = queryController;
 
 const actionLogController = require("../controllers/actionLogs");
 const userController = require("../controllers/user");
@@ -70,6 +70,17 @@ const insertUserTask = async (req, res, next) => {
 		}
 	}
 
+	let payload = {
+		name:process.env.DEFAULT_SECTION,
+		projectId:data.projectId
+	}
+	let sectionfind = await ProjectSections.findSection(payload)
+
+	if(sectionfind.id == data.section){
+		data.ratingAllowed = false
+	}else{
+		data.ratingAllowed = true
+	}
 
 	let taskRes = await createPayloadAndInsertTask(data)
 
@@ -153,6 +164,7 @@ const createPayloadAndInsertTask = async function (data) {
 			status: data.status ||  process.env.TASK_STATUS.split(",")[0],
 			section: data.section,
 			projectId: data.projectId,
+			ratingAllowed:data.ratingAllowed,
 			createdBy: data?.auth?.id,    //TODO: Change after auth is updated
 			assignedTo: data.assignedTo,
 			// dueDate: data.dueDate || new Date(new Date().setUTCHours(23, 59, 59, 000)),
