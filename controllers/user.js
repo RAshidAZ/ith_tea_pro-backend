@@ -132,7 +132,8 @@ const findAllGuestWithPagination = async function (data) {
     try {
 		
 		let payload = {
-			role: { $nin: ["SUPER_ADMIN","ADMIN","LEAD","CONTRIBUTOR"]}
+			role: { $nin: ["SUPER_ADMIN","ADMIN","LEAD","CONTRIBUTOR"]},
+            isDeleted:false
         }
 
 
@@ -175,14 +176,22 @@ const findAllGuestWithPagination = async function (data) {
                     as: "projects"
                 }
 				},
+			{
+				$lookup: {
+                    from: "credentials",
+                    localField: "_id",
+                    foreignField: "userId",
+                    as: "guestCredentials"
+                }
+				},
 				{
 					$unwind : {path:"$credentials",preserveNullAndEmptyArrays:true}
 				},
 				{
 					$project:{
-						"credentials.password":0,
-						"credentials.salt":0,
-						"credentials.accountId":0
+						"guestCredentials.password":0,
+						"guestCredentials.salt":0,
+						"guestCredentials.accountId":0
 					}
 				},
 				{
