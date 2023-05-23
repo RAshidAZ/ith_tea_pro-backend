@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const btoa = require('btoa')
+const excelJS = require("exceljs");
 const validator = require('validator');
 const { sendResponse } = require('../helpers/sendResponse');
 const { populate } = require('../models/ratings');
@@ -416,6 +417,124 @@ const getGroupByTasks = async (req, res, next) => {
 	return res.status(200).send(sendResponse(200, 'Task Fetched Successfully', 'getGroupByTasks', taskRes.data, req.data.signature))
 }
 exports.getGroupByTasks = getGroupByTasks;
+
+const exportDataToExcel = async (req, res, next) => {
+	let data = req.data;
+
+	let allowedTaskGroup = process.env.ALLOWED_GROUP_BY.split(',')
+
+	if (!allowedTaskGroup.includes(data.groupBy)) {
+		return res.status(400).send(sendResponse(400, `${data.groupBy} Group By Not Supported`, 'exportDataToExcel', null, req.data.signature))
+	} else {
+		data.aggregateGroupBy = `$${data.groupBy}`
+	}
+
+	data.aggregateGroupBy = CONSTANTS.GROUP_BY[data.groupBy]
+
+	let taskRes = await createPayloadAndGetGroupByTask(data)
+	let taskData = taskRes.data
+	// data.filteredData taskRes.data;
+	console.log(taskData.tasks)
+	if (taskRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'exportDataToExcel', null, req.data.signature))
+	}
+
+	const workbook = new excelJS.Workbook();  // Create a new workbook
+	const worksheet = workbook.addWorksheet("My Users"); // New Worksheet
+	const path = "./";  // Path to download excel
+
+
+	// Column for data in excel. key must match data key
+	worksheet.columns = [
+		{ header: "S no.", key: "s_no", width: 20 },
+		{ header: "Project Name", key: "projectName", width: 20 },
+		{ header: "Section Name", key: "section", width: 20 },
+		{ header: "Completed Tasks", key: "completedTasks", width: 10 },
+		{ header: "Total Tasks", key: "totalTasks", width: 10 },
+		{ header: 'Task Title', key: 'taskTitle', width: 20 },
+		{ header: 'Task status', key: 'status', width: 20 },
+		{ header: 'Task description', key: 'description', width: 20 },
+		{ header: 'Task lead', key: 'lead', width: 20 },
+		{ header: 'Task CreatedBy', key: 'createdBy', width: 20 },
+		{ header: 'Task AssignedTo', key: 'assignedTo', width: 20 },
+		{ header: 'Task DueDate', key: 'dueDate', width: 20 },
+		{ header: 'Task Rated', key: 'isRated', width: 20 },
+		{ header: 'Task Rating', key: 'rating', width: 20 },
+		{ header: 'Task Created On', key: 'createdAt', width: 20 },
+
+
+	];
+
+	// Looping through User data
+	let counter = 1;
+	taskData.forEach((task) => {
+		
+		let projectIdName = task._id.projectId;
+		let section = task._id.section;
+
+		task.projectName = projectIdName
+		task.section = section
+
+		task.tasks.forEach((tasks) => {
+			task.s_no = counter;
+			let taskId = tasks._id;
+			let taskTitle = tasks.title;
+			let description = tasks.description;
+			let status = tasks.status;
+			let lead = tasks.lead[0].name;
+
+			let assignedTo = ''
+			let assignedToUser = tasks.assignedTo?.name 
+			if (assignedToUser===null) {
+				assignedToUser = tasks.assignedTo;
+			}
+			assignedTo = assignedToUser;
+			
+			let createdBy = ''
+			let createdByUser =  tasks.createdBy?.name 
+			if (createdByUser===null) {
+				createdByUser = tasks.createdBy;
+			}
+			createdBy = createdByUser;
+			let createdAt = tasks.createdAt;
+			let dueDate = tasks.dueDate;
+			let isRated = tasks.isRated;
+			let rating = tasks.rating;
+
+			task.taskTitle = taskTitle
+			task.description = description
+			task.lead = lead
+			task.status = status
+			task.createdBy = createdBy
+			task.assignedTo = assignedTo
+			task.dueDate = dueDate
+			task.isRated = isRated
+			task.rating = rating
+			task.createdAt = createdAt
+
+			worksheet.addRow(task,task.taskTitle,task.projectName,task.section,task.lead,task.status,task.assignedTo,task.dueDate,task.isRated,task.rating,task.createdBy,task.createdAt); 
+
+			counter++;
+		});	
+	});
+	// Making first line in excel bold
+	worksheet.getRow(1).eachCell((cell) => {
+		cell.font = { bold: true };
+	});
+	try {
+		const data = await workbook.xlsx.writeFile(`${path}/users.xlsx`)
+			.then(() => {
+				res.download(`${path}users.xlsx`);
+			});
+		} catch (err) {
+			console.log(err)
+			res.send({
+				status: "error",
+				message: "Something went wrong",
+			});
+		}
+	}
+exports.exportDataToExcel = exportDataToExcel;
 
 const createPayloadAndGetGroupByTask = async function (data) {
 	try {
