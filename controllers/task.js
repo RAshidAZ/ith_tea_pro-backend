@@ -441,7 +441,6 @@ const exportDataToExcel = async (req, res, next) => {
 
 	const workbook = new excelJS.Workbook();  // Create a new workbook
 	const worksheet = workbook.addWorksheet("My Users"); // New Worksheet
-	const path = "./";  // Path to download excel
 
 
 	// Column for data in excel. key must match data key
@@ -477,7 +476,6 @@ const exportDataToExcel = async (req, res, next) => {
 
 		task.tasks.forEach((tasks) => {
 			task.s_no = counter;
-			let taskId = tasks._id;
 			let taskTitle = tasks.title;
 			let description = tasks.description;
 			let status = tasks.status;
@@ -522,16 +520,16 @@ const exportDataToExcel = async (req, res, next) => {
 		cell.font = { bold: true };
 	});
 	try {
-		const data = await workbook.xlsx.writeFile(`${path}/users.xlsx`)
-			.then(() => {
-				res.download(`${path}users.xlsx`);
-			});
+
+			workbook.xlsx.writeBuffer().then(buffer => {
+				// Set the response headers for file download
+				res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+				res.setHeader('Content-Disposition', 'attachment; filename="users.xlsx"');
+				res.send(buffer);
+			})
 		} catch (err) {
 			console.log(err)
-			res.send({
-				status: "error",
-				message: "Something went wrong",
-			});
+		return res.status(500).send(sendResponse(500, 'error in file downloading', 'exportDataToExcel', err, req.data.signature))
 		}
 	}
 exports.exportDataToExcel = exportDataToExcel;
