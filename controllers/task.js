@@ -441,7 +441,6 @@ const exportDataToExcel = async (req, res, next) => {
 
 	const workbook = new excelJS.Workbook();  // Create a new workbook
 	const worksheet = workbook.addWorksheet("My Users"); // New Worksheet
-	const path = "./";  // Path to download excel
 
 
 	// Column for data in excel. key must match data key
@@ -468,7 +467,7 @@ const exportDataToExcel = async (req, res, next) => {
 	// Looping through User data
 	let counter = 1;
 	taskData.forEach((task) => {
-
+	
 		let projectIdName = task._id.projectId;
 		let section = task._id.section;
 
@@ -477,7 +476,6 @@ const exportDataToExcel = async (req, res, next) => {
 
 		task.tasks.forEach((tasks) => {
 			task.s_no = counter;
-			let taskId = tasks._id;
 			let taskTitle = tasks.title;
 			let description = tasks.description;
 			let status = tasks.status;
