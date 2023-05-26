@@ -78,8 +78,15 @@ const insertUserTask = async (req, res, next) => {
 
 	if(sectionfind.id == data.section){
 		data.ratingAllowed = false
+		if(!data.miscType){
+			return res.status(400).send(sendResponse(401, 'Type is required', 'insertUserTask', null, req.data.signature))
+		}
+		
 	}else{
 		data.ratingAllowed = true
+		if(data.miscType){
+			return res.status(400).send(sendResponse(401, 'Type is Not required', 'insertUserTask', null, req.data.signature))
+		}
 	}
 
 	let taskRes = await createPayloadAndInsertTask(data)
@@ -169,6 +176,7 @@ const createPayloadAndInsertTask = async function (data) {
 			assignedTo: data.assignedTo,
 			// dueDate: data.dueDate || new Date(new Date().setUTCHours(23, 59, 59, 000)),
 			completedDate: data.completedDate,
+			miscType:data.miscType,
 			priority: data.priority,
 			lead: data.tasklead
 		}
@@ -850,11 +858,12 @@ const rateUserTask = async (req, res, next) => {
 	}
 
 	let task = await getTaskById(data);
-	console.log(task.data)
 	if (task.error || !task.data) {
 		return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
 	}
-
+	if(task.data.ratingAllowed===false){
+		return res.status(400).send(sendResponse(400, 'Rating Not Allowed', 'rateUserTask', null, req.data.signature))
+	}
 	let rating = parseInt(data.rating)
 	if (rating > 6) {
 		return res.status(400).send(sendResponse(400, 'Rating should be less than 6', 'rateUserTask', null, req.data.signature))
@@ -993,7 +1002,8 @@ const updateUserTaskRating = async function (data) {
 	try {
 
 		let findData = {
-			_id: data.taskId
+			_id: data.taskId,
+			ratingAllowed:true
 		}
 		let updateData = {
 			rating: data.rating,
@@ -1167,6 +1177,8 @@ const getTaskListToRate = async function (req, res, next) {
 		return res.status(400).send(sendResponse(400, 'Missing Params', 'getTaskListToRate', null, req.data.signature))
 	}
 	data.isRated = false;
+	data.ratingAllowed = true;
+	
 	data.status = 'COMPLETED'
 	let tasksLists = await createPayloadAndGetTaskLists(data);
 	if (tasksLists.error) {
@@ -1745,6 +1757,7 @@ const createPayloadAndGetPendingRatingTasks = async function (data) {
 
 		let findData = {
 			isDeleted: false,
+			ratingAllowed:true,
 			isArchived :  false,
 			status : "COMPLETED",
 			isRated : false
