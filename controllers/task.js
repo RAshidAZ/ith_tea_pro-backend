@@ -1031,7 +1031,8 @@ const getAllTasksWithSameDueDate = async function (data) {
 
 		let findData = {
 			assignedTo: data.taskDetails.assignedTo,
-			dueDate: data.taskDetails.dueDate
+			dueDate: data.taskDetails.dueDate,
+			ratingAllowed:true
 		}
 
 
