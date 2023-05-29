@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 const btoa = require('btoa')
 const validator = require('validator');
 const { sendResponse } = require('../helpers/sendResponse');
-const { populate } = require('../models/ratings');
 const queryController = require('../query');
 const { CONSTANTS } = require('../config/constants');
 const excelJS = require("exceljs");
@@ -433,9 +432,7 @@ const exportDataToExcel = async (req, res, next) => {
 
 	let taskRes = await createPayloadAndGetGroupByTask(data)
 	let taskData = taskRes.data
-	// data.filteredData taskRes.data;
-	console.log(taskData.tasks)
-	if (taskRes.error) {
+	if (taskRes.error){
 		return res.status(500).send(sendResponse(500, '', 'exportDataToExcel', null, req.data.signature))
 	}
 
@@ -480,20 +477,8 @@ const exportDataToExcel = async (req, res, next) => {
 			let description = tasks.description;
 			let status = tasks.status;
 			let lead = tasks.lead[0].name;
-
-			let assignedTo = ''
-			let assignedToUser = tasks.assignedTo?.name 
-			if (assignedToUser===null) {
-				assignedToUser = tasks.assignedTo;
-			}
-			assignedTo = assignedToUser;
-
-			let createdBy = ''
-			let createdByUser =  tasks.createdBy?.name 
-			if (createdByUser===null) {
-				createdByUser = tasks.createdBy;
-			}
-			createdBy = createdByUser;
+			let assignedTo = tasks.assignedTo.name
+			let createdBy = tasks.createdBy.name
 			let createdAt = tasks.createdAt;
 			let dueDate = tasks.dueDate;
 			let isRated = tasks.isRated;
