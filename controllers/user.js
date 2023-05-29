@@ -28,7 +28,7 @@ const findAllUserWithPagination = async function (data) {
     try {
 		
 		let payload = {
-			role: { $nin: ["SUPER_ADMIN","GUEST"]}
+			role: { $nin: ["SUPER_ADMIN"]}
         }
 
 		// if(['LEAD', 'CONTRIBUTOR', 'GUEST'].includes(data.auth.role) && data.filteredProjects){
@@ -269,7 +269,7 @@ exports.findAllUserNonPagination = findAllUserNonPagination
 const editUserDetails = async (req, res, next) => {
     let data = req.data;
 
-    if (['CONTRIBUTOR', 'INTERN'].includes(data.auth.role)) {
+    if (['CONTRIBUTOR','GUEST','INTERN'].includes(data.auth.role)) {
         data.userId = data.auth.id;
     }
     if (['LEAD', 'SUPER_ADMIN', 'ADMIN'].includes(data.auth.role) && !data.userId) {
@@ -380,67 +380,10 @@ const addNewUser = async (req, res, next) => {
     if (emailRes.data) {
         return res.status(400).send(sendResponse(400, 'Email Already Exists', 'addNewUser', null, req.data.signature))
     }
-	if(data.employeeId){
-		let employeeIdRes = await checkEmployeeIdExists(data);
-		console.log('employeeIdRes : ', employeeIdRes)
-		if (employeeIdRes.error) {
-			return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
-		}
-		if (employeeIdRes.data) {
-			return res.status(400).send(sendResponse(400, 'Employee Id Already Exists', 'addNewUser', null, req.data.signature))
-		}
-	}
+    if(data.role==="GUEST"){
 
-    let registerUser = await createPayloadAndRegisterUser(data);
-	if (registerUser.error) {
-		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewUser', null, req.data.signature))
-	}
-    data.registerUser = registerUser.data;
-    data.registerUserId = registerUser.data._id;
-
-    if (data.projectIds && data.projectIds.length) {
-        let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
-        if (assignProjectsToUserRes.error) {
-            return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
-        }
-    }
-    let actionLogData = {
-        actionType: "TEAM_MEMBER",
-        actionTaken: "TEAM_MEMBER_ADDED",
-        actionBy: data.auth.id,
-        addedUserId: registerUser.data?._id
-    }
-    data.actionLogData = actionLogData;
-    let addActionLogRes = await actionLogController.addActionLog(data);
-
-    if (addActionLogRes.error) {
-        return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
-    }
-
-    let sendWelcomeEmailRes = await emailUtitlities.sendWelcomeEmail(data);
-    return res.status(200).send(sendResponse(200, 'Users Created', 'addNewUser', null, req.data.signature))
-}
-exports.addNewUser = addNewUser;
-
-const addNewGuest = async (req, res, next) => {
-    let data = req.data;
-    if (!data.name || !data.email|| !data.role || data.role!="GUEST") {
-        return res.status(400).send(sendResponse(400, "", 'addNewGuest', null, req.data.signature))
-    }
-
-	if ((data.auth.role == "ADMIN" && ["SUPER_ADMIN", "ADMIN"].includes(data.role)) || data.role == 'SUPER_ADMIN') {
-        return res.status(400).send(sendResponse(400, "Not allowed to add this role", 'addNewGuest', null, req.data.signature))
-    }
-	
-    let emailRes = await checkEmailExists(data);
-    if (emailRes.error) {
-        return res.status(500).send(sendResponse(500, '', 'addNewGuest', null, req.data.signature))
-    }
-    if (emailRes.data) {
-        return res.status(400).send(sendResponse(400, 'Email Already Exists', 'addNewGuest', null, req.data.signature))
-    }
     let generatePasswordForGuest = crypto.randomBytes(8).toString('base64');
-        data.password = generatePasswordForGuest
+    data.password = generatePasswordForGuest
 
     let registerUser = await createPayloadAndRegisterUser(data);
 	if (registerUser.error) {
@@ -494,8 +437,123 @@ const addNewGuest = async (req, res, next) => {
 
     let sendWelcomeEmailRes = await emailUtitlities.sendWelcomeEmailToGuest(data);
     return res.status(200).send(sendResponse(200, 'Users Created', 'addNewGuest', null, req.data.signature))
+    }
+	if(data.employeeId){
+		let employeeIdRes = await checkEmployeeIdExists(data);
+		console.log('employeeIdRes : ', employeeIdRes)
+		if (employeeIdRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+		}
+		if (employeeIdRes.data) {
+			return res.status(400).send(sendResponse(400, 'Employee Id Already Exists', 'addNewUser', null, req.data.signature))
+		}
+	}
+
+    let registerUser = await createPayloadAndRegisterUser(data);
+	if (registerUser.error) {
+		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewUser', null, req.data.signature))
+	}
+    data.registerUser = registerUser.data;
+    data.registerUserId = registerUser.data._id;
+
+    if (data.projectIds && data.projectIds.length) {
+        let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
+        if (assignProjectsToUserRes.error) {
+            return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+        }
+    }
+    let actionLogData = {
+        actionType: "TEAM_MEMBER",
+        actionTaken: "TEAM_MEMBER_ADDED",
+        actionBy: data.auth.id,
+        addedUserId: registerUser.data?._id
+    }
+    data.actionLogData = actionLogData;
+    let addActionLogRes = await actionLogController.addActionLog(data);
+
+    if (addActionLogRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+    }
+
+    let sendWelcomeEmailRes = await emailUtitlities.sendWelcomeEmail(data);
+    return res.status(200).send(sendResponse(200, 'Users Created', 'addNewUser', null, req.data.signature))
 }
-exports.addNewGuest = addNewGuest;
+exports.addNewUser = addNewUser;
+
+// const addNewGuest = async (req, res, next) => {
+//     let data = req.data;
+//     if (!data.name || !data.email|| !data.role || data.role!="GUEST") {
+//         return res.status(400).send(sendResponse(400, "", 'addNewGuest', null, req.data.signature))
+//     }
+
+// 	if ((data.auth.role == "ADMIN" && ["SUPER_ADMIN", "ADMIN"].includes(data.role)) || data.role == 'SUPER_ADMIN') {
+//         return res.status(400).send(sendResponse(400, "Not allowed to add this role", 'addNewGuest', null, req.data.signature))
+//     }
+	
+//     let emailRes = await checkEmailExists(data);
+//     if (emailRes.error) {
+//         return res.status(500).send(sendResponse(500, '', 'addNewGuest', null, req.data.signature))
+//     }
+//     if (emailRes.data) {
+//         return res.status(400).send(sendResponse(400, 'Email Already Exists', 'addNewGuest', null, req.data.signature))
+//     }
+//     let generatePasswordForGuest = crypto.randomBytes(8).toString('base64');
+//         data.password = generatePasswordForGuest
+
+//     let registerUser = await createPayloadAndRegisterUser(data);
+// 	if (registerUser.error) {
+// 		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
+// 	}
+//     data.registerUser = registerUser.data;
+//     data.registerUserId = registerUser.data._id;
+
+//     if (data.projectIds && data.projectIds.length) {
+//         let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
+//         if (assignProjectsToUserRes.error) {
+//             return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+//         }
+//     }
+//     let passgeneratedHashAndSalt = generateHashAndSalt(data);
+//     if (passgeneratedHashAndSalt.error) {
+// 		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
+// 	}
+//     data.generatedHashAndSalt = passgeneratedHashAndSalt.data 
+
+//     // generate acc id.....
+//     let accountId = await utilities.generateAccountId();
+//     data.accountId = accountId;
+//     console.log("Password accountId => ", data.accountId);
+
+//     let insertGuestCredentials = await createPayloadAndInsertCredentials(data);
+//     if (insertGuestCredentials.error) {
+// 		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
+// 	}
+
+    
+//     if (data.projectIds && data.projectIds.length) {
+//         let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
+//         if (assignProjectsToUserRes.error) {
+//             return res.status(500).send(sendResponse(500, '', 'addNewGuest', null, req.data.signature))
+//         }
+//     }
+//     let actionLogData = {
+//         actionType: "GUEST",
+//         actionTaken: "GUEST_ADDED",
+//         actionBy: data.auth.id,
+//         addedUserId: registerUser.data._id
+//     }
+//     console.log(actionLogData)
+//     data.actionLogData = actionLogData;
+//     let addActionLogRes = await actionLogController.addActionLog(data);
+
+//     if (addActionLogRes.error) {
+//         return res.status(500).send(sendResponse(500, '', 'addNewGuest',addActionLogRes , req.data.signature))
+//     }
+
+//     let sendWelcomeEmailRes = await emailUtitlities.sendWelcomeEmailToGuest(data);
+//     return res.status(200).send(sendResponse(200, 'Users Created', 'addNewGuest', null, req.data.signature))
+// }
+// exports.addNewGuest = addNewGuest;
 
 const checkEmailExists = async (data) => {
     try {
@@ -785,7 +843,7 @@ const getAllUsersNonPaginated = async (req, res, next) => {
     let data = req.data;
 
     let findData = {
-        role: {$in : ['CONTRIBUTOR']},
+        role: {$in : ['CONTRIBUTOR','GUEST']},
 		isDeleted : false
     }
     if (data.search) {
@@ -875,7 +933,7 @@ const getUnAssignedUserLisitng = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, 'Missing Params', 'getUnAssignedUserLisitng', null, req.data.signature))
 	}
 
-	if(data.role && !['CONTRIBUTOR', 'LEAD'].includes(data.role)){
+	if(data.role && !['CONTRIBUTOR','GUEST', 'LEAD'].includes(data.role)){
         return res.status(400).send(sendResponse(400, 'Invalid role passed', 'getUnAssignedUserLisitng', null, req.data.signature))
 	}
 	userRes = await createPayloadAndGetUnAssignedUserOfSpecificProject(data);

@@ -11,13 +11,10 @@ const authenticator = require('../middlewares/authenticator')(clients, data);
 const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
-const {activeGuest,addNewGuest, getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getUserListing, getAllLeadsListing, deleteUser, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng, getTeamAnalytics,getAllGuest} = require('../controllers/user');
+const {activeGuest, getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getUserListing, getAllLeadsListing, deleteUser, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng, getTeamAnalytics,getAllGuest} = require('../controllers/user');
 
 // Superadmin, Admin Add New Team Member
 router.post("/v1/add", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], addNewUser);
-
-// Superadmin, Admin Add New Guest user
-router.post("/v1/addGuest", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], addNewGuest);
 
 //Superadmin, admin edit any user details ( provide userId )
 // Lead edit either self or any user details ( provide userId )
