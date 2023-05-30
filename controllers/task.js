@@ -859,7 +859,7 @@ const rateUserTask = async (req, res, next) => {
 
 	let task = await getTaskById(data);
 	if (task.error || !task.data) {
-		return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
+		return res.status(500).send(sendResponse(500, 'Task Not found..', 'rateUserTask', null, req.data.signature))
 	}
 	if(task.data.ratingAllowed===false){
 		return res.status(400).send(sendResponse(400, 'Rating Not Allowed', 'rateUserTask', null, req.data.signature))
