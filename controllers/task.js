@@ -81,7 +81,8 @@ const insertUserTask = async (req, res, next) => {
 	let actionLogData = {
 		actionTaken: 'TASK_ADDED',
 		actionBy: data.auth.id,
-		taskId : taskRes.data._id
+		taskId : taskRes.data._id,
+		new:{status:data.status}
 	}
 	data.actionLogData = actionLogData;
 	let addActionLogRes = await actionLogController.addTaskLog(data);
@@ -1382,15 +1383,15 @@ const updateTaskStatus = async (req, res, next) => {
 	}
 
 	// Task Completion time calculator
-	if(data.status == 'COMPLETED'){
+	if(data.status == 'ONHOLD'){
 		let payload = {
 			taskId:data.taskId,
-			actionTaken:"TASK_STATUS_UPDATED",
+			$or: [ { actionTaken:"TASK_ADDED"}, { actionTaken:"TASK_STATUS_UPDATED"} ],
 			new:{status:"ONGOING"}
 		}
 		
 		let previousTask = await getTaskLogs(payload,{},'',{createdAt:-1})
-		console.log(previousTask)
+		// console.log(previousTask)
 
 		let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime() 
 		const totalSeconds = Math.floor(timetakenDate / 1000);
@@ -1399,10 +1400,68 @@ const updateTaskStatus = async (req, res, next) => {
 		const minutes = totalMinutes % 60;
 
 		let timetook={
-			hours,
-			minutes
+			hours:hours,
+			minutes:minutes
 		}
+		console.log('timetook obj =================',timetook)
 		data.timeTaken =  timetook
+		console.log('timetook obj =================',data.timeTaken)
+		}
+	// Task Completion time calculator
+	if(data.status == 'COMPLETED'){
+		if(fetchTaskById.data.timeTaken==0){
+			let payload = {
+				taskId:data.taskId,
+				$or: [ { actionTaken:"TASK_ADDED"}, { actionTaken:"TASK_STATUS_UPDATED"} ],
+				new:{status:"ONGOING"}
+			}
+			
+			let previousTask = await getTaskLogs(payload,{},'',{createdAt:-1})
+			console.log("this ran mtln vro ================",previousTask)
+			
+			let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime() 
+			const totalSeconds = Math.floor(timetakenDate / 1000);
+			const totalMinutes = Math.floor(totalSeconds / 60);
+			const hours = Math.floor(totalMinutes / 60);
+			const minutes = totalMinutes % 60;
+			
+			let timetook={
+				hours:hours,
+				minutes:minutes
+			}
+			data.timeTaken =  timetook
+		}else{
+			
+			let payload = {
+				taskId:data.taskId,
+				$or: [ { actionTaken:"TASK_ADDED"}, { actionTaken:"TASK_STATUS_UPDATED"} ],
+				new:{status:"ONGOING"}
+			}
+			
+			let previousTask = await getTaskLogs(payload,{},'',{createdAt:-1})
+
+			let previousTime = fetchTaskById.data.timeTaken
+			let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime() 
+			const totalSeconds = Math.floor(timetakenDate / 1000);
+			const totalMinutes = Math.floor(totalSeconds / 60);
+			const updatedHours = previousTime.hours + Math.floor(totalMinutes / 60);
+			const updatedMinutes = (previousTime.minutes + totalMinutes) % 60;
+			// you have to do more calculation for minutes and hours here and after 24 hours change to days also 
+			let calculatedHours = previousTime.hours + updatedHours 
+			let calculatedMinutes = previousTime.minutes + updatedMinutes
+
+			console.log("fetchDataH=======",updatedHours)
+			console.log("fetchDataM=======",updatedMinutes)
+			console.log("calculatedH=======",calculatedHours)
+			console.log("calculatedMinutes=======",calculatedMinutes)
+			let timetook = {
+				hours:calculatedHours,
+				minutes:updatedMinutes
+			}
+			console.log("timetook====================================",timetook)
+			
+			data.timeTaken =  timetook
+		}
 		}
 
 	if(!fetchTaskById.data.dueDate && data.status == 'COMPLETED'){
@@ -1423,6 +1482,7 @@ const updateTaskStatus = async (req, res, next) => {
 	// }
 
 	let taskRes = await createPayloadAndUpdateTaskStatus(data)
+	// console.log(taskRes)
 	if (taskRes.error || !taskRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'updateTaskStatus', null, req.data.signature))
 	}
@@ -1458,6 +1518,14 @@ const createPayloadAndUpdateTaskStatus = async function (data) {
 			}
 		}
 
+		if(data.status == 'ONHOLD'){
+			updatePayload['$set'] = {
+					status: data.status,
+					completedDate : new Date(),
+					isDelayTask : data.isDelayTask || false,
+					timeTaken: data.timeTaken
+				}
+		}
 		if(data.status == 'COMPLETED'){
 			updatePayload['$set'] = {
 					status: data.status,
