@@ -1391,21 +1391,15 @@ const updateTaskStatus = async (req, res, next) => {
 		}
 		
 		let previousTask = await getTaskLogs(payload,{},'',{createdAt:-1})
-		// console.log(previousTask)
-
-		let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime() 
-		const totalSeconds = Math.floor(timetakenDate / 1000);
-		const totalMinutes = Math.floor(totalSeconds / 60);
-		const hours = Math.floor(totalMinutes / 60);
-		const minutes = totalMinutes % 60;
-
-		let timetook={
-			hours:hours,
-			minutes:minutes
-		}
-		console.log('timetook obj =================',timetook)
-		data.timeTaken =  timetook
-		console.log('timetook obj =================',data.timeTaken)
+		if(previousTask.length===0){
+			data.timeTaken = 0 
+		}else{
+			let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime()
+			const totalSeconds = Math.floor(timetakenDate / 1000);
+			const totalMinutes = Math.floor(totalSeconds / 60);
+			console.log("=====================================",totalMinutes)
+			data.timeTaken = totalMinutes 
+			}
 		}
 	// Task Completion time calculator
 	if(data.status == 'COMPLETED'){
@@ -1415,53 +1409,32 @@ const updateTaskStatus = async (req, res, next) => {
 				$or: [ { actionTaken:"TASK_ADDED"}, { actionTaken:"TASK_STATUS_UPDATED"} ],
 				new:{status:"ONGOING"}
 			}
-			
 			let previousTask = await getTaskLogs(payload,{},'',{createdAt:-1})
-			console.log("this ran mtln vro ================",previousTask)
-			
-			let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime() 
-			const totalSeconds = Math.floor(timetakenDate / 1000);
-			const totalMinutes = Math.floor(totalSeconds / 60);
-			const hours = Math.floor(totalMinutes / 60);
-			const minutes = totalMinutes % 60;
-			
-			let timetook={
-				hours:hours,
-				minutes:minutes
+			console.log(previousTask)
+			if(previousTask.length===0){
+				data.timeTaken = 0 
+			}else{
+				let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime()
+				const totalSeconds = Math.floor(timetakenDate / 1000);
+				const totalMinutes = Math.floor(totalSeconds / 60);
+				console.log("=====================================",totalMinutes)
+				data.timeTaken = totalMinutes 
 			}
-			data.timeTaken =  timetook
 		}else{
-			
 			let payload = {
 				taskId:data.taskId,
 				$or: [ { actionTaken:"TASK_ADDED"}, { actionTaken:"TASK_STATUS_UPDATED"} ],
 				new:{status:"ONGOING"}
 			}
-			
 			let previousTask = await getTaskLogs(payload,{},'',{createdAt:-1})
-
-			let previousTime = fetchTaskById.data.timeTaken
-			let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime() 
-			const totalSeconds = Math.floor(timetakenDate / 1000);
-			const totalMinutes = Math.floor(totalSeconds / 60);
-			const updatedHours = previousTime.hours + Math.floor(totalMinutes / 60);
-			const updatedMinutes = (previousTime.minutes + totalMinutes) % 60;
-			// you have to do more calculation for minutes and hours here and after 24 hours change to days also 
-			let calculatedHours = previousTime.hours + updatedHours 
-			let calculatedMinutes = previousTime.minutes + updatedMinutes
-
-			console.log("fetchDataH=======",updatedHours)
-			console.log("fetchDataM=======",updatedMinutes)
-			console.log("calculatedH=======",calculatedHours)
-			console.log("calculatedMinutes=======",calculatedMinutes)
-			let timetook = {
-				hours:calculatedHours,
-				minutes:updatedMinutes
+				let previousTime = fetchTaskById.data.timeTaken
+				let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime() 
+				const totalSeconds = Math.floor(timetakenDate / 1000);
+				const totalMinutes = Math.floor(totalSeconds / 60);
+				let calculatedMinutes = previousTime + totalMinutes
+				data.timeTaken = calculatedMinutes
+				
 			}
-			console.log("timetook====================================",timetook)
-			
-			data.timeTaken =  timetook
-		}
 		}
 
 	if(!fetchTaskById.data.dueDate && data.status == 'COMPLETED'){

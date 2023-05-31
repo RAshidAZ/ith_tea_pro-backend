@@ -97,7 +97,7 @@ let tasksSchema = new Schema({
         default: false
     },
 	timeTaken: {
-        type: Object,
+        type: Number,
         default:0
     }
 
