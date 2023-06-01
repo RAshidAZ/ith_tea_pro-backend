@@ -416,6 +416,18 @@ if(task.data.isRated==true){
 	}
 }
 	taskRes.dueDate = data.dueDate
+
+  	// due date resetting here because of average rating updation
+	let dueDateFindPayload = {
+		_id:taskRes.id
+	}
+	let dueDateUpdatePayload = {
+		dueDate:null
+	}
+	let dueOptions = {
+		new:true
+	}
+	let resetDueDate = await Task.findOneAndUpdate(dueDateFindPayload,dueDateUpdatePayload,dueOptions)
 	let insertNewTask = await createPayloadAndInsertReOpenTask(taskRes)
 	if (insertNewTask.error || !insertNewTask.data) {
 		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
