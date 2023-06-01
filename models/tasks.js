@@ -96,6 +96,9 @@ let tasksSchema = new Schema({
         type: Boolean,
         default: false
     },
+    defaultTaskTime:{
+        type:Object
+    },
 	timeTaken: {
         type: Number,
         default:0

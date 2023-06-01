@@ -70,6 +70,15 @@ const insertUserTask = async (req, res, next) => {
 			return res.status(400).send(sendResponse(401, 'Not Allowed to add task for selected lead/assignee', 'insertUserTask', null, req.data.signature))
 		}
 	}
+	
+	if(!data.defaultTaskTime){
+		return res.status(400).send(sendResponse(400, 'Please Provide Estimated time for this task', 'insertUserTask', null, req.data.signature))
+	}
+	data.defaultTaskTime = {
+		hours:data.defaultTaskTime.hours,
+		minutes:data.defaultTaskTime.minutes
+	}
+	
 
 
 	let taskRes = await createPayloadAndInsertTask(data)
@@ -159,6 +168,7 @@ const createPayloadAndInsertTask = async function (data) {
 			assignedTo: data.assignedTo,
 			// dueDate: data.dueDate || new Date(new Date().setUTCHours(23, 59, 59, 000)),
 			completedDate: data.completedDate,
+			defaultTaskTime:data.defaultTaskTime,
 			priority: data.priority,
 			lead: data.tasklead
 		}
