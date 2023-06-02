@@ -6,7 +6,7 @@ const queryController = require('../query');
 const { CONSTANTS } = require('../config/constants');
 const excelJS = require("exceljs");
 
-const { Task, Rating, Project, Comments, TaskLogs, User } = queryController;
+const { Task, Rating, Project, Comments, TaskLogs, User,ProjectSections } = queryController;
 
 const actionLogController = require("../controllers/actionLogs");
 const userController = require("../controllers/user");
@@ -70,6 +70,24 @@ const insertUserTask = async (req, res, next) => {
 		}
 	}
 
+	let payload = {
+		name:process.env.DEFAULT_SECTION,
+		projectId:data.projectId
+	}
+	let sectionfind = await ProjectSections.findSection(payload)
+
+	if(sectionfind.id == data.section){
+		data.ratingAllowed = false
+		if(!data.miscType){
+			return res.status(400).send(sendResponse(401, 'Type is required', 'insertUserTask', null, req.data.signature))
+		}
+		
+	}else{
+		data.ratingAllowed = true
+		if(data.miscType){
+			return res.status(400).send(sendResponse(401, 'Type is Not required', 'insertUserTask', null, req.data.signature))
+		}
+	}
 
 	let taskRes = await createPayloadAndInsertTask(data)
 
@@ -153,10 +171,12 @@ const createPayloadAndInsertTask = async function (data) {
 			status: data.status ||  process.env.TASK_STATUS.split(",")[0],
 			section: data.section,
 			projectId: data.projectId,
+			ratingAllowed:data.ratingAllowed,
 			createdBy: data?.auth?.id,    //TODO: Change after auth is updated
 			assignedTo: data.assignedTo,
 			// dueDate: data.dueDate || new Date(new Date().setUTCHours(23, 59, 59, 000)),
 			completedDate: data.completedDate,
+			miscType:data.miscType,
 			priority: data.priority,
 			lead: data.tasklead
 		}
@@ -942,11 +962,12 @@ const rateUserTask = async (req, res, next) => {
 	}
 
 	let task = await getTaskById(data);
-	console.log(task.data)
 	if (task.error || !task.data) {
-		return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
+		return res.status(500).send(sendResponse(500, 'Task Not found..', 'rateUserTask', null, req.data.signature))
 	}
-
+	if(task.data.ratingAllowed===false){
+		return res.status(400).send(sendResponse(400, 'Rating Not Allowed', 'rateUserTask', null, req.data.signature))
+	}
 	let rating = parseInt(data.rating)
 	if (rating > 6) {
 		return res.status(400).send(sendResponse(400, 'Rating should be less than 6', 'rateUserTask', null, req.data.signature))
@@ -1085,7 +1106,8 @@ const updateUserTaskRating = async function (data) {
 	try {
 
 		let findData = {
-			_id: data.taskId
+			_id: data.taskId,
+			ratingAllowed:true
 		}
 		let updateData = {
 			rating: data.rating,
@@ -1113,7 +1135,8 @@ const getAllTasksWithSameDueDate = async function (data) {
 
 		let findData = {
 			assignedTo: data.taskDetails.assignedTo,
-			dueDate: data.taskDetails.dueDate
+			dueDate: data.taskDetails.dueDate,
+			ratingAllowed:true
 		}
 
 
@@ -1259,6 +1282,8 @@ const getTaskListToRate = async function (req, res, next) {
 		return res.status(400).send(sendResponse(400, 'Missing Params', 'getTaskListToRate', null, req.data.signature))
 	}
 	data.isRated = false;
+	data.ratingAllowed = true;
+	
 	data.status = 'COMPLETED'
 	let tasksLists = await createPayloadAndGetTaskLists(data);
 	if (tasksLists.error) {
@@ -1837,6 +1862,7 @@ const createPayloadAndGetPendingRatingTasks = async function (data) {
 
 		let findData = {
 			isDeleted: false,
+			ratingAllowed:true,
 			isArchived :  false,
 			status : "COMPLETED",
 			isRated : false
