@@ -14,6 +14,7 @@ const userController = require("../controllers/user");
 //helper
 const utilities = require("../helpers/security");
 const emailUtitlities = require("../helpers/email");
+const { getTaskLogs } = require('../query/taskLogs');
 
 
 //Insert Task
@@ -69,6 +70,15 @@ const insertUserTask = async (req, res, next) => {
 			return res.status(400).send(sendResponse(401, 'Not Allowed to add task for selected lead/assignee', 'insertUserTask', null, req.data.signature))
 		}
 	}
+	
+	if(!data.defaultTaskTime){
+		return res.status(400).send(sendResponse(400, 'Please Provide Estimated time for this task', 'insertUserTask', null, req.data.signature))
+	}
+	data.defaultTaskTime = {
+		hours:data.defaultTaskTime.hours,
+		minutes:data.defaultTaskTime.minutes
+	}
+	
 
 	let payload = {
 		name:process.env.DEFAULT_SECTION,
@@ -98,7 +108,8 @@ const insertUserTask = async (req, res, next) => {
 	let actionLogData = {
 		actionTaken: 'TASK_ADDED',
 		actionBy: data.auth.id,
-		taskId : taskRes.data._id
+		taskId : taskRes.data._id,
+		new:{status:data.status}
 	}
 	data.actionLogData = actionLogData;
 	let addActionLogRes = await actionLogController.addTaskLog(data);
@@ -176,6 +187,7 @@ const createPayloadAndInsertTask = async function (data) {
 			assignedTo: data.assignedTo,
 			// dueDate: data.dueDate || new Date(new Date().setUTCHours(23, 59, 59, 000)),
 			completedDate: data.completedDate,
+			defaultTaskTime:data.defaultTaskTime,
 			miscType:data.miscType,
 			priority: data.priority,
 			lead: data.tasklead
@@ -1674,6 +1686,61 @@ const updateTaskStatus = async (req, res, next) => {
 		}
 	}
 
+	// Task Completion time calculator
+	if(data.status == 'ONHOLD'){
+		let payload = {
+			taskId:data.taskId,
+			$or: [ { actionTaken:"TASK_ADDED"}, { actionTaken:"TASK_STATUS_UPDATED"} ],
+			new:{status:"ONGOING"}
+		}
+		
+		let previousTask = await getTaskLogs(payload,{},'',{createdAt:-1})
+		if(previousTask.length===0){
+			data.timeTaken = 0 
+		}else{
+			let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime()
+			const totalSeconds = Math.floor(timetakenDate / 1000);
+			const totalMinutes = Math.floor(totalSeconds / 60);
+			console.log("=====================================",totalMinutes)
+			data.timeTaken = totalMinutes 
+			}
+		}
+	// Task Completion time calculator
+	if(data.status == 'COMPLETED'){
+		if(fetchTaskById.data.timeTaken==0){
+			let payload = {
+				taskId:data.taskId,
+				$or: [ { actionTaken:"TASK_ADDED"}, { actionTaken:"TASK_STATUS_UPDATED"} ],
+				new:{status:"ONGOING"}
+			}
+			let previousTask = await getTaskLogs(payload,{},'',{createdAt:-1})
+			console.log(previousTask)
+			if(previousTask.length===0){
+				data.timeTaken = 0 
+			}else{
+				let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime()
+				const totalSeconds = Math.floor(timetakenDate / 1000);
+				const totalMinutes = Math.floor(totalSeconds / 60);
+				console.log("=====================================",totalMinutes)
+				data.timeTaken = totalMinutes 
+			}
+		}else{
+			let payload = {
+				taskId:data.taskId,
+				$or: [ { actionTaken:"TASK_ADDED"}, { actionTaken:"TASK_STATUS_UPDATED"} ],
+				new:{status:"ONGOING"}
+			}
+			let previousTask = await getTaskLogs(payload,{},'',{createdAt:-1})
+				let previousTime = fetchTaskById.data.timeTaken
+				let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime() 
+				const totalSeconds = Math.floor(timetakenDate / 1000);
+				const totalMinutes = Math.floor(totalSeconds / 60);
+				let calculatedMinutes = previousTime + totalMinutes
+				data.timeTaken = calculatedMinutes
+				
+			}
+		}
+
 	if(!fetchTaskById.data.dueDate && data.status == 'COMPLETED'){
 		return res.status(400).send(sendResponse(401, "Can't complete task without dueDate", 'updateTaskStatus', null, req.data.signature))
 	}
@@ -1692,6 +1759,7 @@ const updateTaskStatus = async (req, res, next) => {
 	// }
 
 	let taskRes = await createPayloadAndUpdateTaskStatus(data)
+	// console.log(taskRes)
 	if (taskRes.error || !taskRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'updateTaskStatus', null, req.data.signature))
 	}
@@ -1727,11 +1795,20 @@ const createPayloadAndUpdateTaskStatus = async function (data) {
 			}
 		}
 
+		if(data.status == 'ONHOLD'){
+			updatePayload['$set'] = {
+					status: data.status,
+					completedDate : new Date(),
+					isDelayTask : data.isDelayTask || false,
+					timeTaken: data.timeTaken
+				}
+		}
 		if(data.status == 'COMPLETED'){
 			updatePayload['$set'] = {
 					status: data.status,
 					completedDate : new Date(),
-					isDelayTask : data.isDelayTask || false
+					isDelayTask : data.isDelayTask || false,
+					timeTaken: data.timeTaken
 				}
 		}
 		let options = {
