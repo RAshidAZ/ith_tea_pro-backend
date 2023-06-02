@@ -4,6 +4,7 @@ const validator = require('validator');
 const { sendResponse } = require('../helpers/sendResponse');
 const queryController = require('../query');
 const { CONSTANTS } = require('../config/constants');
+const cheerio = require('cheerio');
 const excelJS = require("exceljs");
 
 const { Task, Rating, Project, Comments, TaskLogs, User,ProjectSections } = queryController;
@@ -630,20 +631,21 @@ const exportDataToExcel = async (req, res, next) => {
 
 	// Column for data in excel. key must match data key
 	worksheet.columns = [
-		{ header: "S no.", key: "s_no", width: 20 },
+		{ header: "S no.", key: "s_no", width: 7 },
 		{ header: "Project Name", key: "projectName", width: 20 },
 		{ header: "Section Name", key: "section", width: 20 },
-		{ header: "Completed Tasks", key: "completedTasks", width: 10 },
+		{ header: "Completed Tasks", key: "completedTasks", width: 15 },
 		{ header: "Total Tasks", key: "totalTasks", width: 10 },
+		{ header: 'Task ReOpened', key: 'isReOpen', width: 13	 },
 		{ header: 'Task Title', key: 'taskTitle', width: 20 },
 		{ header: 'Task status', key: 'status', width: 20 },
-		{ header: 'Task description', key: 'description', width: 20 },
+		{ header: 'Task description', key: 'description', width: 25 },
 		{ header: 'Task lead', key: 'lead', width: 20 },
 		{ header: 'Task CreatedBy', key: 'createdBy', width: 20 },
 		{ header: 'Task AssignedTo', key: 'assignedTo', width: 20 },
 		{ header: 'Task DueDate', key: 'dueDate', width: 20 },
-		{ header: 'Task Rated', key: 'isRated', width: 20 },
-		{ header: 'Task Rating', key: 'rating', width: 20 },
+		{ header: 'Task Rated', key: 'isRated', width: 10 },
+		{ header: 'Task Rating', key: 'rating', width: 10 },
 		{ header: 'Task Created On', key: 'createdAt', width: 20 },
 
 
@@ -660,6 +662,7 @@ const exportDataToExcel = async (req, res, next) => {
 		task.section = section
 
 		task.tasks.forEach((tasks) => {
+
 			task.s_no = counter;
 			let taskTitle = tasks.title;
 			let description = tasks.description;
@@ -670,20 +673,31 @@ const exportDataToExcel = async (req, res, next) => {
 			let createdAt = tasks.createdAt;
 			let dueDate = tasks.dueDate;
 			let isRated = tasks.isRated;
+			let isReOpen = tasks.isReOpen;
 			let rating = tasks.rating;
 
+			console.log("desc-------",description)
+			if(!description){
+				description = "Description Not Available"
+				task.description = description
+			}else{
+				const $ = cheerio.load(tasks.description);
+				const description = $('body').text();
+				task.description = description
+			}
+
 			task.taskTitle = taskTitle
-			task.description = description
 			task.lead = lead
 			task.status = status
 			task.createdBy = createdBy
 			task.assignedTo = assignedTo
 			task.dueDate = dueDate
 			task.isRated = isRated
+			task.isReOpen = isReOpen
 			task.rating = rating
 			task.createdAt = createdAt
 
-			worksheet.addRow(task,task.taskTitle,task.projectName,task.section,task.lead,task.status,task.assignedTo,task.dueDate,task.isRated,task.rating,task.createdBy,task.createdAt); 
+			worksheet.addRow(task,task.taskTitle,task.projectName,task.section,task.lead,task.status,task.assignedTo,task.dueDate,task.isRated,task.rating,task.createdBy,task.createdAt,task.isReOpen); 
 
 			counter++;
 		});	
