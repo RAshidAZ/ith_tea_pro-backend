@@ -19,7 +19,7 @@ module.exports = function () {
             }
             if (allProjectsAssigned.error) {
                 console.log(allProjectsAssigned.error);
-                var response = {
+                let response = {
                     success: false,
                     message: 'Something Went Wrong'
                 };
@@ -48,7 +48,7 @@ module.exports = function () {
 
                 projectsToFilter = projectsToFilter.map(e => e.toString());
                 if (!(projectsToFilter.every(projectToCheck => allProjectsAssigned.includes(projectToCheck.toString())))) {
-                    var response = {
+                    let response = {
                         success: false,
                         message: 'Unauthorized for this project'
                     };
