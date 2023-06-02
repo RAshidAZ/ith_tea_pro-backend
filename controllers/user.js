@@ -1,6 +1,6 @@
 const queryController = require('../query')
 const { User, Auth, Credentials, Project } = queryController;
-
+const crypto = require('crypto');
 const mongoose = require("mongoose");
 const btoa = require('btoa')
 const { sendResponse } = require('../helpers/sendResponse');
@@ -8,6 +8,7 @@ const utilities = require('../helpers/security');
 const emailUtitlities = require("../helpers/email");
 
 const actionLogController = require("../controllers/actionLogs");
+const credentials = require('../models/credentials');
 
 /**Get all users with Custom Pagination */
 const getAllUsers = async (req, res, next) => {
@@ -113,6 +114,112 @@ const findAllUserWithPagination = async function (data) {
 }
 exports.findAllUserWithPagination = findAllUserWithPagination
 
+/**Get all Guest with Custom Pagination */
+const getAllGuest = async (req, res, next) => {
+    let data = req.data;
+
+    let userRes = await findAllGuestWithPagination(data)
+
+    if (userRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getAllUsers', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'Users Fetched', 'getAllUsers', userRes.data, req.data.signature))
+}
+exports.getAllGuest = getAllGuest;
+
+const findAllGuestWithPagination = async function (data) {
+    try {
+		
+		let payload = {
+			role: { $nin: ["SUPER_ADMIN","ADMIN","LEAD","CONTRIBUTOR"]},
+            isDeleted:false
+        }
+
+
+		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+			payload.isDeleted = false
+		}
+
+        if (data.search) {
+            payload["$or"] = [
+                { "name": { "$regex": data.search, "$options": "i" } },
+                { "email": { "$regex": data.search, "$options": "i" } },
+            ]
+        }
+        let projection = {};
+
+        let usersCount = await User.getAllUsersCountForPagination(payload);
+
+        let limit = parseInt(process.env.PAGE_LIMIT);
+        if (data.limit) {
+            limit = parseInt(data.limit);
+        }
+
+        let skip = 0;
+        if (data.currentPage) {
+            skip = (data.currentPage - 1) * limit
+        }
+
+        let sortCriteria = {
+            createdAt: -1
+        }
+		let pipeline = [
+			{
+				$match : payload
+			},
+			{
+				$lookup: {
+                    from: "projects",
+                    localField: "_id",
+                    foreignField: "accessibleBy",
+                    as: "projects"
+                }
+				},
+			{
+				$lookup: {
+                    from: "credentials",
+                    localField: "_id",
+                    foreignField: "userId",
+                    as: "guestCredentials"
+                }
+				},
+				{
+					$unwind : {path:"$credentials",preserveNullAndEmptyArrays:true}
+				},
+				{
+					$project:{
+						"guestCredentials.password":0,
+						"guestCredentials.salt":0,
+						"guestCredentials.accountId":0
+					}
+				},
+				{
+					$sort : sortCriteria
+				},
+				{
+					$skip : parseInt(skip)
+				},
+				{
+					$limit : parseInt(limit)
+				}
+		]
+		let userRes = await User.userAggregate(pipeline);
+
+        let sendData = {
+            users: userRes,
+            totalCount: usersCount,
+            currentPage: data.currentPage,
+            limit: data.limit
+        }
+        return { data: sendData, error: false }
+    } catch (err) {
+        console.log("findAllUserWithPagination Error : ", err)
+        return { data: err, error: true }
+    }
+}
+exports.findAllGuestWithPagination = findAllGuestWithPagination
+
 
 const getAllUsersListingNonPaginated = async (req, res, next) => {
     let data = req.data;
@@ -162,7 +269,7 @@ exports.findAllUserNonPagination = findAllUserNonPagination
 const editUserDetails = async (req, res, next) => {
     let data = req.data;
 
-    if (['CONTRIBUTOR', 'INTERN'].includes(data.auth.role)) {
+    if (['CONTRIBUTOR','GUEST','INTERN'].includes(data.auth.role)) {
         data.userId = data.auth.id;
     }
     if (['LEAD', 'SUPER_ADMIN', 'ADMIN'].includes(data.auth.role) && !data.userId) {
@@ -273,6 +380,64 @@ const addNewUser = async (req, res, next) => {
     if (emailRes.data) {
         return res.status(400).send(sendResponse(400, 'Email Already Exists', 'addNewUser', null, req.data.signature))
     }
+    if(data.role==="GUEST"){
+
+    let generatePasswordForGuest = crypto.randomBytes(8).toString('base64');
+    data.password = generatePasswordForGuest
+
+    let registerUser = await createPayloadAndRegisterUser(data);
+	if (registerUser.error) {
+		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
+	}
+    data.registerUser = registerUser.data;
+    data.registerUserId = registerUser.data._id;
+
+    if (data.projectIds && data.projectIds.length) {
+        let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
+        if (assignProjectsToUserRes.error) {
+            return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+        }
+    }
+    let passgeneratedHashAndSalt = generateHashAndSalt(data);
+    if (passgeneratedHashAndSalt.error) {
+		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
+	}
+    data.generatedHashAndSalt = passgeneratedHashAndSalt.data 
+
+    // generate acc id.....
+    let accountId = await utilities.generateAccountId();
+    data.accountId = accountId;
+    console.log("Password accountId => ", data.accountId);
+
+    let insertGuestCredentials = await createPayloadAndInsertCredentials(data);
+    if (insertGuestCredentials.error) {
+		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
+	}
+
+    
+    if (data.projectIds && data.projectIds.length) {
+        let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
+        if (assignProjectsToUserRes.error) {
+            return res.status(500).send(sendResponse(500, '', 'addNewGuest', null, req.data.signature))
+        }
+    }
+    let actionLogData = {
+        actionType: "GUEST",
+        actionTaken: "GUEST_ADDED",
+        actionBy: data.auth.id,
+        addedUserId: registerUser.data._id
+    }
+    console.log(actionLogData)
+    data.actionLogData = actionLogData;
+    let addActionLogRes = await actionLogController.addActionLog(data);
+
+    if (addActionLogRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'addNewGuest',addActionLogRes , req.data.signature))
+    }
+
+    let sendWelcomeEmailRes = await emailUtitlities.sendWelcomeEmailToGuest(data);
+    return res.status(200).send(sendResponse(200, 'Users Created', 'addNewGuest', null, req.data.signature))
+    }
 	if(data.employeeId){
 		let employeeIdRes = await checkEmployeeIdExists(data);
 		console.log('employeeIdRes : ', employeeIdRes)
@@ -325,6 +490,19 @@ const checkEmailExists = async (data) => {
         return { data: userRes, error: false }
     } catch (err) {
         console.log("createPayloadAndEditUserDetails Error : ", err)
+        return { data: err, error: true }
+    }
+}
+
+const generateHashAndSalt =  (data) =>{
+
+    try{
+        let hashedPasswordAndSalt =  utilities.generatePassword(data.password);
+
+
+        return { data: hashedPasswordAndSalt, error: false }
+
+    }catch(err){
         return { data: err, error: true }
     }
 }
@@ -408,6 +586,7 @@ const createPayloadAndRegisterUser = async function (data) {
 		// let updateUser = await Auth.findAndUpdateUser(findData, updateData);
 		let payload = {
 			email : data.email,
+            // password:data.password,
 			token : randomString,
 			userId : registerUser._id
 		}
@@ -427,8 +606,8 @@ const createPayloadAndRegisterUser = async function (data) {
 }
 
 const createPayloadAndInsertCredentials = async function (data) {
-    let { hash, salt } = data.generatedHashSalt;
-    if (!hash || !salt) {
+    let generatedPass = data.generatedHashAndSalt;
+    if (!generatedPass.hash || !generatedPass.salt) {
         return cb(responseUtilities.responseStruct(500, "no hash/salt", "registerUser", null, data.req.signature));
     }
     let findData = {
@@ -436,8 +615,8 @@ const createPayloadAndInsertCredentials = async function (data) {
     }
     let updateData = {
         userId: data.registerUser._id,
-        password: hash,
-        salt: salt,
+        password: generatedPass.hash,
+        salt: generatedPass.salt,
         accountId: data.accountId,
         isActive: true,
         isBlocked: false,
@@ -481,7 +660,7 @@ const createPayloadAndAssignProjectToAddedUser = async function (data) {
                 $addToSet: { managedBy: mongoose.Types.ObjectId(data.registerUserId) }
             }
         }
-        if (["CONTRIBUTOR", "INTERN"].includes(data.role)) {
+        if (["CONTRIBUTOR", "INTERN","GUEST"].includes(data.role)) {
             updatePayload = {
                 $addToSet: { accessibleBy: mongoose.Types.ObjectId(data.registerUserId) }
             }
@@ -589,7 +768,7 @@ const getAllUsersNonPaginated = async (req, res, next) => {
     let data = req.data;
 
     let findData = {
-        role: {$in : ['CONTRIBUTOR']},
+        role: {$in : ['CONTRIBUTOR','GUEST']},
 		isDeleted : false
     }
     if (data.search) {
@@ -679,7 +858,7 @@ const getUnAssignedUserLisitng = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, 'Missing Params', 'getUnAssignedUserLisitng', null, req.data.signature))
 	}
 
-	if(data.role && !['CONTRIBUTOR', 'LEAD'].includes(data.role)){
+	if(data.role && !['CONTRIBUTOR','GUEST', 'LEAD'].includes(data.role)){
         return res.status(400).send(sendResponse(400, 'Invalid role passed', 'getUnAssignedUserLisitng', null, req.data.signature))
 	}
 	userRes = await createPayloadAndGetUnAssignedUserOfSpecificProject(data);
@@ -892,6 +1071,72 @@ const deleteUser = async (req, res, next) => {
     return res.status(200).send(sendResponse(200, 'User deleted', 'deleteUser', null, req.data.signature))
 }
 exports.deleteUser = deleteUser
+
+const  activeGuest = async (req, res, next) => {
+    let data = req.data;
+
+    if (!data.userId) {
+        return res.status(400).send(sendResponse(400, 'Missing Params', 'deleteUser', null, req.data.signature))
+    }
+
+	let findPayload = {
+		userId : data.userId
+	}
+	let userRes = await Credentials.findOneQuery(findPayload)
+    if (!userRes) {
+        return res.status(400).send(sendResponse(400, 'User Not Found', 'activeGuest', null, req.data.signature))
+    }
+    if(userRes.isActive == true){
+        let guestUpdateRes = await createPayloadAndDeactivateStatus(data);
+        // console.log(guestUpdateRes)  
+        if (guestUpdateRes.error) {
+            return res.status(500).send(sendResponse(500, '', 'activeGuest', null, req.data.signature))
+        }
+        return res.status(200).send(sendResponse(200, 'Guest is now Inactive', 'activeGuest', null, req.data.signature))
+    }else{
+        let guestUpdateRes = await createPayloadAndUpdateToTrue(data);
+        console.log(guestUpdateRes)
+        if (guestUpdateRes.error) {
+            return res.status(500).send(sendResponse(500, '', 'activeGuest', null, req.data.signature))
+        }
+        return res.status(200).send(sendResponse(200, 'Guest is now active', 'activeGuest', null, req.data.signature))
+
+       
+    }
+
+    // return res.status(200).send(sendResponse(200, 'Guest is now active', 'activeGuest', null, req.data.signature))
+}
+exports.activeGuest = activeGuest
+
+const createPayloadAndUpdateToTrue = async (data) => {
+
+    let findPayload = {
+	  userId: data.userId
+	}
+    let updatePayload = {
+        isActive: true
+    }
+
+    let updateStatusRes = await Credentials.updateCredentials(findPayload,updatePayload)
+    //  console.log(updateStatusRes)
+
+    return { data: updateStatusRes , error: false }
+}
+
+const createPayloadAndDeactivateStatus = async (data) => {
+
+    let findPayload = {
+	  userId: data.userId
+	}
+    let updatePayload = {
+        isActive: false
+    }
+
+    let updateStatusRes = await Credentials.updateCredentials(findPayload,updatePayload)
+    //  console.log(updateStatusRes)
+
+    return { data: updateStatusRes , error: false }
+}
 
 const createPayloadAndDeleteUser = async (data) => {
     try {

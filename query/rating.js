@@ -43,3 +43,10 @@ exports.getUserRating = async function (payload, projection, sortCriteria) {
     }
     return Rating.find(payload, projection).sort(sortCriteria)
 }
+exports.findUserRatingAndPopulate = async function (payload, projection,populate="") {
+	if (!projection) {
+        projection = {}
+    }
+
+    return Rating.findOne(payload, projection).populate(populate)
+}

@@ -62,6 +62,15 @@ let tasksSchema = new Schema({
         type: Boolean,
         default: false
     },
+    isReOpen:{
+        type: Boolean,
+        default: false
+    },
+	ratingAllowed: {
+        type: Boolean,
+        default: true
+    },
+    miscType: String,
     rating: {
         type: Number,
         min: 0,

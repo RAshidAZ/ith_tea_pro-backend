@@ -2,11 +2,11 @@ const mongoose = require('mongoose');
 const btoa = require('btoa')
 const validator = require('validator');
 const { sendResponse } = require('../helpers/sendResponse');
-const { populate } = require('../models/ratings');
 const queryController = require('../query');
 const { CONSTANTS } = require('../config/constants');
+const excelJS = require("exceljs");
 
-const { Task, Rating, Project, Comments, TaskLogs, User } = queryController;
+const { Task, Rating, Project, Comments, TaskLogs, User,ProjectSections } = queryController;
 
 const actionLogController = require("../controllers/actionLogs");
 const userController = require("../controllers/user");
@@ -80,6 +80,24 @@ const insertUserTask = async (req, res, next) => {
 	}
 	
 
+	let payload = {
+		name:process.env.DEFAULT_SECTION,
+		projectId:data.projectId
+	}
+	let sectionfind = await ProjectSections.findSection(payload)
+
+	if(sectionfind.id == data.section){
+		data.ratingAllowed = false
+		if(!data.miscType){
+			return res.status(400).send(sendResponse(401, 'Type is required', 'insertUserTask', null, req.data.signature))
+		}
+		
+	}else{
+		data.ratingAllowed = true
+		if(data.miscType){
+			return res.status(400).send(sendResponse(401, 'Type is Not required', 'insertUserTask', null, req.data.signature))
+		}
+	}
 
 	let taskRes = await createPayloadAndInsertTask(data)
 
@@ -164,11 +182,13 @@ const createPayloadAndInsertTask = async function (data) {
 			status: data.status ||  process.env.TASK_STATUS.split(",")[0],
 			section: data.section,
 			projectId: data.projectId,
+			ratingAllowed:data.ratingAllowed,
 			createdBy: data?.auth?.id,    //TODO: Change after auth is updated
 			assignedTo: data.assignedTo,
 			// dueDate: data.dueDate || new Date(new Date().setUTCHours(23, 59, 59, 000)),
 			completedDate: data.completedDate,
 			defaultTaskTime:data.defaultTaskTime,
+			miscType:data.miscType,
 			priority: data.priority,
 			lead: data.tasklead
 		}
@@ -356,6 +376,150 @@ const editUserTask = async (req, res, next) => {
 }
 exports.editUserTask = editUserTask;
 
+const reopenUserTask = async (req, res, next) => {
+	let data = req.data;
+
+	if (!data.taskId) {
+		return res.status(400).send(sendResponse(400, "", 'editUserTask', null, req.data.signature))
+	}
+
+	if(data.dueDate && !validator.isISO8601(data.dueDate) && validator.isDate(data.dueDate)){
+		delete data.dueDate
+	}
+	let task = await getTaskDetails(data);
+	console.log(task)
+
+	if (task.error || !task.data) {
+		return res.status(400).send(sendResponse(400, 'Task Not found..', 'reopenUserTask', null, req.data.signature))
+	}
+	if (!task.data.status=='COMPLETED') {
+		return res.status(400).send(sendResponse(400, 'Task is not Completed', 'reopenUserTask', null, req.data.signature))
+	}
+
+	if(!['SUPER_ADMIN'].includes(data.auth.role) && data.filteredProjects && !data.filteredProjects.includes(task.data.projectId.toString())){
+		return res.status(400).send(sendResponse(400, "You're not assigned this project", 'reopenUserTask', null, req.data.signature))
+	}
+
+	if(!['SUPER_ADMIN'].includes(data.auth.role) && task.data.status && task.data.status == process.env.TASK_STATUS.split(",")[2] ){
+		return res.status(400).send(sendResponse(400, "Can't edit completed task", 'reopenUserTask', null, req.data.signature))
+	}
+	if(task.data.dueDate && data.status == 'COMPLETED'){
+		if(new Date(task.data.dueDate).getTime()< new Date().getTime()){
+			data.isDelayTask = true
+		}
+	}
+	let findPayload = {
+		_id:data.taskId
+	}
+	let updatePayload = {
+		rating:0,
+		isReOpen:true
+		// dueDate:null
+	}
+	let options = {
+		new:true
+	}
+
+	let taskRes = await Task.findOneAndUpdate(findPayload,updatePayload,options)
+
+		if (taskRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'editUserTask', null, req.data.signature))
+		}
+if(task.data.isRated==true){
+	data.taskDetails={
+		
+	}
+	data.taskDetails.assignedTo = taskRes.assignedTo
+	console.log(task.data.dueDate)
+	data.taskDetails.dueDate = task.data.dueDate
+	
+	let allTasksWithSameDueDate = await getAllTasksWithSameDueDate(data);
+	console.log("allTasksWithSameDueDate=====",allTasksWithSameDueDate)
+	data.allTasksWithSameDueDate = allTasksWithSameDueDate.data;
+	
+	
+	data.taskDetails.dueDate = task.data.dueDate
+	console.log("this due date is we are gettng",data.taskDetails.dueDate)
+	
+	let updatedOverallRating = await updateOverallRatingDoc(data);
+	console.log("upadte===",updatedOverallRating)
+	
+	if (updatedOverallRating.error) {
+		return res.status(500).send(sendResponse(500, 'Rating couldnot be updated', 'rateUserTask', null, req.data.signature))
+	}
+}
+	taskRes.dueDate = data.dueDate
+
+  	// due date resetting here because of average rating updation
+	let dueDateFindPayload = {
+		_id:taskRes.id
+	}
+	let dueDateUpdatePayload = {
+		dueDate:null
+	}
+	let dueOptions = {
+		new:true
+	}
+	let resetDueDate = await Task.findOneAndUpdate(dueDateFindPayload,dueDateUpdatePayload,dueOptions)
+	let insertNewTask = await createPayloadAndInsertReOpenTask(taskRes)
+	if (insertNewTask.error || !insertNewTask.data) {
+		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
+	}
+	// console.log("insertNewTask================",insertNewTask)
+	let actionLogData = {
+		actionTaken:'REOPEN_TASK',
+		actionBy: data.auth.id,
+		taskId : data.taskId,
+		correspondingTaskId:insertNewTask.data.id,
+	}
+
+	if(data.reason){
+		reason = `REOPEN_TASK: ${data.reason}`
+		
+		actionLogData.reason = reason
+	}
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addTaskLog(data);
+	if (addActionLogRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
+	}
+
+
+	return res.status(200).send(sendResponse(200, 'Task Reopened Successfully', 'editUserTask', insertNewTask, req.data.signature))
+}
+exports.reopenUserTask = reopenUserTask;
+
+
+const createPayloadAndInsertReOpenTask = async function (taskRes) {
+	try {
+		let payload = {
+			title: taskRes.title,
+			description: taskRes.description,
+			status: process.env.TASK_STATUS.split(",")[0],
+			section: taskRes.section,
+			projectId: taskRes.projectId,
+			createdBy: taskRes.createdBy,    //TODO: Change after auth is updated
+			assignedTo: taskRes.assignedTo,
+			dueDate: taskRes.dueDate,
+			// completedDate: taskRes.completedDate,
+			priority: taskRes.priority,
+			lead: taskRes.lead
+		}
+		
+		if (taskRes.attachments) {
+			payload["attachments"] = taskRes.attachments 
+		}
+
+		let taskResend = await Task.insertUserTask(payload)
+
+		return { data: taskResend, error: false }
+	} catch (err) {
+		console.log("createPayloadAndInsertTask Error : ", err)
+		return { data: err, error: true }
+	}
+}
+exports.createPayloadAndInsertTask = createPayloadAndInsertTask
+
 const createPayloadAndEditTask = async function (data) {
 	try {
 		let findPayload = {
@@ -428,6 +592,110 @@ const getGroupByTasks = async (req, res, next) => {
 	return res.status(200).send(sendResponse(200, 'Task Fetched Successfully', 'getGroupByTasks', taskRes.data, req.data.signature))
 }
 exports.getGroupByTasks = getGroupByTasks;
+
+const exportDataToExcel = async (req, res, next) => {
+	let data = req.data;
+
+	let allowedTaskGroup = process.env.ALLOWED_GROUP_BY.split(',')
+
+	if (!allowedTaskGroup.includes(data.groupBy)) {
+		return res.status(400).send(sendResponse(400, `${data.groupBy} Group By Not Supported`, 'exportDataToExcel', null, req.data.signature))
+	} else {
+		data.aggregateGroupBy = `$${data.groupBy}`
+	}
+
+	data.aggregateGroupBy = CONSTANTS.GROUP_BY[data.groupBy]
+
+	let taskRes = await createPayloadAndGetGroupByTask(data)
+	let taskData = taskRes.data
+	if (taskRes.error){
+		return res.status(500).send(sendResponse(500, '', 'exportDataToExcel', null, req.data.signature))
+	}
+
+	const workbook = new excelJS.Workbook();  // Create a new workbook
+	const worksheet = workbook.addWorksheet("My Users"); // New Worksheet
+
+
+	// Column for data in excel. key must match data key
+	worksheet.columns = [
+		{ header: "S no.", key: "s_no", width: 20 },
+		{ header: "Project Name", key: "projectName", width: 20 },
+		{ header: "Section Name", key: "section", width: 20 },
+		{ header: "Completed Tasks", key: "completedTasks", width: 10 },
+		{ header: "Total Tasks", key: "totalTasks", width: 10 },
+		{ header: 'Task Title', key: 'taskTitle', width: 20 },
+		{ header: 'Task status', key: 'status', width: 20 },
+		{ header: 'Task description', key: 'description', width: 20 },
+		{ header: 'Task lead', key: 'lead', width: 20 },
+		{ header: 'Task CreatedBy', key: 'createdBy', width: 20 },
+		{ header: 'Task AssignedTo', key: 'assignedTo', width: 20 },
+		{ header: 'Task DueDate', key: 'dueDate', width: 20 },
+		{ header: 'Task Rated', key: 'isRated', width: 20 },
+		{ header: 'Task Rating', key: 'rating', width: 20 },
+		{ header: 'Task Created On', key: 'createdAt', width: 20 },
+
+
+	];
+
+	// Looping through User data
+	let counter = 1;
+	taskData.forEach((task) => {
+	
+		let projectIdName = task._id.projectId;
+		let section = task._id.section;
+
+		task.projectName = projectIdName
+		task.section = section
+
+		task.tasks.forEach((tasks) => {
+			task.s_no = counter;
+			let taskTitle = tasks.title;
+			let description = tasks.description;
+			let status = tasks.status;
+			let lead = tasks.lead[0].name;
+			let assignedTo = tasks.assignedTo.name
+			let createdBy = tasks.createdBy.name
+			let createdAt = tasks.createdAt;
+			let dueDate = tasks.dueDate;
+			let isRated = tasks.isRated;
+			let rating = tasks.rating;
+
+			task.taskTitle = taskTitle
+			task.description = description
+			task.lead = lead
+			task.status = status
+			task.createdBy = createdBy
+			task.assignedTo = assignedTo
+			task.dueDate = dueDate
+			task.isRated = isRated
+			task.rating = rating
+			task.createdAt = createdAt
+
+			worksheet.addRow(task,task.taskTitle,task.projectName,task.section,task.lead,task.status,task.assignedTo,task.dueDate,task.isRated,task.rating,task.createdBy,task.createdAt); 
+
+			counter++;
+		});	
+	});
+	// Making first line in excel bold
+	worksheet.getRow(1).eachCell((cell) => {
+		cell.font = { bold: true };
+	});
+	try {
+
+        workbook.xlsx.writeBuffer().then(buffer => {
+            // Set the response headers for file download
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', 'attachment; filename="users.xlsx"');
+            res.send(buffer);
+        })
+    } catch (err) {
+        console.log(err)
+    return res.status(500).send(sendResponse(500, 'error in file downloading', 'exportDataToExcel', err, req.data.signature))
+    }
+}
+	
+exports.exportDataToExcel = exportDataToExcel;
+
 
 const createPayloadAndGetGroupByTask = async function (data) {
 	try {
@@ -629,28 +897,33 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			// populate.push({ path: '_id.projectId', model: 'projects', select: 'name' })
 			populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
 			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name profilePicture' })
+			populate.push({ path: 'tasks.lead', model: 'users', select: 'name profilePicture' })
 		}
 		if (data.groupBy == 'projectId') {
 			// populate.push({ path: '_id', model: 'projects', select: 'name' })
 			populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
 			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name profilePicture' })
+			populate.push({ path: 'tasks.lead', model: 'users', select: 'name profilePicture' })
 		}
 		if (data.groupBy == 'createdBy') {
 			populate.push({ path: '_id.createdBy', model: 'users', select: 'name' })
 			populate.push({ path: 'tasks.projectId', model: 'projects', select: 'name' })
 			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name profilePicture' })
+			populate.push({ path: 'tasks.lead', model: 'users', select: 'name profilePicture' })
 		}
 		if (data.groupBy == 'assignedTo') {
 			populate.push({ path: '_id.assignedTo', model: 'users', select: 'name' })
 			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name profilePicture' })
 			populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
 			populate.push({ path: 'tasks.projectId', model: 'projects', select: 'name' })
-
+			populate.push({ path: 'tasks.lead', model: 'users', select: 'name profilePicture' })
+			
 		}
 		if (data.groupBy == 'status' || data.groupBy == 'sections') {
 			populate.push({ path: 'tasks.projectId', model: 'projects', select: 'name' })
 			populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
 			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name profilePicture' })
+			populate.push({ path: 'tasks.lead', model: 'users', select: 'name profilePicture' })
 		}
 
 		let populatedRes = await Project.projectPopulate(taskRes, populate)
@@ -840,15 +1113,17 @@ const rateUserTask = async (req, res, next) => {
 
 	let data = req.data;
 
-	if (!data.taskId || !data.rating) {
+	if (!data.taskId || data.rating == null) {
 		return res.status(400).send(sendResponse(400, "Please send all required Data fields", 'rateUserTask', null, req.data.signature))
 	}
 
 	let task = await getTaskById(data);
 	if (task.error || !task.data) {
-		return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
+		return res.status(500).send(sendResponse(500, 'Task Not found..', 'rateUserTask', null, req.data.signature))
 	}
-
+	if(task.data.ratingAllowed===false){
+		return res.status(400).send(sendResponse(400, 'Rating Not Allowed', 'rateUserTask', null, req.data.signature))
+	}
 	let rating = parseInt(data.rating)
 	if (rating > 6) {
 		return res.status(400).send(sendResponse(400, 'Rating should be less than 6', 'rateUserTask', null, req.data.signature))
@@ -862,7 +1137,7 @@ const rateUserTask = async (req, res, next) => {
 	taskDueDate = new Date(taskDueDate);
 	
 	let timeDifference = ((currentDate.getTime()-taskDueDate.getTime()) || 1)/(1000 * 60 * 60)
-	if (timeDifference > parseInt(process.env.ratingTimeAllowed)) {
+	if (!task.isRated && timeDifference > parseInt(process.env.ratingTimeAllowed)) {
 		data.isDelayRated = true
 		// return res.status(400).send(sendResponse(400, 'Oops, You are late in rating..', 'rateUserTask', null, req.data.signature))
 	}
@@ -916,20 +1191,35 @@ const rateUserTask = async (req, res, next) => {
 	if (updatedOverallRating.error || !updateTaskRating.data) {
 		return res.status(500).send(sendResponse(500, 'Rating couldnot be updated', 'rateUserTask', null, req.data.signature))
 	}
-
-	let actionLogData = {
-		actionTaken: 'RATE_TASK',
-		actionBy: data.auth.id,
-		userId : taskDetails.assignedTo,
-		taskId: data.taskId,
-		ratingId : updatedOverallRating.data._id
+	if(task.isRated = true){
+		let actionLogData = {
+			actionTaken: 'RERATE_TASK',
+			actionBy: data.auth.id,
+			userId : taskDetails.assignedTo,
+			taskId: data.taskId,
+			ratingId : updatedOverallRating.data._id
+		}
+		data.actionLogData = actionLogData;
+		let addActionLogRes = await actionLogController.addRatingLog(data);
+		if (addActionLogRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
+		}
+	}else{
+		let actionLogData = {
+			actionTaken: 'RATE_TASK',
+			actionBy: data.auth.id,
+			userId : taskDetails.assignedTo,
+			taskId: data.taskId,
+			ratingId : updatedOverallRating.data._id
+		}
+		data.actionLogData = actionLogData;
+		let addActionLogRes = await actionLogController.addRatingLog(data);
+		if (addActionLogRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
+		}
 	}
-	data.actionLogData = actionLogData;
-	let addActionLogRes = await actionLogController.addRatingLog(data);
+	
 
-	if (addActionLogRes.error) {
-		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
-	}
 
 	return res.status(200).send(sendResponse(200, 'Task Rated', 'rateUserTask', updatedOverallRating.data, req.data.signature));
 }
@@ -972,7 +1262,8 @@ const updateUserTaskRating = async function (data) {
 	try {
 
 		let findData = {
-			_id: data.taskId
+			_id: data.taskId,
+			ratingAllowed:true
 		}
 		let updateData = {
 			rating: data.rating,
@@ -1000,7 +1291,8 @@ const getAllTasksWithSameDueDate = async function (data) {
 
 		let findData = {
 			assignedTo: data.taskDetails.assignedTo,
-			dueDate: data.taskDetails.dueDate
+			dueDate: data.taskDetails.dueDate,
+			ratingAllowed:true
 		}
 
 
@@ -1146,6 +1438,8 @@ const getTaskListToRate = async function (req, res, next) {
 		return res.status(400).send(sendResponse(400, 'Missing Params', 'getTaskListToRate', null, req.data.signature))
 	}
 	data.isRated = false;
+	data.ratingAllowed = true;
+	
 	data.status = 'COMPLETED'
 	let tasksLists = await createPayloadAndGetTaskLists(data);
 	if (tasksLists.error) {
@@ -1715,7 +2009,7 @@ const createPayloadAndGetTodayTaskLists = async function (data) {
 		if(!['SUPER_ADMIN'].includes(data.auth.role)){
 			findData.projectId = { $in : data.filteredProjects || []}
 		}
-		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+		if(!['SUPER_ADMIN', 'ADMIN',"GUEST"].includes(data.auth.role)){
 			findData["$or"] = [
 				{ createdBy: data.auth.id },
 				{ assignedTo: data.auth.id },
@@ -1789,6 +2083,7 @@ const createPayloadAndGetPendingRatingTasks = async function (data) {
 
 		let findData = {
 			isDeleted: false,
+			ratingAllowed:true,
 			isArchived :  false,
 			status : "COMPLETED",
 			isRated : false

@@ -101,26 +101,45 @@ const addNewProject = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "", 'addNewProject', null, req.data.signature))
 	}
 
+	/* The below code is checking if a project name already exists in the database. */
 	let checkIfProjectNameExist = await checkUniqueProject(data)
 	if(checkIfProjectNameExist.error){
-		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
+		return res.status(500).send(sendResponse(500, '', 'addNewProject_checkUniqueProject', null, req.data.signature))
 	}
 	if(checkIfProjectNameExist.data.exist){
-		return res.status(400).send(sendResponse(400, "Project name already exist", 'addNewProject', null, req.data.signature))
-	}
-	let projectRes = await createPayloadAndAddProject(data)
-	if (projectRes.error || !projectRes.data) {
-		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
+		return res.status(400).send(sendResponse(400, "Project name already exist", 'addNewProject_checkUniqueProject', null, req.data.signature))
 	}
 
+	
+	// Adding projects in DB
+	let projectRes = await createPayloadAndAddProject(data)
+	if (projectRes.error || !projectRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'addNewProject_createPayloadAndAddProject', null, req.data.signature))
+	}
+	data.projectId = projectRes.data._id
+	
+	// Adding default project section.
+	data.defaultSection = true;
+	let projectSectionRes = await createPayloadAndAddProjectSection(data)
+	if (projectSectionRes.error || !projectSectionRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'addNewProject_createDefaultSection', null, req.data.signature))
+	}
+	
+	// Updating default section id in project.
+	data.projectSections = [projectSectionRes.data._id]
+	let updateProjectRes = await createPayloadAndUpdateProjectSection(data)
+	if (updateProjectRes.error || !updateProjectRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'addProjectSection_createPayloadAndUpdateProjectSection', null, req.data.signature))
+	}
+
+	// Adding project logs
 	let actionLogData = {
 		actionTaken: 'PROJECT_ADDED',
 		actionBy: data.auth.id,
-		projectId : projectRes.data._id
+		projectId : data.projectId
 	}
 	data.actionLogData = actionLogData;
 	let addActionLogRes = await actionLogController.addProjectLog(data);
-
 	if (addActionLogRes.error) {
 		console.log("===========error",addActionLogRes.data)
 		return res.status(500).send(sendResponse(500, '', 'addNewProject', null, req.data.signature))
@@ -129,7 +148,6 @@ const addNewProject = async (req, res, next) => {
 	return res.status(200).send(sendResponse(200, "Project's Added Successfully", 'addNewProject', null, req.data.signature))
 }
 exports.addNewProject = addNewProject
-
 
 const createPayloadAndAddProject = async function (data) {
 	try {
@@ -249,8 +267,11 @@ const assignUserToProject = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "", 'assignUserToProject', null, req.data.signature))
 	}
 
+	// console.log(data.proje)
+
 
 	let projectData = await Project.findSpecificProject({ _id : data.projectId});
+	console.log(projectData)
 
 	if (!projectData || projectData.isArchived) {
 		return res.status(400).send(sendResponse(400, "Project Archived, Can't assign lead/users ", 'assignUserToProject', null, req.data.signature))
@@ -290,13 +311,18 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 		}
 
 		let allUsers = await User.getAllUsers(findUsers)
+		console.log(allUsers)
 		data.allUsers = allUsers
 		allUsers = allUsers.length ? allUsers : []
 		let usersToAssign = allUsers.filter((el) => el.role == 'CONTRIBUTOR')
 		let leadsToAssign = allUsers.filter((el) => el.role == 'LEAD')
-		console.log("=================assign user/lead data=========",usersToAssign, leadsToAssign)
+		let guestToAssign = allUsers.filter((el) => el.role == 'GUEST')
+		console.log("=================assign user/lead data=========",usersToAssign, leadsToAssign,guestToAssign)
 		if(usersToAssign.length && !usersToAssign[0].role){
 			usersToAssign = []
+		}
+		if(guestToAssign.length && !guestToAssign[0].role){
+			guestToAssign = []
 		}
 
 		
@@ -304,7 +330,7 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 			leadsToAssign = []
 		}
 		let updatePayload = {
-			$addToSet: { accessibleBy: { $each: usersToAssign }, managedBy: { $each: leadsToAssign } }
+			$addToSet: { accessibleBy: { $each: usersToAssign }, accessibleBy: { $each: guestToAssign  },managedBy: { $each: leadsToAssign } }
 		}
 
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
@@ -647,6 +673,8 @@ const createPayloadAndgetAllProjectSections = async function (data) {
 			payload.projectId = data.projectId
 		}
 		let sortCriteria = {
+			"projectId.name" : 1,
+			name : 1,
 			createdAt: 1
 		}
 
@@ -691,7 +719,7 @@ exports.addProjectSection = addProjectSection
 const createPayloadAndAddProjectSection = async function (data) {
 	try {
 		let payload = {
-			name: data.name,
+			name: data.defaultSection ? process.env.DEFAULT_SECTION : data.name,
 			isActive : true,
 			isDeleted : false,
 			projectId : data.projectId
@@ -1358,7 +1386,7 @@ const createPayloadAndAssignProjectsToUser = async function (data) {
 
 		let updatePayload = { }
 		
-		if(user.role == 'CONTRIBUTOR'){
+		if(user.role == 'CONTRIBUTOR','GUEST'){
 			updatePayload = { $addToSet: { accessibleBy: user._id }}
 		}else{
 			updatePayload = { $addToSet: { managedBy: user._id }}
@@ -1476,6 +1504,7 @@ const createPayloadAndRemoveUsersFromProject = async function (data) {
 		data.allUsers = allUsers
 		allUsers = allUsers.length ? allUsers : []
 		let usersToUnAssign = allUsers.filter((el) => el.role == 'CONTRIBUTOR')
+		let guestsToUnAssign = allUsers.filter((el) => el.role == 'GUEST')
 		let leadsToUnAssign = allUsers.filter((el) => el.role == 'LEAD')
 		console.log("=================assign user/lead data=========",usersToUnAssign, leadsToUnAssign)
 		if(usersToUnAssign.length && !usersToUnAssign[0].role){
@@ -1486,7 +1515,7 @@ const createPayloadAndRemoveUsersFromProject = async function (data) {
 			leadsToUnAssign = []
 		}
 		let updatePayload = {
-			$pull: { accessibleBy: { $in: usersToUnAssign }, managedBy: { $in: leadsToUnAssign } }
+			$pull: { accessibleBy: { $in: usersToUnAssign },accessibleBy: { $in: guestsToUnAssign }, managedBy: { $in: leadsToUnAssign } }
 		}
 
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)

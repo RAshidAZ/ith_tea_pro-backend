@@ -13,7 +13,8 @@ const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
 
-const { editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTeamTasksCountReport, getTaskStatusAnalytics, getTodayTasksList,  getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments, getTeamTasksList } = require('../controllers/task');
+
+const { reopenUserTask, exportDataToExcel, editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTeamTasksCountReport, getTaskStatusAnalytics, getTodayTasksList,  getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments, getTeamTasksList } = require('../controllers/task');
 
 
 //Insert task
@@ -25,6 +26,10 @@ router.post("/v1/user/insert",
 router.patch("/v1/edit",
     [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"]), filterProjects],
     editUserTask);
+
+router.post("/v1/reopen",
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects],
+    reopenUserTask);
 
 // Task Listing Main API
 router.get("/v1/groupby",
@@ -61,6 +66,11 @@ router.get("/v1/list/for/rating",
     
 /**Insert Task Rating */
 router.post("/v1/rate",
+[authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects],
+rateUserTask);
+
+/**Edit Task Rating */
+router.patch("/v1/rate/updateRating",
     [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects],
     rateUserTask);
 
@@ -82,7 +92,7 @@ router.get("/v1/all/of/project",
 
 /**Insert Task comment */
 router.post("/v1/add/comment",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN"]), filterProjects],
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR", "INTERN","GUEST"]), filterProjects],
     commentUserTask);
 
 /**Get comments of taks and rating of user for given date*/
@@ -93,7 +103,7 @@ module.exports = router;
 
 //get today tasks list for team work
 router.get("/v1/get/today/tasks",
-    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects],
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD','GUEST']), filterProjects],
     getTodayTasksList)
 
 // get team-member tasks list
@@ -105,3 +115,7 @@ router.get("/v1/get/team/task",
 router.get("/v1/get/team/task/count",
 [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects],
 getTeamTasksCountReport)
+
+router.get("/v1/downloadExcel",
+[authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects],
+exportDataToExcel)

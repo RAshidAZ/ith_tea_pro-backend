@@ -90,7 +90,6 @@ const updateUserRating = async (req, res, next) => {
 	return res.status(200).send(sendResponse(200, 'Rating Updated', 'updateUserRating', null, req.data.signature))
 }
 exports.updateUserRating = updateUserRating
-
 const getMonthAllUserRating = async (req, res, next) => {
 	let data = req.data;
 
@@ -192,6 +191,7 @@ const getAllUsersRatingForMonth = async function (data) {
 			roleFilter.push('ADMIN')
 		}
 		findData.role  = { $nin: roleFilter }
+		// findData.ratingAllowed  = { $nin: [false] }
 		if(data.userRating){
 			findData._id = mongoose.Types.ObjectId(data.auth.id)
 		}
@@ -271,7 +271,6 @@ const getAllUsersRatingForMonth = async function (data) {
 
 		// let ratingRes = await Rating.getAllUsersRatingForMonth(payload)
 		let ratingRes = await User.getAllUsersRatingForMonth(payload)
-
 		return { data: ratingRes, error: false }
 	} catch (error) {
 		console.log("getAllUsersRatingForMonth Error : ", error)
@@ -379,6 +378,51 @@ const createPayloadAndGetWeekRating = async function (data) {
 	}
 }
 exports.createPayloadAndGetWeekRating = createPayloadAndGetWeekRating;
+
+const getRatingByDate = async (req, res, next) => {
+	let data = req.data;
+
+	let ratingRes = await createPayloadAndGetDayRating(data)
+	console.log(ratingRes)
+	if (ratingRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'getRatingByDate', null, req.data.signature))
+	}
+	return res.status(200).send(sendResponse(200, 'Day Ratings Fetched', 'getMonthAllUserRating', ratingRes.data, req.data.signature))
+}
+exports.getRatingByDate = getRatingByDate
+
+const createPayloadAndGetDayRating = async function (data) {
+	try {
+		const day = data.date;
+		const month = data.month; 
+		const year = data.year;
+		
+		let payload = {
+			userId: data.auth.id,
+			date: day,
+			month: month, 
+			year: year
+		}
+
+		let populate = "taskIds"
+		populate= [{
+			path:"taskIds"
+		},
+		{
+			path:"taskIds",
+			populate:{
+				path:"ratingComments"
+			}
+		}]
+
+
+		let dayRating = await Rating.findUserRatingAndPopulate(payload, {}, populate)
+		return { data: dayRating, error: false }
+	} catch (error) {
+		console.log("createPayloadAndGetWeekRating Error : ", error)
+		return { data: error, error: true }
+	}
+}
 
 const filteredDistinctProjectsUsers = async function (data) {
 	try {
