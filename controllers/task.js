@@ -293,6 +293,17 @@ const editUserTask = async (req, res, next) => {
 		}
 		// updatePayload.lead = data.tasklead
 	}
+	let payload = {
+		name:process.env.DEFAULT_SECTION,
+		projectId:data.projectId
+	}
+	let sectionfind = await ProjectSections.findSection(payload)
+	console.log('section =====================================',sectionfind.id)
+	if(data.section==sectionfind.id){
+		data.ratingAllowed=false
+	}else{
+		data.ratingAllowed=true
+	}
 
 	let taskRes = await createPayloadAndEditTask(data)
 	if (taskRes.error) {
@@ -400,7 +411,7 @@ const reopenUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "You're not assigned this project", 'reopenUserTask', null, req.data.signature))
 	}
 
-	if(!['SUPER_ADMIN'].includes(data.auth.role) && task.data.status && task.data.status == process.env.TASK_STATUS.split(",")[2] ){
+	if(!['SUPER_ADMIN','ADMIN','LEAD'].includes(data.auth.role) && task.data.status && task.data.status == process.env.TASK_STATUS.split(",")[2] ){
 		return res.status(400).send(sendResponse(400, "Can't edit completed task", 'reopenUserTask', null, req.data.signature))
 	}
 	if(task.data.dueDate && data.status == 'COMPLETED'){
@@ -539,6 +550,7 @@ const createPayloadAndEditTask = async function (data) {
 		
 		if (JSON.stringify(data.section)) {
 			updatePayload.section = data.section
+			updatePayload.ratingAllowed = data.ratingAllowed
 		}
 
 		if (data.isDelayTask) {
