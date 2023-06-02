@@ -191,6 +191,7 @@ const getAllUsersRatingForMonth = async function (data) {
 			roleFilter.push('ADMIN')
 		}
 		findData.role  = { $nin: roleFilter }
+		// findData.ratingAllowed  = { $nin: [false] }
 		if(data.userRating){
 			findData._id = mongoose.Types.ObjectId(data.auth.id)
 		}
@@ -270,7 +271,6 @@ const getAllUsersRatingForMonth = async function (data) {
 
 		// let ratingRes = await Rating.getAllUsersRatingForMonth(payload)
 		let ratingRes = await User.getAllUsersRatingForMonth(payload)
-		console.log(ratingRes)
 		return { data: ratingRes, error: false }
 	} catch (error) {
 		console.log("getAllUsersRatingForMonth Error : ", error)

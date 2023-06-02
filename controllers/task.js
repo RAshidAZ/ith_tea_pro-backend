@@ -4,8 +4,9 @@ const validator = require('validator');
 const { sendResponse } = require('../helpers/sendResponse');
 const queryController = require('../query');
 const { CONSTANTS } = require('../config/constants');
+const excelJS = require("exceljs");
 
-const { Task, Rating, Project, Comments, TaskLogs, User } = queryController;
+const { Task, Rating, Project, Comments, TaskLogs, User,ProjectSections } = queryController;
 
 const actionLogController = require("../controllers/actionLogs");
 const userController = require("../controllers/user");
@@ -69,6 +70,24 @@ const insertUserTask = async (req, res, next) => {
 		}
 	}
 
+	let payload = {
+		name:process.env.DEFAULT_SECTION,
+		projectId:data.projectId
+	}
+	let sectionfind = await ProjectSections.findSection(payload)
+
+	if(sectionfind.id == data.section){
+		data.ratingAllowed = false
+		if(!data.miscType){
+			return res.status(400).send(sendResponse(401, 'Type is required', 'insertUserTask', null, req.data.signature))
+		}
+		
+	}else{
+		data.ratingAllowed = true
+		if(data.miscType){
+			return res.status(400).send(sendResponse(401, 'Type is Not required', 'insertUserTask', null, req.data.signature))
+		}
+	}
 
 	let taskRes = await createPayloadAndInsertTask(data)
 
@@ -152,10 +171,12 @@ const createPayloadAndInsertTask = async function (data) {
 			status: data.status ||  process.env.TASK_STATUS.split(",")[0],
 			section: data.section,
 			projectId: data.projectId,
+			ratingAllowed:data.ratingAllowed,
 			createdBy: data?.auth?.id,    //TODO: Change after auth is updated
 			assignedTo: data.assignedTo,
 			// dueDate: data.dueDate || new Date(new Date().setUTCHours(23, 59, 59, 000)),
 			completedDate: data.completedDate,
+			miscType:data.miscType,
 			priority: data.priority,
 			lead: data.tasklead
 		}
@@ -559,6 +580,110 @@ const getGroupByTasks = async (req, res, next) => {
 	return res.status(200).send(sendResponse(200, 'Task Fetched Successfully', 'getGroupByTasks', taskRes.data, req.data.signature))
 }
 exports.getGroupByTasks = getGroupByTasks;
+
+const exportDataToExcel = async (req, res, next) => {
+	let data = req.data;
+
+	let allowedTaskGroup = process.env.ALLOWED_GROUP_BY.split(',')
+
+	if (!allowedTaskGroup.includes(data.groupBy)) {
+		return res.status(400).send(sendResponse(400, `${data.groupBy} Group By Not Supported`, 'exportDataToExcel', null, req.data.signature))
+	} else {
+		data.aggregateGroupBy = `$${data.groupBy}`
+	}
+
+	data.aggregateGroupBy = CONSTANTS.GROUP_BY[data.groupBy]
+
+	let taskRes = await createPayloadAndGetGroupByTask(data)
+	let taskData = taskRes.data
+	if (taskRes.error){
+		return res.status(500).send(sendResponse(500, '', 'exportDataToExcel', null, req.data.signature))
+	}
+
+	const workbook = new excelJS.Workbook();  // Create a new workbook
+	const worksheet = workbook.addWorksheet("My Users"); // New Worksheet
+
+
+	// Column for data in excel. key must match data key
+	worksheet.columns = [
+		{ header: "S no.", key: "s_no", width: 20 },
+		{ header: "Project Name", key: "projectName", width: 20 },
+		{ header: "Section Name", key: "section", width: 20 },
+		{ header: "Completed Tasks", key: "completedTasks", width: 10 },
+		{ header: "Total Tasks", key: "totalTasks", width: 10 },
+		{ header: 'Task Title', key: 'taskTitle', width: 20 },
+		{ header: 'Task status', key: 'status', width: 20 },
+		{ header: 'Task description', key: 'description', width: 20 },
+		{ header: 'Task lead', key: 'lead', width: 20 },
+		{ header: 'Task CreatedBy', key: 'createdBy', width: 20 },
+		{ header: 'Task AssignedTo', key: 'assignedTo', width: 20 },
+		{ header: 'Task DueDate', key: 'dueDate', width: 20 },
+		{ header: 'Task Rated', key: 'isRated', width: 20 },
+		{ header: 'Task Rating', key: 'rating', width: 20 },
+		{ header: 'Task Created On', key: 'createdAt', width: 20 },
+
+
+	];
+
+	// Looping through User data
+	let counter = 1;
+	taskData.forEach((task) => {
+	
+		let projectIdName = task._id.projectId;
+		let section = task._id.section;
+
+		task.projectName = projectIdName
+		task.section = section
+
+		task.tasks.forEach((tasks) => {
+			task.s_no = counter;
+			let taskTitle = tasks.title;
+			let description = tasks.description;
+			let status = tasks.status;
+			let lead = tasks.lead[0].name;
+			let assignedTo = tasks.assignedTo.name
+			let createdBy = tasks.createdBy.name
+			let createdAt = tasks.createdAt;
+			let dueDate = tasks.dueDate;
+			let isRated = tasks.isRated;
+			let rating = tasks.rating;
+
+			task.taskTitle = taskTitle
+			task.description = description
+			task.lead = lead
+			task.status = status
+			task.createdBy = createdBy
+			task.assignedTo = assignedTo
+			task.dueDate = dueDate
+			task.isRated = isRated
+			task.rating = rating
+			task.createdAt = createdAt
+
+			worksheet.addRow(task,task.taskTitle,task.projectName,task.section,task.lead,task.status,task.assignedTo,task.dueDate,task.isRated,task.rating,task.createdBy,task.createdAt); 
+
+			counter++;
+		});	
+	});
+	// Making first line in excel bold
+	worksheet.getRow(1).eachCell((cell) => {
+		cell.font = { bold: true };
+	});
+	try {
+
+        workbook.xlsx.writeBuffer().then(buffer => {
+            // Set the response headers for file download
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', 'attachment; filename="users.xlsx"');
+            res.send(buffer);
+        })
+    } catch (err) {
+        console.log(err)
+    return res.status(500).send(sendResponse(500, 'error in file downloading', 'exportDataToExcel', err, req.data.signature))
+    }
+}
+	
+exports.exportDataToExcel = exportDataToExcel;
+
 
 const createPayloadAndGetGroupByTask = async function (data) {
 	try {
@@ -981,11 +1106,12 @@ const rateUserTask = async (req, res, next) => {
 	}
 
 	let task = await getTaskById(data);
-	console.log(task.data)
 	if (task.error || !task.data) {
-		return res.status(400).send(sendResponse(400, 'Task Not found..', 'rateUserTask', null, req.data.signature))
+		return res.status(500).send(sendResponse(500, 'Task Not found..', 'rateUserTask', null, req.data.signature))
 	}
-
+	if(task.data.ratingAllowed===false){
+		return res.status(400).send(sendResponse(400, 'Rating Not Allowed', 'rateUserTask', null, req.data.signature))
+	}
 	let rating = parseInt(data.rating)
 	if (rating > 6) {
 		return res.status(400).send(sendResponse(400, 'Rating should be less than 6', 'rateUserTask', null, req.data.signature))
@@ -1124,7 +1250,8 @@ const updateUserTaskRating = async function (data) {
 	try {
 
 		let findData = {
-			_id: data.taskId
+			_id: data.taskId,
+			ratingAllowed:true
 		}
 		let updateData = {
 			rating: data.rating,
@@ -1152,7 +1279,8 @@ const getAllTasksWithSameDueDate = async function (data) {
 
 		let findData = {
 			assignedTo: data.taskDetails.assignedTo,
-			dueDate: data.taskDetails.dueDate
+			dueDate: data.taskDetails.dueDate,
+			ratingAllowed:true
 		}
 
 
@@ -1298,6 +1426,8 @@ const getTaskListToRate = async function (req, res, next) {
 		return res.status(400).send(sendResponse(400, 'Missing Params', 'getTaskListToRate', null, req.data.signature))
 	}
 	data.isRated = false;
+	data.ratingAllowed = true;
+	
 	data.status = 'COMPLETED'
 	let tasksLists = await createPayloadAndGetTaskLists(data);
 	if (tasksLists.error) {
@@ -1802,7 +1932,7 @@ const createPayloadAndGetTodayTaskLists = async function (data) {
 		if(!['SUPER_ADMIN'].includes(data.auth.role)){
 			findData.projectId = { $in : data.filteredProjects || []}
 		}
-		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+		if(!['SUPER_ADMIN', 'ADMIN',"GUEST"].includes(data.auth.role)){
 			findData["$or"] = [
 				{ createdBy: data.auth.id },
 				{ assignedTo: data.auth.id },
@@ -1876,6 +2006,7 @@ const createPayloadAndGetPendingRatingTasks = async function (data) {
 
 		let findData = {
 			isDeleted: false,
+			ratingAllowed:true,
 			isArchived :  false,
 			status : "COMPLETED",
 			isRated : false
