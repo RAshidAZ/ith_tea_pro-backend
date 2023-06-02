@@ -1788,7 +1788,7 @@ const createPayloadAndGetTodayTaskLists = async function (data) {
 		if(!['SUPER_ADMIN'].includes(data.auth.role)){
 			findData.projectId = { $in : data.filteredProjects || []}
 		}
-		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+		if(!['SUPER_ADMIN', 'ADMIN',"GUEST"].includes(data.auth.role)){
 			findData["$or"] = [
 				{ createdBy: data.auth.id },
 				{ assignedTo: data.auth.id },

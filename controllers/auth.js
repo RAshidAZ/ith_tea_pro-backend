@@ -605,13 +605,16 @@ const forgotPassword = async (req, res, next) => {
 	//find user
 	let findUser = { email : data.email}
 	let userRes = await User.userfindOneQuery(findUser);
+    console.log(userRes)
 	if(!userRes){
         return res.status(400).send(sendResponse(400, "User not found", 'forgotPassword', null, req.data.signature))
 	}
-
+    
 	data.userId = mongoose.Types.ObjectId(userRes._id)
+    console.log(data.userId)
 	//check user details
 	let userCredentials = await utilities.readUserByCredentials(data)
+    console.log(userCredentials)
 	
 	if(userCredentials.error){
 		return res.status(400).send(sendResponse(400, userCredentials.data, 'forgotPassword', null, req.data.signature))

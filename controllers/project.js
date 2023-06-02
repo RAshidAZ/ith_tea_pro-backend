@@ -267,8 +267,11 @@ const assignUserToProject = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "", 'assignUserToProject', null, req.data.signature))
 	}
 
+	// console.log(data.proje)
+
 
 	let projectData = await Project.findSpecificProject({ _id : data.projectId});
+	console.log(projectData)
 
 	if (!projectData || projectData.isArchived) {
 		return res.status(400).send(sendResponse(400, "Project Archived, Can't assign lead/users ", 'assignUserToProject', null, req.data.signature))
@@ -308,13 +311,18 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 		}
 
 		let allUsers = await User.getAllUsers(findUsers)
+		console.log(allUsers)
 		data.allUsers = allUsers
 		allUsers = allUsers.length ? allUsers : []
 		let usersToAssign = allUsers.filter((el) => el.role == 'CONTRIBUTOR')
 		let leadsToAssign = allUsers.filter((el) => el.role == 'LEAD')
-		console.log("=================assign user/lead data=========",usersToAssign, leadsToAssign)
+		let guestToAssign = allUsers.filter((el) => el.role == 'GUEST')
+		console.log("=================assign user/lead data=========",usersToAssign, leadsToAssign,guestToAssign)
 		if(usersToAssign.length && !usersToAssign[0].role){
 			usersToAssign = []
+		}
+		if(guestToAssign.length && !guestToAssign[0].role){
+			guestToAssign = []
 		}
 
 		
@@ -322,7 +330,7 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 			leadsToAssign = []
 		}
 		let updatePayload = {
-			$addToSet: { accessibleBy: { $each: usersToAssign }, managedBy: { $each: leadsToAssign } }
+			$addToSet: { accessibleBy: { $each: usersToAssign }, accessibleBy: { $each: guestToAssign  },managedBy: { $each: leadsToAssign } }
 		}
 
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
@@ -1378,7 +1386,7 @@ const createPayloadAndAssignProjectsToUser = async function (data) {
 
 		let updatePayload = { }
 		
-		if(user.role == 'CONTRIBUTOR'){
+		if(user.role == 'CONTRIBUTOR','GUEST'){
 			updatePayload = { $addToSet: { accessibleBy: user._id }}
 		}else{
 			updatePayload = { $addToSet: { managedBy: user._id }}
@@ -1496,6 +1504,7 @@ const createPayloadAndRemoveUsersFromProject = async function (data) {
 		data.allUsers = allUsers
 		allUsers = allUsers.length ? allUsers : []
 		let usersToUnAssign = allUsers.filter((el) => el.role == 'CONTRIBUTOR')
+		let guestsToUnAssign = allUsers.filter((el) => el.role == 'GUEST')
 		let leadsToUnAssign = allUsers.filter((el) => el.role == 'LEAD')
 		console.log("=================assign user/lead data=========",usersToUnAssign, leadsToUnAssign)
 		if(usersToUnAssign.length && !usersToUnAssign[0].role){
@@ -1506,7 +1515,7 @@ const createPayloadAndRemoveUsersFromProject = async function (data) {
 			leadsToUnAssign = []
 		}
 		let updatePayload = {
-			$pull: { accessibleBy: { $in: usersToUnAssign }, managedBy: { $in: leadsToUnAssign } }
+			$pull: { accessibleBy: { $in: usersToUnAssign },accessibleBy: { $in: guestsToUnAssign }, managedBy: { $in: leadsToUnAssign } }
 		}
 
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
