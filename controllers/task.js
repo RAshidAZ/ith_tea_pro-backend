@@ -676,7 +676,7 @@ const exportDataToExcel = async (req, res, next) => {
 			let isReOpen = tasks.isReOpen;
 			let rating = tasks.rating;
 
-			console.log("desc-------",description)
+			// console.log("desc-------",description)
 			if(!description){
 				description = "Description Not Available"
 				task.description = description
