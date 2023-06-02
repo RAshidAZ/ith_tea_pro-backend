@@ -364,6 +364,150 @@ const editUserTask = async (req, res, next) => {
 }
 exports.editUserTask = editUserTask;
 
+const reopenUserTask = async (req, res, next) => {
+	let data = req.data;
+
+	if (!data.taskId) {
+		return res.status(400).send(sendResponse(400, "", 'editUserTask', null, req.data.signature))
+	}
+
+	if(data.dueDate && !validator.isISO8601(data.dueDate) && validator.isDate(data.dueDate)){
+		delete data.dueDate
+	}
+	let task = await getTaskDetails(data);
+	console.log(task)
+
+	if (task.error || !task.data) {
+		return res.status(400).send(sendResponse(400, 'Task Not found..', 'reopenUserTask', null, req.data.signature))
+	}
+	if (!task.data.status=='COMPLETED') {
+		return res.status(400).send(sendResponse(400, 'Task is not Completed', 'reopenUserTask', null, req.data.signature))
+	}
+
+	if(!['SUPER_ADMIN'].includes(data.auth.role) && data.filteredProjects && !data.filteredProjects.includes(task.data.projectId.toString())){
+		return res.status(400).send(sendResponse(400, "You're not assigned this project", 'reopenUserTask', null, req.data.signature))
+	}
+
+	if(!['SUPER_ADMIN'].includes(data.auth.role) && task.data.status && task.data.status == process.env.TASK_STATUS.split(",")[2] ){
+		return res.status(400).send(sendResponse(400, "Can't edit completed task", 'reopenUserTask', null, req.data.signature))
+	}
+	if(task.data.dueDate && data.status == 'COMPLETED'){
+		if(new Date(task.data.dueDate).getTime()< new Date().getTime()){
+			data.isDelayTask = true
+		}
+	}
+	let findPayload = {
+		_id:data.taskId
+	}
+	let updatePayload = {
+		rating:0,
+		isReOpen:true
+		// dueDate:null
+	}
+	let options = {
+		new:true
+	}
+
+	let taskRes = await Task.findOneAndUpdate(findPayload,updatePayload,options)
+
+		if (taskRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'editUserTask', null, req.data.signature))
+		}
+if(task.data.isRated==true){
+	data.taskDetails={
+		
+	}
+	data.taskDetails.assignedTo = taskRes.assignedTo
+	console.log(task.data.dueDate)
+	data.taskDetails.dueDate = task.data.dueDate
+	
+	let allTasksWithSameDueDate = await getAllTasksWithSameDueDate(data);
+	console.log("allTasksWithSameDueDate=====",allTasksWithSameDueDate)
+	data.allTasksWithSameDueDate = allTasksWithSameDueDate.data;
+	
+	
+	data.taskDetails.dueDate = task.data.dueDate
+	console.log("this due date is we are gettng",data.taskDetails.dueDate)
+	
+	let updatedOverallRating = await updateOverallRatingDoc(data);
+	console.log("upadte===",updatedOverallRating)
+	
+	if (updatedOverallRating.error) {
+		return res.status(500).send(sendResponse(500, 'Rating couldnot be updated', 'rateUserTask', null, req.data.signature))
+	}
+}
+	taskRes.dueDate = data.dueDate
+
+  	// due date resetting here because of average rating updation
+	let dueDateFindPayload = {
+		_id:taskRes.id
+	}
+	let dueDateUpdatePayload = {
+		dueDate:null
+	}
+	let dueOptions = {
+		new:true
+	}
+	let resetDueDate = await Task.findOneAndUpdate(dueDateFindPayload,dueDateUpdatePayload,dueOptions)
+	let insertNewTask = await createPayloadAndInsertReOpenTask(taskRes)
+	if (insertNewTask.error || !insertNewTask.data) {
+		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
+	}
+	// console.log("insertNewTask================",insertNewTask)
+	let actionLogData = {
+		actionTaken:'REOPEN_TASK',
+		actionBy: data.auth.id,
+		taskId : data.taskId,
+		correspondingTaskId:insertNewTask.data.id,
+	}
+
+	if(data.reason){
+		reason = `REOPEN_TASK: ${data.reason}`
+		
+		actionLogData.reason = reason
+	}
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addTaskLog(data);
+	if (addActionLogRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
+	}
+
+
+	return res.status(200).send(sendResponse(200, 'Task Reopened Successfully', 'editUserTask', insertNewTask, req.data.signature))
+}
+exports.reopenUserTask = reopenUserTask;
+
+
+const createPayloadAndInsertReOpenTask = async function (taskRes) {
+	try {
+		let payload = {
+			title: taskRes.title,
+			description: taskRes.description,
+			status: process.env.TASK_STATUS.split(",")[0],
+			section: taskRes.section,
+			projectId: taskRes.projectId,
+			createdBy: taskRes.createdBy,    //TODO: Change after auth is updated
+			assignedTo: taskRes.assignedTo,
+			dueDate: taskRes.dueDate,
+			// completedDate: taskRes.completedDate,
+			priority: taskRes.priority,
+			lead: taskRes.lead
+		}
+		
+		if (taskRes.attachments) {
+			payload["attachments"] = taskRes.attachments 
+		}
+
+		let taskResend = await Task.insertUserTask(payload)
+
+		return { data: taskResend, error: false }
+	} catch (err) {
+		console.log("createPayloadAndInsertTask Error : ", err)
+		return { data: err, error: true }
+	}
+}
+exports.createPayloadAndInsertTask = createPayloadAndInsertTask
+
 const createPayloadAndEditTask = async function (data) {
 	try {
 		let findPayload = {

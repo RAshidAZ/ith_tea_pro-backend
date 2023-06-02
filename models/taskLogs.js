@@ -13,6 +13,11 @@ let taskLogSchema = new Schema({
         type: mongoose.Types.ObjectId,
         ref: "tasks"
     },
+    correspondingTaskId: {
+        type: mongoose.Types.ObjectId,
+        ref: "tasks"
+    },
+	reason:String,
 	commentId: {
         type: mongoose.Types.ObjectId,
         ref: "comments"

@@ -13,7 +13,8 @@ const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
 
-const { exportDataToExcel, editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTeamTasksCountReport, getTaskStatusAnalytics, getTodayTasksList,  getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments, getTeamTasksList } = require('../controllers/task');
+
+const { reopenUserTask, exportDataToExcel, editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTeamTasksCountReport, getTaskStatusAnalytics, getTodayTasksList,  getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments, getTeamTasksList } = require('../controllers/task');
 
 
 //Insert task
@@ -25,6 +26,10 @@ router.post("/v1/user/insert",
 router.patch("/v1/edit",
     [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"]), filterProjects],
     editUserTask);
+
+router.post("/v1/reopen",
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects],
+    reopenUserTask);
 
 // Task Listing Main API
 router.get("/v1/groupby",
