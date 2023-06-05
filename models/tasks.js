@@ -101,6 +101,12 @@ let tasksSchema = new Schema({
             ref: "comments"
         }
     ],
+    verificationComments: [
+        {
+            type: mongoose.Types.ObjectId,
+            ref: "comments"
+        }
+    ],
 	isDeleted: {
         type: Boolean,
         default: false

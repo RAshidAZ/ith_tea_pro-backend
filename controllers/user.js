@@ -296,6 +296,35 @@ const editUserDetails = async (req, res, next) => {
 }
 exports.editUserDetails = editUserDetails
 
+const assignManager = async (req, res, next) => {
+    let data = req.data;
+
+    if (!data.userId) {
+        return res.status(400).send(sendResponse(400, "Missing Params", 'editUserDetails', null, req.data.signature))
+    }
+    if (!data.managerId) {
+        return res.status(400).send(sendResponse(400, "Missing Params", 'editUserDetails', null, req.data.signature))
+    }
+
+     data.manager = data.managerId ;
+
+	if(data.employeeId){
+		let employeeIdRes = await checkEmployeeIdExists(data);
+		if (employeeIdRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+		}
+		if (employeeIdRes.data) {
+			return res.status(400).send(sendResponse(400, 'Employee Id Already Exists', 'editUserDetails', null, req.data.signature))
+		}
+	}
+    let userRes = await createPayloadAndEditUserDetails(data)
+    if (userRes.error) {
+        return res.status(500).send(sendResponse(500, 'Something Went Wrong', 'editUserDetails', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'Profile updated', 'editUserDetails', userRes.data, req.data.signature))
+}
+exports.assignManager = assignManager
 
 const createPayloadAndEditUserDetails = async function (data) {
     try {
@@ -314,6 +343,9 @@ const createPayloadAndEditUserDetails = async function (data) {
         }
 		if (JSON.stringify(data.dob)) {
             updatePayload.dob = data.dob
+        }
+		if (data.manager){
+            updatePayload.manager = data.manager
         }
         if (JSON.stringify(data.designation)) {
             updatePayload.designation = data.designation

@@ -51,7 +51,8 @@ const createPayloadAndInsertComment = async function (data) {
             commentedBy: data.givenBy,
             editHistory: [{ previousComment: '' }],
             taggedUsers: data.taggedUsers,
-            comment: data.comment
+            comment: data.comment,
+            verificationComment: data.verificationsComments
         }
         let commentRes = await Comments.insertRatingComment(payload)
         return { data: commentRes, error: false }
