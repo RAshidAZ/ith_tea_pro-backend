@@ -32,7 +32,8 @@ let commentSchema = new Schema({
             ref: "users"
         }
     ],
-    comment: String
+    comment: String,
+    verificationComment:String
 
 }, {
     timestamps: true

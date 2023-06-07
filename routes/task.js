@@ -14,7 +14,7 @@ const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
 
 
-const { reopenUserTask, exportDataToExcel, editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTeamTasksCountReport, getTaskStatusAnalytics, getTodayTasksList,  getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments, getTeamTasksList } = require('../controllers/task');
+const {getTodayTasksListByUserId, editUserTaskToVerify,reopenUserTask, exportDataToExcel, editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTeamTasksCountReport, getTaskStatusAnalytics, getTodayTasksList,  getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments, getTeamTasksList } = require('../controllers/task');
 
 
 //Insert task
@@ -26,6 +26,10 @@ router.post("/v1/user/insert",
 router.patch("/v1/edit",
     [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"]), filterProjects],
     editUserTask);
+
+router.patch("/v1/verify",
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"]), filterProjects],
+    editUserTaskToVerify);
 
 router.post("/v1/reopen",
     [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects],
@@ -43,6 +47,10 @@ getTaskDetailsByTaskId);
 router.get("/v1/overdue/tasks", 
 [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN"]), filterProjects], 
 getOverDueTasks);
+
+router.get("/v1/user/tasks", 
+[authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN"]), filterProjects], 
+getTodayTasksListByUserId);
 
 router.get("/v1/status/analytics", [authenticator], getTaskStatusAnalytics);
 

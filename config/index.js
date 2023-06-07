@@ -12,7 +12,7 @@ const commonVariables = {
     ROLE: ["CONTRIBUTOR", "SUPER_ADMIN", "ADMIN", "LEAD", "GUEST"],          //contributor/GUEST ADD
 	role: '{"contributor":"CONTRIBUTOR", "superadmin":"SUPER_ADMIN", "admin" : "ADMIN", "lead" : "LEAD", "guest" : "GUEST"}',
 	rolePriority : '{"SUPER_ADMIN" : 10,"ADMIN" : 7,"LEAD" : 4,"CONTRIBUTOR" : 2,"GUEST" : 0}',
-    TASK_STATUS: ["NOT_STARTED", "ONGOING", "COMPLETED", "CLOSED", "ONHOLD"],
+    TASK_STATUS: ["NOT_STARTED", "ONGOING", "COMPLETED", "CLOSED", "ONHOLD","VERIFIED"],
 	PROJECT_STATUS : ["COMPLETED", "ONGOING", "UPCOMING"],
 	COMMENT_TYPE : ["TASK", "RATING"],
     TASK_PRIORITY: ["LOW", "REPEATED", "MEDIUM", "HIGH", "None"],

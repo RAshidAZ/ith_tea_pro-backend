@@ -11,7 +11,7 @@ const authenticator = require('../middlewares/authenticator')(clients, data);
 const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
-const {activeGuest, getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getUserListing, getAllLeadsListing, deleteUser, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng, getTeamAnalytics,getAllGuest} = require('../controllers/user');
+const {assignManager,activeGuest, getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getUserListing, getAllLeadsListing, deleteUser, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng, getTeamAnalytics,getAllGuest} = require('../controllers/user');
 
 // Superadmin, Admin Add New Team Member
 router.post("/v1/add", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], addNewUser);
@@ -20,6 +20,9 @@ router.post("/v1/add", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"]
 // Lead edit either self or any user details ( provide userId )
 // User, intern can edit only themself
 router.patch("/v1/edit", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "CONTRIBUTOR", "INTERN", "LEAD", "GUEST"])], editUserDetails);
+
+// Route to assign Manager
+router.patch("/v1/assign/manager", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], assignManager);
 
 //get userby userId
 router.get("/v1/userId", [authenticator], getUserDetailsByUserId);

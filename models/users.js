@@ -12,6 +12,12 @@ let userSchema = new Schema(
             default: "email",
         },
         department: String,
+        manager:[
+            {
+            type: mongoose.Types.ObjectId,
+            ref: "users"
+             }
+         ],
         wings: { type: String },
 		dob : Date,
         designation: String,

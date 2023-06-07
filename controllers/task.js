@@ -4,6 +4,7 @@ const validator = require('validator');
 const { sendResponse } = require('../helpers/sendResponse');
 const queryController = require('../query');
 const { CONSTANTS } = require('../config/constants');
+const commentController = require('./comment');
 const cheerio = require('cheerio');
 const excelJS = require("exceljs");
 
@@ -387,6 +388,91 @@ const editUserTask = async (req, res, next) => {
 	return res.status(200).send(sendResponse(200, 'Task Edited Successfully', 'editUserTask', null, req.data.signature))
 }
 exports.editUserTask = editUserTask;
+
+const editUserTaskToVerify = async (req, res, next) => {
+	let data = req.data;
+
+	if (!data.taskId) {
+		return res.status(400).send(sendResponse(400, "", 'editUserTask', null, req.data.signature))
+	}
+	let task = await getTaskDetails(data);
+	if (task.error || !task.data) {
+		return res.status(400).send(sendResponse(400, 'Task Not found..', 'editUserTask', null, req.data.signature))
+	}
+	if (!task.data.completedDate) {
+		return res.status(400).send(sendResponse(400, 'Task is not completed', 'rateUserTask', null, req.data.signature))
+	}
+	if(!['SUPER_ADMIN','ADMIN','LEAD'].includes(data.auth.role) && data.filteredProjects && !data.filteredProjects.includes(task.data.projectId.toString())){
+		return res.status(400).send(sendResponse(400, "You're not assigned this project", 'editUserTask', null, req.data.signature))
+	}
+
+	if(!['SUPER_ADMIN','ADMIN','LEAD'].includes(data.auth.role) && task.data.status && task.data.status == process.env.TASK_STATUS.split(",")[2] ){
+		return res.status(400).send(sendResponse(400, "Can't edit completed task", 'editUserTask', null, req.data.signature))
+	}
+
+	data.taskDetails = task.data
+
+
+	let ifAllowedToEditTask = await checkifAllowedToEditTask(data);
+
+	if (ifAllowedToEditTask.error) {
+		return res.status(500).send(sendResponse(500, '', 'createPayloadAndEditTask', null, req.data.signature))
+	}
+
+	if (!ifAllowedToEditTask.data.allowed) {
+		return res.status(400).send(sendResponse(401, 'Not Allowed edit task', 'createPayloadAndEditTask', null, req.data.signature))
+	}
+
+	if(data.tasklead && data.tasklead.length && data.assignedTo){
+		let ifAllowedToAddAssisgnee = await checkLeadAndAssigneeForTask(data);
+		if (ifAllowedToAddAssisgnee.error) {
+			return res.status(500).send(sendResponse(500, '', 'createPayloadAndEditTask', null, req.data.signature))
+		}
+
+		if (!ifAllowedToAddAssisgnee.data.allowed) {
+			return res.status(400).send(sendResponse(401, 'Not Allowed to add task for selected lead/assignee', 'createPayloadAndEditTask', null, req.data.signature))
+		}
+	}
+
+	if(data.status == 'VERIFIED'){
+
+		if (data.verificationsComments){
+			data.givenBy = data.auth.id
+
+			let commentRes = await commentController.createPayloadAndInsertComment(data)
+			if (commentRes.error || !commentRes.data) {
+				return res.status(500).send(sendResponse(500, '', 'createPayloadAndInsertComment', null, req.data.signature))
+			}
+
+			data.verificationsComments = commentRes.data._id
+			console.log(data.verificationsComments)
+			let insertVerifictaiontComment = await updateTaskVerificationAndAddComment(data)
+			console.log(insertVerifictaiontComment)
+		}else{
+			return res.status(400).send(sendResponse(401, 'Comment is Required', 'updateTaskStatus', null, req.data.signature))
+		}
+	}
+	let actionLogData = {
+		actionTaken:'TASK_VERIFIED',
+		actionBy: data.auth.id,
+		taskId : data.taskId,
+	}
+	let previousTaskData = {}
+	let newTaskData = {}
+
+		actionLogData.new = newTaskData
+		actionLogData.previous = previousTaskData
+	
+		data.actionLogData = actionLogData;
+		let addActionLogRes = await actionLogController.addTaskLog(data);
+	
+		if (addActionLogRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'editUserTaskToVerify', null, req.data.signature))
+		}
+
+	return res.status(200).send(sendResponse(200, 'Task Edited Successfully', 'editUserTaskToVerify', addActionLogRes, req.data.signature))
+}
+exports.editUserTaskToVerify = editUserTaskToVerify;
 
 const reopenUserTask = async (req, res, next) => {
 	let data = req.data;
@@ -1918,6 +2004,27 @@ const updateUserTaskComment = async function (data) {
 		return { data: err, error: true }
 	}
 }
+const updateTaskVerificationAndAddComment = async function (data) {
+	try {
+
+		let findData = {
+			_id: data.taskId
+		}
+		let updateData = {
+			status:data.status,
+			$addToSet: { verificationComments: data.verificationsComments}
+		}
+		let options = {
+			new: true
+		}
+		let taskRating = await Task.findOneAndUpdate(findData, updateData, options);
+		return { data: taskRating, error: false }
+
+	} catch (err) {
+		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}
 
 const checkIfLeadAssignedProject = async function (data) {
 
@@ -2054,6 +2161,54 @@ const createPayloadAndGetTodayTaskLists = async function (data) {
 		
 		let sortCriteria = { dueDate : 1}
 		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
+		return { data: taskList, error: false }
+
+	} catch (err) {
+		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}
+
+
+const getTodayTasksListByUserId = async function (req, res, next) {
+
+	let data = req.data;
+
+	let tasksLists = await createPayloadAndGetTodayTaskListsByUserId(data);
+	if (tasksLists.error) {
+		return res.status(500).send(sendResponse(500, '', 'getTodayTasksListByUserId', null, req.data.signature))
+	}
+
+	return res.status(200).send(sendResponse(200, 'Task List', 'getTodayTasksListByUserId', tasksLists.data, req.data.signature));
+}
+exports.getTodayTasksListByUserId = getTodayTasksListByUserId;
+
+const createPayloadAndGetTodayTaskListsByUserId = async function (data) {
+	try {
+
+		let dateFilter = {};
+		if(data.fromDate){
+			dateFilter['$gte'] = new Date(data.fromDate)
+		}
+		if(data.toDate){
+			dateFilter['$lte'] = new Date(data.toDate)
+		}
+		
+		let findData = {
+			assignedTo:data.userId,
+			isDeleted: false,
+			isArchived :  false,
+		};
+
+		if(data.fromDate || data.toDate){
+			findData.createdAt = dateFilter
+		}
+
+		let populate = 'assignedTo verificationComments'
+		
+		let sortCriteria = { createdAt : 1}
+		
+		let taskList = await Task.taskFindQuery(findData, {}, populate,sortCriteria);
 		return { data: taskList, error: false }
 
 	} catch (err) {
