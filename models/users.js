@@ -12,25 +12,19 @@ let userSchema = new Schema(
             default: "email",
         },
         department: String,
-        manager:[
-            {
-            type: mongoose.Types.ObjectId,
-            ref: "users"
-             }
-         ],
         wings: { type: String },
-		dob : Date,
+        dob: Date,
         designation: String,
         employeeId: String,
-		passwordToken: String,
-		profileCompleted : {
-			type: Boolean,
-			default: false
-		},
+        passwordToken: String,
+        profileCompleted: {
+            type: Boolean,
+            default: false
+        },
         role: {
             type: String,
             enum: {
-                values:  ["CONTRIBUTOR", "SUPER_ADMIN", "ADMIN", "LEAD", "INTERN", "GUEST"],
+                values: ["CONTRIBUTOR", "SUPER_ADMIN", "ADMIN", "LEAD", "INTERN", "GUEST"],
                 message: "ROLE ENUM FAILED",
             },
             default: "CONTRIBUTOR",
@@ -39,10 +33,15 @@ let userSchema = new Schema(
         linkedInLink: String,
         facebookLink: String,
         twitterLink: String,
-		isDeleted : {
-			type: Boolean,
-			default: false
-		},
+        isDeleted: {
+            type: Boolean,
+            default: false
+        },
+
+        managerIds: [{
+            type: mongoose.Types.ObjectId,
+            ref: "users"
+        }],
     },
     { timestamps: true }
 );

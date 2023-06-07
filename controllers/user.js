@@ -26,21 +26,21 @@ exports.getAllUsers = getAllUsers;
 
 const findAllUserWithPagination = async function (data) {
     try {
-		
-		let payload = {
-			role: { $nin: ["SUPER_ADMIN"]}
+
+        let payload = {
+            role: { $nin: ["SUPER_ADMIN"] }
         }
 
-		// if(['LEAD', 'CONTRIBUTOR', 'GUEST'].includes(data.auth.role) && data.filteredProjects){
-		// 	let filteredProjectsUsers = await filteredDistinctProjectsUsers(data)
-		// 	if(filteredProjectsUsers && filteredProjectsUsers.data){
-		// 		payload._id  = { $in : filteredProjectsUsers.data}
-		// 	}
-		// }
+        // if(['LEAD', 'CONTRIBUTOR', 'GUEST'].includes(data.auth.role) && data.filteredProjects){
+        // 	let filteredProjectsUsers = await filteredDistinctProjectsUsers(data)
+        // 	if(filteredProjectsUsers && filteredProjectsUsers.data){
+        // 		payload._id  = { $in : filteredProjectsUsers.data}
+        // 	}
+        // }
 
-		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
-			payload.isDeleted = false
-		}
+        if (!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
+            payload.isDeleted = false
+        }
 
         if (data.search) {
             payload["$or"] = [
@@ -66,39 +66,39 @@ const findAllUserWithPagination = async function (data) {
             createdAt: -1
         }
         // let userRes = await User.getAllUsersPagination(payload, projection, sortCriteria, skip, limit);
-		let pipeline = [
-			{
-				$match : payload
-			},
-			{
-				$lookup: {
-								from: "credentials",
-								localField: "_id",
-								foreignField: "userId",
-								as: "credentials"
-							}
-				},
-				{
-					$unwind : {path:"$credentials",preserveNullAndEmptyArrays:true}
-				},
-				{
-					$project:{
-						"credentials.password":0,
-						"credentials.salt":0,
-						"credentials.accountId":0
-					}
-				},
-				{
-					$sort : sortCriteria
-				},
-				{
-					$skip : parseInt(skip)
-				},
-				{
-					$limit : parseInt(limit)
-				}
-		]
-		let userRes = await User.userAggregate(pipeline);
+        let pipeline = [
+            {
+                $match: payload
+            },
+            {
+                $lookup: {
+                    from: "credentials",
+                    localField: "_id",
+                    foreignField: "userId",
+                    as: "credentials"
+                }
+            },
+            {
+                $unwind: { path: "$credentials", preserveNullAndEmptyArrays: true }
+            },
+            {
+                $project: {
+                    "credentials.password": 0,
+                    "credentials.salt": 0,
+                    "credentials.accountId": 0
+                }
+            },
+            {
+                $sort: sortCriteria
+            },
+            {
+                $skip: parseInt(skip)
+            },
+            {
+                $limit: parseInt(limit)
+            }
+        ]
+        let userRes = await User.userAggregate(pipeline);
 
         let sendData = {
             users: userRes,
@@ -130,16 +130,16 @@ exports.getAllGuest = getAllGuest;
 
 const findAllGuestWithPagination = async function (data) {
     try {
-		
-		let payload = {
-			role: { $nin: ["SUPER_ADMIN","ADMIN","LEAD","CONTRIBUTOR"]},
-            isDeleted:false
+
+        let payload = {
+            role: { $nin: ["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"] },
+            isDeleted: false
         }
 
 
-		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
-			payload.isDeleted = false
-		}
+        if (!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
+            payload.isDeleted = false
+        }
 
         if (data.search) {
             payload["$or"] = [
@@ -164,47 +164,47 @@ const findAllGuestWithPagination = async function (data) {
         let sortCriteria = {
             createdAt: -1
         }
-		let pipeline = [
-			{
-				$match : payload
-			},
-			{
-				$lookup: {
+        let pipeline = [
+            {
+                $match: payload
+            },
+            {
+                $lookup: {
                     from: "projects",
                     localField: "_id",
                     foreignField: "accessibleBy",
                     as: "projects"
                 }
-				},
-			{
-				$lookup: {
+            },
+            {
+                $lookup: {
                     from: "credentials",
                     localField: "_id",
                     foreignField: "userId",
                     as: "guestCredentials"
                 }
-				},
-				{
-					$unwind : {path:"$credentials",preserveNullAndEmptyArrays:true}
-				},
-				{
-					$project:{
-						"guestCredentials.password":0,
-						"guestCredentials.salt":0,
-						"guestCredentials.accountId":0
-					}
-				},
-				{
-					$sort : sortCriteria
-				},
-				{
-					$skip : parseInt(skip)
-				},
-				{
-					$limit : parseInt(limit)
-				}
-		]
-		let userRes = await User.userAggregate(pipeline);
+            },
+            {
+                $unwind: { path: "$credentials", preserveNullAndEmptyArrays: true }
+            },
+            {
+                $project: {
+                    "guestCredentials.password": 0,
+                    "guestCredentials.salt": 0,
+                    "guestCredentials.accountId": 0
+                }
+            },
+            {
+                $sort: sortCriteria
+            },
+            {
+                $skip: parseInt(skip)
+            },
+            {
+                $limit: parseInt(limit)
+            }
+        ]
+        let userRes = await User.userAggregate(pipeline);
 
         let sendData = {
             users: userRes,
@@ -237,8 +237,8 @@ exports.getAllUsersListingNonPaginated = getAllUsersListingNonPaginated;
 const findAllUserNonPagination = async function (data) {
     try {
         let payload = {
-            role: { $nin: ["ADMIN", "SUPER_ADMIN"]},
-			isDeleted : false
+            role: { $nin: ["ADMIN", "SUPER_ADMIN"] },
+            isDeleted: false
         }
         if (data.search) {
             payload["$or"] = [
@@ -269,7 +269,7 @@ exports.findAllUserNonPagination = findAllUserNonPagination
 const editUserDetails = async (req, res, next) => {
     let data = req.data;
 
-    if (['CONTRIBUTOR','GUEST','INTERN'].includes(data.auth.role)) {
+    if (['CONTRIBUTOR', 'GUEST', 'INTERN'].includes(data.auth.role)) {
         data.userId = data.auth.id;
     }
     if (['LEAD', 'SUPER_ADMIN', 'ADMIN'].includes(data.auth.role) && !data.userId) {
@@ -278,15 +278,15 @@ const editUserDetails = async (req, res, next) => {
     if (!data.userId) {
         return res.status(400).send(sendResponse(400, "Missing Params", 'editUserDetails', null, req.data.signature))
     }
-	if(data.employeeId){
-		let employeeIdRes = await checkEmployeeIdExists(data);
-		if (employeeIdRes.error) {
-			return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
-		}
-		if (employeeIdRes.data) {
-			return res.status(400).send(sendResponse(400, 'Employee Id Already Exists', 'editUserDetails', null, req.data.signature))
-		}
-	}
+    if (data.employeeId) {
+        let employeeIdRes = await checkEmployeeIdExists(data);
+        if (employeeIdRes.error) {
+            return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+        }
+        if (employeeIdRes.data) {
+            return res.status(400).send(sendResponse(400, 'Employee Id Already Exists', 'editUserDetails', null, req.data.signature))
+        }
+    }
     let userRes = await createPayloadAndEditUserDetails(data)
     if (userRes.error) {
         return res.status(500).send(sendResponse(500, 'Something Went Wrong', 'editUserDetails', null, req.data.signature))
@@ -299,30 +299,26 @@ exports.editUserDetails = editUserDetails
 const assignManager = async (req, res, next) => {
     let data = req.data;
 
-    if (!data.userId) {
-        return res.status(400).send(sendResponse(400, "Missing Params", 'editUserDetails', null, req.data.signature))
-    }
-    if (!data.managerId) {
-        return res.status(400).send(sendResponse(400, "Missing Params", 'editUserDetails', null, req.data.signature))
+    if (!data.userId || !data.managerIds?.length) {
+        return res.status(400).send(sendResponse(400, "Missing Params", 'assignManager', null, req.data.signature))
     }
 
-     data.manager = data.managerId ;
+    let userExistRes = await createPayloadAndGetUserDetailsByUserId(data)
+    if (userExistRes.error) {
+        return res.status(500).send(sendResponse(500, 'Error in fetching user details.', 'assignManager', null, req.data.signature))
+    }
 
-	if(data.employeeId){
-		let employeeIdRes = await checkEmployeeIdExists(data);
-		if (employeeIdRes.error) {
-			return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
-		}
-		if (employeeIdRes.data) {
-			return res.status(400).send(sendResponse(400, 'Employee Id Already Exists', 'editUserDetails', null, req.data.signature))
-		}
-	}
+    if (!userExistRes.data) {
+        return res.status(400).send(sendResponse(400, 'No such user exist.', 'assignManager', null, req.data.signature))
+    }
+
     let userRes = await createPayloadAndEditUserDetails(data)
+
     if (userRes.error) {
-        return res.status(500).send(sendResponse(500, 'Something Went Wrong', 'editUserDetails', null, req.data.signature))
+        return res.status(500).send(sendResponse(500, 'Something Went Wrong', 'assignManager', null, req.data.signature))
     }
 
-    return res.status(200).send(sendResponse(200, 'Profile updated', 'editUserDetails', userRes.data, req.data.signature))
+    return res.status(200).send(sendResponse(200, 'Profile updated', 'assignManager', userRes.data, req.data.signature))
 }
 exports.assignManager = assignManager
 
@@ -331,59 +327,20 @@ const createPayloadAndEditUserDetails = async function (data) {
         let payload = {
             _id: data.userId,
         }
+
         let updatePayload = {}
-        if (JSON.stringify(data.name)) {
-            updatePayload.name = data.name
-        }
-        if (JSON.stringify(data.department)) {
-            updatePayload.department = data.department
-        }
-        if (JSON.stringify(data.wings)) {
-            updatePayload.wings = data.wings
-        }
-		if (JSON.stringify(data.dob)) {
-            updatePayload.dob = data.dob
-        }
-		if (data.manager){
-            updatePayload.manager = data.manager
-        }
-        if (JSON.stringify(data.designation)) {
-            updatePayload.designation = data.designation
-        }
-        if (JSON.stringify(data.linkedInLink)) {
-            updatePayload.linkedInLink = data.linkedInLink
-        }
-        if (JSON.stringify(data.githubLink)) {
-            updatePayload.githubLink = data.githubLink
-        }
-		if (JSON.stringify(data.facebookLink)) {
-            updatePayload.facebookLink = data.facebookLink
-        }
-        if (JSON.stringify(data.twitterLink)) {
-            updatePayload.twitterLink = data.twitterLink
+        let updates = ['name', 'department', 'wings', 'dob', 'designation', 'linkedInLink', 'githubLink', 'facebookLink', 'twitterLink', 'employeeId', 'profilePicture', 'profileCompleted', 'isBlocked'];
+        let keys = Object.keys(data)
+        for (let i = 0; i < keys.length; i++) {
+            if (updates.includes(JSON.stringify(keys[i]))) {
+                updatePayload[keys[i]] = data[keys[i]]
+            }
         }
 
-		if(JSON.stringify(data.employeeId)){
-			updatePayload.employeeId = data.employeeId
-		}
-
-		if(JSON.stringify(data.profilePicture)){
-			updatePayload.profilePicture = data.profilePicture
-		}
-
-		// if (data.name && data.dob && data.department && data.designation && data.employeeId) {
-        //     updatePayload.profileCompleted = true
-        // }else{
-		// 	updatePayload.profileCompleted = false
-		// }
-
-		if (JSON.stringify(data.profileCompleted)) {
-            updatePayload.profileCompleted = data.profileCompleted;
+        if (data.managerIds) {
+            updatePayload.managerIds = data.managerIds
         }
 
-        if (JSON.stringify(data.isBlocked)) {
-            updatePayload.isBlocked = data.isBlocked;
-        }
         let userRes = await User.editUserDetails(payload, updatePayload)
         return { data: userRes, error: false }
     } catch (err) {
@@ -395,16 +352,16 @@ exports.createPayloadAndEditUserDetails = createPayloadAndEditUserDetails
 
 const addNewUser = async (req, res, next) => {
     let data = req.data;
-    if (!data.name || !data.email|| !data.role) {
+    if (!data.name || !data.email || !data.role) {
         return res.status(400).send(sendResponse(400, "", 'addNewUser', null, req.data.signature))
     }
-	// if (["SUPER_ADMIN", "ADMIN"].includes(data.role)) {
+    // if (["SUPER_ADMIN", "ADMIN"].includes(data.role)) {
     //     return res.status(400).send(sendResponse(400, "Not allowed to add this role", 'addNewUser', null, req.data.signature))
     // }
-	if ((data.auth.role == "ADMIN" && ["SUPER_ADMIN", "ADMIN"].includes(data.role)) || data.role == 'SUPER_ADMIN') {
+    if ((data.auth.role == "ADMIN" && ["SUPER_ADMIN", "ADMIN"].includes(data.role)) || data.role == 'SUPER_ADMIN') {
         return res.status(400).send(sendResponse(400, "Not allowed to add this role", 'addNewUser', null, req.data.signature))
     }
-	
+
     let emailRes = await checkEmailExists(data);
     if (emailRes.error) {
         return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
@@ -412,79 +369,79 @@ const addNewUser = async (req, res, next) => {
     if (emailRes.data) {
         return res.status(400).send(sendResponse(400, 'Email Already Exists', 'addNewUser', null, req.data.signature))
     }
-    if(data.role==="GUEST"){
+    if (data.role === "GUEST") {
 
-    let generatePasswordForGuest = crypto.randomBytes(8).toString('base64');
-    data.password = generatePasswordForGuest
+        let generatePasswordForGuest = crypto.randomBytes(8).toString('base64');
+        data.password = generatePasswordForGuest
 
-    let registerUser = await createPayloadAndRegisterUser(data);
-	if (registerUser.error) {
-		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
-	}
-    data.registerUser = registerUser.data;
-    data.registerUserId = registerUser.data._id;
+        let registerUser = await createPayloadAndRegisterUser(data);
+        if (registerUser.error) {
+            return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
+        }
+        data.registerUser = registerUser.data;
+        data.registerUserId = registerUser.data._id;
 
-    if (data.projectIds && data.projectIds.length) {
-        let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
-        if (assignProjectsToUserRes.error) {
+        if (data.projectIds && data.projectIds.length) {
+            let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
+            if (assignProjectsToUserRes.error) {
+                return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
+            }
+        }
+        let passgeneratedHashAndSalt = generateHashAndSalt(data);
+        if (passgeneratedHashAndSalt.error) {
+            return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
+        }
+        data.generatedHashAndSalt = passgeneratedHashAndSalt.data
+
+        // generate acc id.....
+        let accountId = await utilities.generateAccountId();
+        data.accountId = accountId;
+        console.log("Password accountId => ", data.accountId);
+
+        let insertGuestCredentials = await createPayloadAndInsertCredentials(data);
+        if (insertGuestCredentials.error) {
+            return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
+        }
+
+
+        if (data.projectIds && data.projectIds.length) {
+            let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
+            if (assignProjectsToUserRes.error) {
+                return res.status(500).send(sendResponse(500, '', 'addNewGuest', null, req.data.signature))
+            }
+        }
+        let actionLogData = {
+            actionType: "GUEST",
+            actionTaken: "GUEST_ADDED",
+            actionBy: data.auth.id,
+            addedUserId: registerUser.data._id
+        }
+        console.log(actionLogData)
+        data.actionLogData = actionLogData;
+        let addActionLogRes = await actionLogController.addActionLog(data);
+
+        if (addActionLogRes.error) {
+            return res.status(500).send(sendResponse(500, '', 'addNewGuest', addActionLogRes, req.data.signature))
+        }
+
+        let sendWelcomeEmailRes = await emailUtitlities.sendWelcomeEmailToGuest(data);
+        return res.status(200).send(sendResponse(200, 'Users Created', 'addNewGuest', null, req.data.signature))
+    }
+    if (data.employeeId) {
+        let employeeIdRes = await checkEmployeeIdExists(data);
+        console.log('employeeIdRes : ', employeeIdRes)
+        if (employeeIdRes.error) {
             return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
         }
-    }
-    let passgeneratedHashAndSalt = generateHashAndSalt(data);
-    if (passgeneratedHashAndSalt.error) {
-		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
-	}
-    data.generatedHashAndSalt = passgeneratedHashAndSalt.data 
-
-    // generate acc id.....
-    let accountId = await utilities.generateAccountId();
-    data.accountId = accountId;
-    console.log("Password accountId => ", data.accountId);
-
-    let insertGuestCredentials = await createPayloadAndInsertCredentials(data);
-    if (insertGuestCredentials.error) {
-		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewGuest', null, req.data.signature))
-	}
-
-    
-    if (data.projectIds && data.projectIds.length) {
-        let assignProjectsToUserRes = await createPayloadAndAssignProjectToAddedUser(data);
-        if (assignProjectsToUserRes.error) {
-            return res.status(500).send(sendResponse(500, '', 'addNewGuest', null, req.data.signature))
+        if (employeeIdRes.data) {
+            return res.status(400).send(sendResponse(400, 'Employee Id Already Exists', 'addNewUser', null, req.data.signature))
         }
     }
-    let actionLogData = {
-        actionType: "GUEST",
-        actionTaken: "GUEST_ADDED",
-        actionBy: data.auth.id,
-        addedUserId: registerUser.data._id
-    }
-    console.log(actionLogData)
-    data.actionLogData = actionLogData;
-    let addActionLogRes = await actionLogController.addActionLog(data);
-
-    if (addActionLogRes.error) {
-        return res.status(500).send(sendResponse(500, '', 'addNewGuest',addActionLogRes , req.data.signature))
-    }
-
-    let sendWelcomeEmailRes = await emailUtitlities.sendWelcomeEmailToGuest(data);
-    return res.status(200).send(sendResponse(200, 'Users Created', 'addNewGuest', null, req.data.signature))
-    }
-	if(data.employeeId){
-		let employeeIdRes = await checkEmployeeIdExists(data);
-		console.log('employeeIdRes : ', employeeIdRes)
-		if (employeeIdRes.error) {
-			return res.status(500).send(sendResponse(500, '', 'addNewUser', null, req.data.signature))
-		}
-		if (employeeIdRes.data) {
-			return res.status(400).send(sendResponse(400, 'Employee Id Already Exists', 'addNewUser', null, req.data.signature))
-		}
-	}
 
     let registerUser = await createPayloadAndRegisterUser(data);
-	if (registerUser.error) {
-		return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewUser', null, req.data.signature))
-	}
+    if (registerUser.error) {
+        return res.status(500).send(sendResponse(500, 'Error adding user', 'addNewUser', null, req.data.signature))
+    }
     data.registerUser = registerUser.data;
     data.registerUserId = registerUser.data._id;
 
@@ -526,15 +483,15 @@ const checkEmailExists = async (data) => {
     }
 }
 
-const generateHashAndSalt =  (data) =>{
+const generateHashAndSalt = (data) => {
 
-    try{
-        let hashedPasswordAndSalt =  utilities.generatePassword(data.password);
+    try {
+        let hashedPasswordAndSalt = utilities.generatePassword(data.password);
 
 
         return { data: hashedPasswordAndSalt, error: false }
 
-    }catch(err){
+    } catch (err) {
         return { data: err, error: true }
     }
 }
@@ -543,9 +500,9 @@ const checkEmployeeIdExists = async (data) => {
         let payload = {
             employeeId: data.employeeId,
         }
-		if(data.userId){
-			payload._id = {$ne : data.userId}
-		}
+        if (data.userId) {
+            payload._id = { $ne: data.userId }
+        }
         let projection = { employeeId: 1 }
         let userRes = await User.userfindOneQuery(payload, projection)
         return { data: userRes, error: false }
@@ -556,7 +513,7 @@ const checkEmployeeIdExists = async (data) => {
 }
 
 const createPayloadAndRegisterUser = async function (data) {
-    
+
     let findData = {
         email: data.email
     }
@@ -570,41 +527,41 @@ const createPayloadAndRegisterUser = async function (data) {
         emailVerified: true
     }
 
-	if (data.name) {
-		updateData.name = data.name
-	}
-	if (data.department) {
-		updateData.department = data.department
-	}
-	if (data.wings) {
-		updateData.wings = data.wings
-	}
-	if (data.dob) {
-		updateData.dob = data.dob
-	}
-	if (data.designation) {
-		updateData.designation = data.designation
-	}
-	if (data.linkedInLink) {
-		updateData.linkedInLink = data.linkedInLink
-	}
-	if (data.githubLink) {
-		updateData.githubLink = data.githubLink
-	}
-	if (data.facebookLink) {
-		updateData.facebookLink = data.facebookLink
-	}
-	if (data.employeeId) {
-		updateData.employeeId = data.employeeId
-	}
-	if (data.twitterLink) {
-		updateData.twitterLink = data.twitterLink
-	}
-	if (data.name && data.dob && data.department && data.designation && data.wings) {
-		updateData.profileCompleted = true
-	}else{
-		updateData.profileCompleted = false
-	}
+    if (data.name) {
+        updateData.name = data.name
+    }
+    if (data.department) {
+        updateData.department = data.department
+    }
+    if (data.wings) {
+        updateData.wings = data.wings
+    }
+    if (data.dob) {
+        updateData.dob = data.dob
+    }
+    if (data.designation) {
+        updateData.designation = data.designation
+    }
+    if (data.linkedInLink) {
+        updateData.linkedInLink = data.linkedInLink
+    }
+    if (data.githubLink) {
+        updateData.githubLink = data.githubLink
+    }
+    if (data.facebookLink) {
+        updateData.facebookLink = data.facebookLink
+    }
+    if (data.employeeId) {
+        updateData.employeeId = data.employeeId
+    }
+    if (data.twitterLink) {
+        updateData.twitterLink = data.twitterLink
+    }
+    if (data.name && data.dob && data.department && data.designation && data.wings) {
+        updateData.profileCompleted = true
+    } else {
+        updateData.profileCompleted = false
+    }
     let options = {
         upsert: true,
         new: true,
@@ -612,17 +569,17 @@ const createPayloadAndRegisterUser = async function (data) {
     }
 
     try {
-		let registerUser = await Auth.findAndUpdateUser(findData, updateData, options);
-		const randomString = Math.random().toString(36).substring(2) + registerUser._id.toString().substring(15,24);
-		data.signupToken = btoa(randomString).toString();
-		// let updateUser = await Auth.findAndUpdateUser(findData, updateData);
-		let payload = {
-			email : data.email,
+        let registerUser = await Auth.findAndUpdateUser(findData, updateData, options);
+        const randomString = Math.random().toString(36).substring(2) + registerUser._id.toString().substring(15, 24);
+        data.signupToken = btoa(randomString).toString();
+        // let updateUser = await Auth.findAndUpdateUser(findData, updateData);
+        let payload = {
+            email: data.email,
             // password:data.password,
-			token : randomString,
-			userId : registerUser._id
-		}
-		let addPasswordSetupToken = await Auth.addPasswordSetupToken(payload);
+            token: randomString,
+            userId: registerUser._id
+        }
+        let addPasswordSetupToken = await Auth.addPasswordSetupToken(payload);
 
         return {
             data: registerUser,
@@ -692,7 +649,7 @@ const createPayloadAndAssignProjectToAddedUser = async function (data) {
                 $addToSet: { managedBy: mongoose.Types.ObjectId(data.registerUserId) }
             }
         }
-        if (["CONTRIBUTOR", "INTERN","GUEST"].includes(data.role)) {
+        if (["CONTRIBUTOR", "INTERN", "GUEST"].includes(data.role)) {
             updatePayload = {
                 $addToSet: { accessibleBy: mongoose.Types.ObjectId(data.registerUserId) }
             }
@@ -783,8 +740,8 @@ const createPayloadAndfindAllLeadsList = async function (data) {
     try {
 
         let findData = {
-            role: { $in : ["LEAD", 'ADMIN']},
-			isDeleted : false
+            role: { $in: ["LEAD", 'ADMIN'] },
+            isDeleted: false
         }
         let projection = {};
 
@@ -800,8 +757,8 @@ const getAllUsersNonPaginated = async (req, res, next) => {
     let data = req.data;
 
     let findData = {
-        role: {$in : ['CONTRIBUTOR','GUEST']},
-		isDeleted : false
+        role: { $in: ['CONTRIBUTOR', 'GUEST'] },
+        isDeleted: false
     }
     if (data.search) {
         findData["$or"] = [
@@ -825,9 +782,9 @@ const createPayloadAndfindAllUsersList = async function (data) {
 
         let projection = {};
         let payload = data.findData;
-		if(!payload.isDeleted){
-			payload.isDeleted = false
-		}
+        if (!payload.isDeleted) {
+            payload.isDeleted = false
+        }
         let sortCriteria = { createdAt: -1 }
         let userRes = await User.getAllUsers(payload, projection, sortCriteria);
         return { data: userRes, error: false }
@@ -888,12 +845,12 @@ const getUnAssignedUserLisitng = async (req, res, next) => {
     let userRes;
     if (!data.projectId) {
         return res.status(400).send(sendResponse(400, 'Missing Params', 'getUnAssignedUserLisitng', null, req.data.signature))
-	}
+    }
 
-	if(data.role && !['CONTRIBUTOR','GUEST', 'LEAD'].includes(data.role)){
+    if (data.role && !['CONTRIBUTOR', 'GUEST', 'LEAD'].includes(data.role)) {
         return res.status(400).send(sendResponse(400, 'Invalid role passed', 'getUnAssignedUserLisitng', null, req.data.signature))
-	}
-	userRes = await createPayloadAndGetUnAssignedUserOfSpecificProject(data);
+    }
+    userRes = await createPayloadAndGetUnAssignedUserOfSpecificProject(data);
 
     if (userRes.error) {
         return res.status(500).send(sendResponse(500, '', 'getAllLeadsLisitng', null, req.data.signature))
@@ -910,31 +867,31 @@ const createPayloadAndGetUnAssignedUserOfSpecificProject = async function (data)
             _id: data.projectId
         }
         let projection = {}
-		// let populate ='managedBy accessibleBy';
-		let userRes = null;
+        // let populate ='managedBy accessibleBy';
+        let userRes = null;
         let projectRes = await Project.findSpecificProject(payload, projection);
-		
-		let userPayload = {
-			isDeleted : false
-		}
-		if(data.role == 'LEAD'){
-			userPayload.role = { $in : ['LEAD', 'ADMIN'] }
-			userRes = (projectRes && projectRes.managedBy) || []
-		}else{
-			userPayload.role = { $in : [data.role] }
-			userRes = (projectRes && projectRes.accessibleBy) || []
-		}
 
-		userPayload._id = { $nin : userRes }
-		let sortCriteria = {
-			createdAt : -1
-		}
-		projection = {
-			name : 1,
-			role : 1,
-			email : 1
-		}
-		let usersData = await User.getAllUsers(userPayload, projection, sortCriteria);
+        let userPayload = {
+            isDeleted: false
+        }
+        if (data.role == 'LEAD') {
+            userPayload.role = { $in: ['LEAD', 'ADMIN'] }
+            userRes = (projectRes && projectRes.managedBy) || []
+        } else {
+            userPayload.role = { $in: [data.role] }
+            userRes = (projectRes && projectRes.accessibleBy) || []
+        }
+
+        userPayload._id = { $nin: userRes }
+        let sortCriteria = {
+            createdAt: -1
+        }
+        projection = {
+            name: 1,
+            role: 1,
+            email: 1
+        }
+        let usersData = await User.getAllUsers(userPayload, projection, sortCriteria);
         // userRes = userRes.filter((e) => {
         //     return (e.isActive && (!e.isBlocked) && e.emailVerified)
         // })
@@ -947,35 +904,35 @@ const createPayloadAndGetUnAssignedUserOfSpecificProject = async function (data)
 }
 
 const filteredDistinctProjectsUsers = async function (data) {
-	try {
+    try {
 
-		let filteredProjects = data.filteredProjects || []
-		filteredProjects = filteredProjects.map(el => mongoose.Types.ObjectId(el))
-		let findData = { _id : { $in : filteredProjects } }
+        let filteredProjects = data.filteredProjects || []
+        filteredProjects = filteredProjects.map(el => mongoose.Types.ObjectId(el))
+        let findData = { _id: { $in: filteredProjects } }
 
         let pipeline = [
-			{
-				$match : findData
-			},
-			{
-			  $project: {
-				allUsers: {
-				  $setUnion: ["$managedBy", "$accessibleBy"]
-				}
-			  }
-			}
-		  ]
+            {
+                $match: findData
+            },
+            {
+                $project: {
+                    allUsers: {
+                        $setUnion: ["$managedBy", "$accessibleBy"]
+                    }
+                }
+            }
+        ]
         let projectsUsers = await Project.projectAggregate(pipeline)
-		let allUsers = (projectsUsers[0] && projectsUsers[0].allUsers) || []
-		console.log("======================all users======",allUsers)
+        let allUsers = (projectsUsers[0] && projectsUsers[0].allUsers) || []
+        console.log("======================all users======", allUsers)
         return { data: allUsers, error: false }
     } catch (err) {
         console.log("createPayloadAndEditUserDetails Error : ", err)
         return { data: err, error: true }
     }
-        
 
-       
+
+
 }
 exports.filteredDistinctProjectsUsers = filteredDistinctProjectsUsers
 
@@ -996,74 +953,74 @@ exports.getTeamAnalytics = getTeamAnalytics;
 const createPayloadAndgetTeamAnalytics = async function (data) {
     try {
 
-		let findData = { }
+        let findData = {}
 
-		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
-			findData.isDeleted = false
-		}
+        if (!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
+            findData.isDeleted = false
+        }
         let payload = [
-			{ $match : findData },
-			{
-			  $lookup: {
-				from: "tasks",
-				localField: "_id",
-				foreignField: "assignedTo",
-				as: "tasks"
-			  }
-			},
-			{
-			  $project: {
-				name: 1,
-				 email : 1,
-				totalTasks: { $size: "$tasks" },
-				completedTasks: {
-				  $size: {
-					$filter: {
-					  input: "$tasks",
-					  as: "task",
-					  cond: { $eq: ["$$task.status", "COMPLETED"] }
-					}
-				  }
-				},
-		        completedAfterDueDate: {
-		          $size: {
-		            $filter: {
-		              input: "$tasks",
-		              as: "task",
-		              cond: {
-		                $and: [
-		                  { $eq: ["$$task.status", "COMPLETED"] },
-		                  { $gt: ["$$task.completedDate", "$$task.dueDate"] }
-		                ]
-		              }
-		            }
-		          }
-		        }
-			  }
-			},
-			 {
-				$project: {
-				  name: 1,
-				  totalTasks: 1,
-				  completedTasks: 1,
-				  completedAfterDueDate: 1,
-				  completedPercentage: {
-					$cond: {
-					  if: { $eq: ["$totalTasks", 0] },
-					  then: 0,
-					  else: { $multiply: [{ $divide: ["$completedTasks", "$totalTasks"] }, 100] }
-					}
-				  },
-				  completedAfterDueDatePercentage: {
-					$cond: {
-					  if: { $eq: ["$totalTasks", 0] },
-					  then: 0,
-					  else: { $multiply: [{ $divide: ["$completedAfterDueDate", "$totalTasks"] }, 100] }
-					}
-				}
-			}
-		}
-		  ]
+            { $match: findData },
+            {
+                $lookup: {
+                    from: "tasks",
+                    localField: "_id",
+                    foreignField: "assignedTo",
+                    as: "tasks"
+                }
+            },
+            {
+                $project: {
+                    name: 1,
+                    email: 1,
+                    totalTasks: { $size: "$tasks" },
+                    completedTasks: {
+                        $size: {
+                            $filter: {
+                                input: "$tasks",
+                                as: "task",
+                                cond: { $eq: ["$$task.status", "COMPLETED"] }
+                            }
+                        }
+                    },
+                    completedAfterDueDate: {
+                        $size: {
+                            $filter: {
+                                input: "$tasks",
+                                as: "task",
+                                cond: {
+                                    $and: [
+                                        { $eq: ["$$task.status", "COMPLETED"] },
+                                        { $gt: ["$$task.completedDate", "$$task.dueDate"] }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    name: 1,
+                    totalTasks: 1,
+                    completedTasks: 1,
+                    completedAfterDueDate: 1,
+                    completedPercentage: {
+                        $cond: {
+                            if: { $eq: ["$totalTasks", 0] },
+                            then: 0,
+                            else: { $multiply: [{ $divide: ["$completedTasks", "$totalTasks"] }, 100] }
+                        }
+                    },
+                    completedAfterDueDatePercentage: {
+                        $cond: {
+                            if: { $eq: ["$totalTasks", 0] },
+                            then: 0,
+                            else: { $multiply: [{ $divide: ["$completedAfterDueDate", "$totalTasks"] }, 100] }
+                        }
+                    }
+                }
+            }
+        ]
         let userRes = await User.userAggregate(payload);
         return { data: userRes, error: false }
     } catch (err) {
@@ -1079,21 +1036,21 @@ const deleteUser = async (req, res, next) => {
         return res.status(400).send(sendResponse(400, 'Missing Params', 'deleteUser', null, req.data.signature))
     }
 
-	let findPayload = {
-		_id : data.userId
-	}
-	let userRes = await User.userfindOneQuery(findPayload)
-	if (!userRes) {
+    let findPayload = {
+        _id: data.userId
+    }
+    let userRes = await User.userfindOneQuery(findPayload)
+    if (!userRes) {
         return res.status(400).send(sendResponse(400, 'User Not Found', 'deleteUser', null, req.data.signature))
     }
-	let userRole = userRes.role
-	if(data.auth.role == 'SUPER_ADMIN' && userRole == 'SUPER_ADMIN'){
+    let userRole = userRes.role
+    if (data.auth.role == 'SUPER_ADMIN' && userRole == 'SUPER_ADMIN') {
         return res.status(400).send(sendResponse(400, "Can't delete given user", 'deleteUser', null, req.data.signature))
-	}
+    }
 
-	if(data.auth.role == 'ADMIN' && ['ADMIN', 'SUPER_ADMIN'].includes(userRole)){
+    if (data.auth.role == 'ADMIN' && ['ADMIN', 'SUPER_ADMIN'].includes(userRole)) {
         return res.status(400).send(sendResponse(400, "Not Allowed to delete given user", 'deleteUser', null, req.data.signature))
-	}
+    }
 
     let userDeleteRes = await createPayloadAndDeleteUser(data);
     if (userDeleteRes.error) {
@@ -1104,28 +1061,28 @@ const deleteUser = async (req, res, next) => {
 }
 exports.deleteUser = deleteUser
 
-const  activeGuest = async (req, res, next) => {
+const activeGuest = async (req, res, next) => {
     let data = req.data;
 
     if (!data.userId) {
         return res.status(400).send(sendResponse(400, 'Missing Params', 'deleteUser', null, req.data.signature))
     }
 
-	let findPayload = {
-		userId : data.userId
-	}
-	let userRes = await Credentials.findOneQuery(findPayload)
+    let findPayload = {
+        userId: data.userId
+    }
+    let userRes = await Credentials.findOneQuery(findPayload)
     if (!userRes) {
         return res.status(400).send(sendResponse(400, 'User Not Found', 'activeGuest', null, req.data.signature))
     }
-    if(userRes.isActive == true){
+    if (userRes.isActive == true) {
         let guestUpdateRes = await createPayloadAndDeactivateStatus(data);
         // console.log(guestUpdateRes)  
         if (guestUpdateRes.error) {
             return res.status(500).send(sendResponse(500, '', 'activeGuest', null, req.data.signature))
         }
         return res.status(200).send(sendResponse(200, 'Guest is now Inactive', 'activeGuest', null, req.data.signature))
-    }else{
+    } else {
         let guestUpdateRes = await createPayloadAndUpdateToTrue(data);
         console.log(guestUpdateRes)
         if (guestUpdateRes.error) {
@@ -1133,7 +1090,7 @@ const  activeGuest = async (req, res, next) => {
         }
         return res.status(200).send(sendResponse(200, 'Guest is now active', 'activeGuest', null, req.data.signature))
 
-       
+
     }
 
     // return res.status(200).send(sendResponse(200, 'Guest is now active', 'activeGuest', null, req.data.signature))
@@ -1143,55 +1100,55 @@ exports.activeGuest = activeGuest
 const createPayloadAndUpdateToTrue = async (data) => {
 
     let findPayload = {
-	  userId: data.userId
-	}
+        userId: data.userId
+    }
     let updatePayload = {
         isActive: true
     }
 
-    let updateStatusRes = await Credentials.updateCredentials(findPayload,updatePayload)
+    let updateStatusRes = await Credentials.updateCredentials(findPayload, updatePayload)
     //  console.log(updateStatusRes)
 
-    return { data: updateStatusRes , error: false }
+    return { data: updateStatusRes, error: false }
 }
 
 const createPayloadAndDeactivateStatus = async (data) => {
 
     let findPayload = {
-	  userId: data.userId
-	}
+        userId: data.userId
+    }
     let updatePayload = {
         isActive: false
     }
 
-    let updateStatusRes = await Credentials.updateCredentials(findPayload,updatePayload)
+    let updateStatusRes = await Credentials.updateCredentials(findPayload, updatePayload)
     //  console.log(updateStatusRes)
 
-    return { data: updateStatusRes , error: false }
+    return { data: updateStatusRes, error: false }
 }
 
 const createPayloadAndDeleteUser = async (data) => {
     try {
         let findPayload = {
-            _id : data.userId
+            _id: data.userId
         }
 
-		let updatePayload = {
-			isDeleted : true
+        let updatePayload = {
+            isDeleted: true
         }
 
         userRes = await User.editUserDetails(findPayload, updatePayload)
-		let projectPayload = { }
+        let projectPayload = {}
 
-		let updateProjectPayload = { }
-		
-		if(userRes.role == 'CONTRIBUTOR'){
-			updateProjectPayload = { $pull: { accessibleBy: userRes._id }}
-		}else{
-			updateProjectPayload = { $pull: { managedBy: userRes._id }}
-		}
+        let updateProjectPayload = {}
 
-		// let projectRes = await Project.updateMany(projectPayload, updateProjectPayload)
+        if (userRes.role == 'CONTRIBUTOR') {
+            updateProjectPayload = { $pull: { accessibleBy: userRes._id } }
+        } else {
+            updateProjectPayload = { $pull: { managedBy: userRes._id } }
+        }
+
+        // let projectRes = await Project.updateMany(projectPayload, updateProjectPayload)
         return { data: userRes, error: false }
     } catch (err) {
         console.log("createPayloadAndDeleteUser Error : ", err)
@@ -1202,7 +1159,7 @@ const createPayloadAndDeleteUser = async (data) => {
 const createPayloadAndgetDeletedUsers = async function (data) {
     try {
 
-        let payload = data.findDeletedUsers || { isDeleted : true };
+        let payload = data.findDeletedUsers || { isDeleted: true };
         let userRes = await User.getDistinct("_id", payload);
         return { data: userRes, error: false }
     } catch (err) {
@@ -1228,7 +1185,7 @@ exports.getUserListing = getUserListing;
 const findAllUsers = async function (data) {
     try {
         let payload = {
-            role: { $nin: ["ADMIN"]}
+            role: { $nin: ["ADMIN"] }
         }
         if (data.search) {
             payload["$or"] = [
@@ -1237,10 +1194,10 @@ const findAllUsers = async function (data) {
             ]
         }
         let projection = {
-			"label":"$name",
-			"value": "$_id",
-			_id : 0
-		};
+            "label": "$name",
+            "value": "$_id",
+            _id: 0
+        };
 
         let sortCriteria = {
             createdAt: -1
@@ -1274,12 +1231,12 @@ exports.getAllLeadsListing = getAllLeadsListing;
 const findAllLeads = async function (data) {
     try {
         let payload = {
-            role: { $in: ['ADMIN', 'LEAD']},
-			isDeleted : false
+            role: { $in: ['ADMIN', 'LEAD'] },
+            isDeleted: false
         }
         let projection = {
-			name :1
-		};
+            name: 1
+        };
 
         let sortCriteria = {
             createdAt: -1
