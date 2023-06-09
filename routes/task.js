@@ -23,8 +23,6 @@ router.post("/v1/user/insert", [authenticator, authenticateRole(["SUPER_ADMIN", 
 //edit task
 router.patch("/v1/edit", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"]), filterProjects], editUserTask);
 
-router.patch("/v1/verify", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"]), filterProjects], verfiyUserTask);
-
 router.post("/v1/reopen", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], reopenUserTask);
 
 // Task Listing Main API
