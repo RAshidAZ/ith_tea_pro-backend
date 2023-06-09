@@ -409,7 +409,7 @@ const createPayloadAndGetDayRating = async function (data) {
 		{
 			path:"taskIds",
 			populate:{
-				path:"ratingComments"
+				path:"verificationComments"
 			}
 		}]
 

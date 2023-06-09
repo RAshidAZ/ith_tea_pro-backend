@@ -14,7 +14,7 @@ const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
 
 
-const { getTodayTasksListByUserId, editUserTaskToVerify, reopenUserTask, exportDataToExcel, editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTeamTasksCountReport, getTaskStatusAnalytics, getTodayTasksList, getTaskList, rateUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments, getTeamTasksList } = require('../controllers/task');
+const { getTodayTasksListByUserId, verfiyUserTask, reopenUserTask, exportDataToExcel, editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTeamTasksCountReport, getTaskStatusAnalytics, getTodayTasksList, getTaskList, verifyUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments, getTeamTasksList } = require('../controllers/task');
 
 
 //Insert task
@@ -23,7 +23,7 @@ router.post("/v1/user/insert", [authenticator, authenticateRole(["SUPER_ADMIN", 
 //edit task
 router.patch("/v1/edit", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"]), filterProjects], editUserTask);
 
-router.patch("/v1/verify", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"]), filterProjects], editUserTaskToVerify);
+router.patch("/v1/verify", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"]), filterProjects], verfiyUserTask);
 
 router.post("/v1/reopen", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], reopenUserTask);
 
@@ -51,11 +51,7 @@ router.get("/v1/list/pending/rating", [authenticator, filterProjects], getTaskLi
 router.get("/v1/list/for/rating", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], getTaskListToRate);
 
 /**Insert Task Rating */
-router.post("/v1/rate", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], rateUserTask);
-
-/**Edit Task Rating */
-router.patch("/v1/rate/updateRating", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], rateUserTask);
-
+router.post("/v1/verify", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], verifyUserTask);
 
 //Delete task API
 router.patch("/v1/delete", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"]), filterProjects], deleteTask);

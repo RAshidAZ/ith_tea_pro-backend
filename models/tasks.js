@@ -54,11 +54,22 @@ let tasksSchema = new Schema({
         type: Boolean,
         default: false
     },
-	isDelayTask: {
+    verifiedBy: {
+        type: mongoose.Types.ObjectId,
+        ref: "users"
+    },
+    isDelayedVerified: {
         type: Boolean,
         default: false
     },
-	isDelayRated: {
+    verificationComments: [
+        {
+            type: mongoose.Types.ObjectId,
+            ref: "comments"
+        }
+    ],
+    
+	isDelayTask: {
         type: Boolean,
         default: false
     },
@@ -69,10 +80,6 @@ let tasksSchema = new Schema({
 
     miscType: String,
 
-    givenBy: {
-        type: mongoose.Types.ObjectId,              //for user that give rating
-        ref: "users"
-    },
 	attachments: [
         {
             type: String
@@ -87,12 +94,6 @@ let tasksSchema = new Schema({
         default: false
     },
 
-    verificationComments: [
-        {
-            type: mongoose.Types.ObjectId,
-            ref: "comments"
-        }
-    ],
 	isDeleted: {
         type: Boolean,
         default: false
