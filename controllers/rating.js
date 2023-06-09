@@ -60,8 +60,8 @@ const insertUserRating = async (req, res, next) => {
 	let actionLogData = {
 		actionTaken: 'RATE_TASK',
 		actionBy: data.auth.id,
-		userId : data.userId,
-		ratingId : ratingRes.data._id
+		userId: data.userId,
+		ratingId: ratingRes.data._id
 	}
 	data.actionLogData = actionLogData;
 	let addActionLogRes = await actionLogController.addRatingLog(data);
@@ -178,19 +178,19 @@ exports.addCommnetIdInRatingById = addCommnetIdInRatingById;
 const getAllUsersRatingForMonth = async function (data) {
 	try {
 		let roleFilter = ["SUPER_ADMIN"]
-		let findData = { }
-		if(data.auth.role == 'CONTRIBUTOR'){
-			findData.isDeleted  = false
+		let findData = {}
+		if (data.auth.role == 'CONTRIBUTOR') {
+			findData.isDeleted = false
 			roleFilter.push('LEAD')
 			roleFilter.push('ADMIN')
 		}
-		if(data.auth.role == 'LEAD'){
-			findData.isDeleted  = false
+		if (data.auth.role == 'LEAD') {
+			findData.isDeleted = false
 			roleFilter.push('ADMIN')
 		}
-		findData.role  = { $nin: roleFilter }
+		findData.role = { $nin: roleFilter }
 		// findData.ratingAllowed  = { $nin: [false] }
-		if(data.userRating){
+		if (data.userRating) {
 			findData._id = mongoose.Types.ObjectId(data.auth.id)
 		}
 		if (!data.userRating && ['LEAD', 'CONTRIBUTOR', 'ADMIN'].includes(data.auth.role) && data.filteredProjects) {
@@ -380,6 +380,9 @@ exports.createPayloadAndGetWeekRating = createPayloadAndGetWeekRating;
 const getRatingByDate = async (req, res, next) => {
 	let data = req.data;
 
+	if(data.date || data.month || data.year){
+		return res.status(400).send(sendResponse(400, 'Missing params', 'getRatingByDate', null, req.data.signature))
+	}
 	let ratingRes = await createPayloadAndGetDayRating(data)
 	console.log(ratingRes)
 	if (ratingRes.error) {
@@ -392,26 +395,27 @@ exports.getRatingByDate = getRatingByDate
 const createPayloadAndGetDayRating = async function (data) {
 	try {
 		const day = data.date;
-		const month = data.month; 
+		const month = data.month;
 		const year = data.year;
-		
+
 		let payload = {
-			userId: data.auth.id,
+			userId: data.userId || data.auth.id,
 			date: day,
-			month: month, 
+			month: month,
 			year: year
 		}
 
 		let populate = "taskIds"
-		populate= [{
-			path:"taskIds"
-		},
-		{
-			path:"taskIds",
-			populate:{
-				path:"verificationComments"
-			}
-		}]
+		populate = [
+			{
+				path: "taskIds"
+			},
+			{
+				path: "taskIds",
+				populate: {
+					path: "verificationComments"
+				}
+			}]
 
 
 		let dayRating = await Rating.findUserRatingAndPopulate(payload, {}, populate)
@@ -450,21 +454,23 @@ const filteredProjectsUsers = async function (data) {
 		let pipeline = [
 			{
 				$group: {
-				  _id: null,
-				  users: { $push: { $concatArrays: ["$managedBy", "$accessibleBy"] } }
+					_id: null,
+					users: { $push: { $concatArrays: ["$managedBy", "$accessibleBy"] } }
 				}
 			},
 			{
 				$project: {
-				  _id: 0,
-				  users: { $reduce: {
-					input: "$users",
-					initialValue: [],
-					in: { $setUnion: ["$$value", "$$this"] }
-				  } }
+					_id: 0,
+					users: {
+						$reduce: {
+							input: "$users",
+							initialValue: [],
+							in: { $setUnion: ["$$value", "$$this"] }
+						}
+					}
 				}
 			}
-		  ]
+		]
 		let projectsUsers = await Project.projectAggregate(pipeline)
 		let allUsers = (projectsUsers && projectsUsers.length && projectsUsers[0].users) || []
 		allUsers.push(data.auth.id)
