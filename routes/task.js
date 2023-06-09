@@ -15,7 +15,7 @@ const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
 
 
-const { getTodayTasksListByUserId, verfiyUserTask, reopenUserTask, exportDataToExcel, editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTeamTasksCountReport, getTaskStatusAnalytics, getTodayTasksList, getTaskList, verifyUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments, getTeamTasksList } = require('../controllers/task');
+const {getTaskListToVerify, getTodayTasksListByUserId, verfiyUserTask, reopenUserTask, exportDataToExcel, editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTeamTasksCountReport, getTaskStatusAnalytics, getTodayTasksList, getTaskList, verifyUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments, getTeamTasksList } = require('../controllers/task');
 
 
 //Insert task
@@ -48,6 +48,7 @@ router.get("/v1/list/pending/rating", [authenticator, filterProjects], getTaskLi
 
 /**Get Task by projectId && userId for a given Date */
 // router.get("/v1/list/for/rating", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], getTaskListToRate);
+router.get("/v1/list/for/rating", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], getTaskListToVerify);
 
 /**Insert Task Rating */
 router.post("/v1/verify", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], verifyUserTask);
@@ -77,6 +78,5 @@ router.get("/v1/get/team/task", [authenticator, authenticateRole(["SUPER_ADMIN",
 router.get("/v1/get/team/task/count", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects], getTeamTasksCountReport)
 
 router.get("/v1/downloadExcel", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects], exportDataToExcel)
-
 
 module.exports = router;
