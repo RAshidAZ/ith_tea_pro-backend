@@ -677,7 +677,7 @@ const getUserDetailsByUserId = async (req, res, next) => {
 }
 exports.getUserDetailsByUserId = getUserDetailsByUserId
 
-const verifyUserForRating = async function (req, res, next) {
+const verifyUserForRating = async function (data) {
     let ratingAllowed = false;
     if (!data.userId) {
         return res.status(400).send(sendResponse(400, "", 'verifyUserForRating', null, req.data.signature))
