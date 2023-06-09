@@ -690,7 +690,7 @@ const verifyUserForRating = async function (req, res, next) {
         return res.status(500).send(sendResponse(500, '', 'verifyUserForRating', null, req.data.signature))
     }
 
-    if(userRes.data.managerIds.includes(data.auth.id)) {
+    if(userRes.data.managerIds.includes(data.auth.id) || ['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
         ratingAllowed = true;
     }
     return res.status(200).send(sendResponse(200, '', 'verifyUserForRating', {ratingAllowed}, req.data.signature))
