@@ -47,6 +47,7 @@ router.get("/v1/list/homepage", [authenticator, filterProjects], getTaskList)
 router.get("/v1/list/pending/rating", [authenticator, filterProjects], getTaskListWithPendingRating)
 
 /**Get Task by projectId && userId for a given Date */
+
 // router.get("/v1/list/for/rating", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], getTaskListToRate);
 router.get("/v1/list/for/rating", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], getTaskListToVerify);
 
