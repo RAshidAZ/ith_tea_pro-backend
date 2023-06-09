@@ -11,7 +11,7 @@ const authenticator = require('../middlewares/authenticator')(clients, data);
 const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
-const {assignManager,activeGuest, getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getUserListing, getAllLeadsListing, deleteUser, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng, getTeamAnalytics,getAllGuest} = require('../controllers/user');
+const { assignManager, activeGuest, getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getUserListing, getAllLeadsListing, deleteUser, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng, getTeamAnalytics, getAllGuest, verifyUserForRating } = require('../controllers/user');
 
 // Superadmin, Admin Add New Team Member
 router.post("/v1/add", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], addNewUser);
@@ -21,6 +21,8 @@ router.post("/v1/add", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"]
 // User, intern can edit only themself
 router.patch("/v1/edit", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "CONTRIBUTOR", "INTERN", "LEAD", "GUEST"])], editUserDetails);
 
+
+router.get('/v1/verify/manager', [authenticator], verifyUserForRating)
 // Route to assign Manager
 router.patch("/v1/assign/manager", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], assignManager);
 
@@ -48,19 +50,19 @@ router.get("/v1/unassigned/list", [], getUnAssignedUserLisitng);
 router.patch("/v1/edit/block/status", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], updateUserBlockStatus);
 
 //get team analytics
-router.get("/v1/team/analytics", 
-[authenticator], 
-getTeamAnalytics);
+router.get("/v1/team/analytics",
+    [authenticator],
+    getTeamAnalytics);
 
 //delete user
-router.patch("/v1/delete/user", 
-[authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], 
-deleteUser);
+router.patch("/v1/delete/user",
+    [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])],
+    deleteUser);
 
 // Active or Inactive Guest
-router.patch("/v1/active/guest", 
-[authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], 
-activeGuest);
+router.patch("/v1/active/guest",
+    [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])],
+    activeGuest);
 
 // Get all Guest (except SA , A, lEAD, Contributor) - Pagination
 router.get("/v1/guest/pagination", [authenticator, filterProjects], getAllGuest);
@@ -69,9 +71,9 @@ router.get("/v1/guest/pagination", [authenticator, filterProjects], getAllGuest)
 router.get("/v1/all/users", [authenticator], getUserListing);
 
 // Get all leads/admin ( for dropdown )
-router.get("/v1/all/leads", 
-[authenticator], 
-getAllLeadsListing);
+router.get("/v1/all/leads",
+    [authenticator],
+    getAllLeadsListing);
 
 module.exports = router;
 

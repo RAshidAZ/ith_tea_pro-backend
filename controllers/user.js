@@ -677,6 +677,24 @@ const getUserDetailsByUserId = async (req, res, next) => {
 }
 exports.getUserDetailsByUserId = getUserDetailsByUserId
 
+const verifyUserForRating = async function (req, res, next) {
+    let ratingAllowed = false;
+    if (!data.userId) {
+        return res.status(400).send(sendResponse(400, "", 'verifyUserForRating', null, req.data.signature))
+    }
+
+    let userRes = await createPayloadAndGetUserDetailsByUserId(data)
+    if (userRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'verifyUserForRating', null, req.data.signature))
+    }
+
+    if(userRes.data.managerIds.includes(data.auth.id)) {
+        ratingAllowed = true;
+    }
+    return res.status(200).send(null, sendResponse(200, '', 'verifyUserForRating', {ratingAllowed}, req.data.signature))
+}
+exports.verifyUserForRating = verifyUserForRating;
+
 const createPayloadAndGetUserDetailsByUserId = async function (data) {
     try {
         let payload = {
