@@ -21,8 +21,9 @@ router.post("/v1/add", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"]
 // User, intern can edit only themself
 router.patch("/v1/edit", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN", "CONTRIBUTOR", "INTERN", "LEAD", "GUEST"])], editUserDetails);
 
-
+// Verify the manager to give rating
 router.get('/v1/verify/manager', [authenticator], verifyUserForRating)
+
 // Route to assign Manager
 router.patch("/v1/assign/manager", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], assignManager);
 

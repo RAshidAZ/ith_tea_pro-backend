@@ -295,12 +295,16 @@ const editUserTask = async (req, res, next) => {
 		}
 		// updatePayload.lead = data.tasklead
 	}
+
 	let payload = {
 		name: process.env.DEFAULT_SECTION,
 		projectId: data.projectId
 	}
+
 	let sectionfind = await ProjectSections.findSection(payload)
+
 	console.log('section =====================================', sectionfind.id)
+
 	if (data.section == sectionfind.id) {
 		data.ratingAllowed = false
 	} else {
@@ -544,9 +548,7 @@ const createPayloadAndEditTask = async function (data) {
 		if (JSON.stringify(data.title)) {
 			updatePayload.title = data.title
 		}
-		if (data.attachments) {
-			updatePayload["attachments"] = data.attachments
-		}
+		
 		if (JSON.stringify(data.description)) {
 			updatePayload.description = data.description
 		}
@@ -554,10 +556,6 @@ const createPayloadAndEditTask = async function (data) {
 		if (JSON.stringify(data.section)) {
 			updatePayload.section = data.section
 			updatePayload.ratingAllowed = data.ratingAllowed
-		}
-
-		if (data.isDelayTask) {
-			updatePayload.isDelayTask = data.isDelayTask
 		}
 
 		if (JSON.stringify(data.projectId)) {
@@ -573,8 +571,17 @@ const createPayloadAndEditTask = async function (data) {
 		if (JSON.stringify(data.priority)) {
 			updatePayload.priority = data.priority
 		}
+		if (data.isDelayTask) {
+			updatePayload["isDelayTask"] = data.isDelayTask
+		}
+		if (data.attachments) {
+			updatePayload["attachments"] = data.attachments
+		}
 		if (data.tasklead) {
-			updatePayload.lead = data.tasklead
+			updatePayload["lead"] = data.tasklead
+		}
+		if(data.defaultTaskTime){
+			updatePayload["defaultTaskTime"] = data.defaultTaskTime
 		}
 		data.taskUpdatePayload = updatePayload;
 		let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload, { new: false })
