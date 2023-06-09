@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+module.exports = router;
 
 const clients = {
     users: {
@@ -46,7 +47,7 @@ router.get("/v1/list/homepage", [authenticator, filterProjects], getTaskList)
 router.get("/v1/list/pending/rating", [authenticator, filterProjects], getTaskListWithPendingRating)
 
 /**Get Task by projectId && userId for a given Date */
-router.get("/v1/list/for/rating", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], getTaskListToRate);
+// router.get("/v1/list/for/rating", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], getTaskListToRate);
 
 /**Insert Task Rating */
 router.post("/v1/verify", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], verifyUserTask);
@@ -66,7 +67,6 @@ router.post("/v1/add/comment", [authenticator, authenticateRole(["SUPER_ADMIN", 
 /**Get comments of taks and rating of user for given date*/
 router.get("/v1/comments", [authenticator], getUserTaskComments);
 
-
 //get today tasks list for team work
 router.get("/v1/get/today/tasks", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD', 'GUEST']), filterProjects], getTodayTasksList)
 
@@ -77,5 +77,6 @@ router.get("/v1/get/team/task", [authenticator, authenticateRole(["SUPER_ADMIN",
 router.get("/v1/get/team/task/count", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects], getTeamTasksCountReport)
 
 router.get("/v1/downloadExcel", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects], exportDataToExcel)
+
 
 module.exports = router;
