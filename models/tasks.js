@@ -68,6 +68,11 @@ let tasksSchema = new Schema({
             ref: "comments"
         }
     ],
+
+    ratingAllowed: {
+        type: Boolean,
+        default: false
+    },
     
 	isDelayTask: {
         type: Boolean,
