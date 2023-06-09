@@ -679,7 +679,7 @@ exports.getUserDetailsByUserId = getUserDetailsByUserId
 
 const verifyUserForRating = async function (req, res, next) {
     let data = req.data;
-    
+
     let ratingAllowed = false;
     if (!data.userId) {
         return res.status(400).send(sendResponse(400, "", 'verifyUserForRating', null, req.data.signature))
@@ -693,7 +693,7 @@ const verifyUserForRating = async function (req, res, next) {
     if(userRes.data.managerIds.includes(data.auth.id)) {
         ratingAllowed = true;
     }
-    return res.status(200).send(null, sendResponse(200, '', 'verifyUserForRating', {ratingAllowed}, req.data.signature))
+    return res.status(200).send(sendResponse(200, '', 'verifyUserForRating', {ratingAllowed}, req.data.signature))
 }
 exports.verifyUserForRating = verifyUserForRating;
 
