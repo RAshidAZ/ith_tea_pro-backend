@@ -31,7 +31,7 @@ exports.getUserRating = getUserRating
 const insertUserRating = async (req, res, next) => {
 	let data = req.data;
 
-	if (!data.rating || !data.userId || !data.date || !data.month || !data.year) {
+	if (!data.rating || !data.userId || !data.date || !data.month || !data.year || !data.comment) {
 		return res.status(400).send(sendResponse(400, "Params Missing", 'insertUserRating', null, req.data.signature))
 	}
 	//TODO: Change after auth is updated
@@ -46,13 +46,11 @@ const insertUserRating = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "Rating Already Given", 'insertUserRating', null, req.data.signature))
 	}
 
-	if (data.comment) {
-		let commentRes = await commentController.createPayloadAndInsertComment(data)
-		if (commentRes.error || !commentRes.data) {
-			return res.status(500).send(sendResponse(500, '', 'insertUserRating', null, req.data.signature))
-		}
-		data.commentId = commentRes.data._id
+	let commentRes = await commentController.createPayloadAndInsertComment(data)
+	if (commentRes.error || !commentRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'insertUserRating', null, req.data.signature))
 	}
+	data.commentId = commentRes.data._id
 
 	let ratingRes = await createPayloadAndInsertRating(data)
 	if (ratingRes.error || !ratingRes.data) {

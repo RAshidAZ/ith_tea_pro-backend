@@ -1078,7 +1078,7 @@ const getTaskCountForProject = async function (data) {
 
 		let findData = {
 			isDeleted : false,
-			isRated : false,
+			isVerified : false,
 			projectId : data.projectId
 		}
 
@@ -1113,7 +1113,7 @@ const getDueTaskCountForProject = async function (data) {
 
 		let findData = {
 			isDeleted : false,
-			isRated : false,
+			isVerified : false,
 			projectId : data.projectId
 		}
 
@@ -1151,7 +1151,7 @@ const getDueTaskCountForSection = async function (data) {
 
 		let findData = {
 			isDeleted : false,
-			isRated : false,
+			isVerified : false,
 			section : data.sectionId
 		}
 

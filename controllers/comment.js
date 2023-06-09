@@ -54,7 +54,7 @@ const createPayloadAndInsertComment = async function (data) {
             comment: data.comment,
             verificationComment: data.verificationsComments
         }
-        let commentRes = await Comments.insertRatingComment(payload)
+        let commentRes = await Comments.insertComment(payload)
         return { data: commentRes, error: false }
     } catch (err) {
         console.log("createPayloadAndInsertComment Error : ", err)

@@ -50,7 +50,7 @@ let tasksSchema = new Schema({
     dueDate: Date,
     completedDate: Date,
 
-    isRated: {
+    isVerified: {
         type: Boolean,
         default: false
     },
@@ -66,17 +66,8 @@ let tasksSchema = new Schema({
         type: Boolean,
         default: false
     },
-	ratingAllowed: {
-        type: Boolean,
-        default: true
-    },
+
     miscType: String,
-    rating: {
-        type: Number,
-        min: 0,
-        max: 5,                      //to be increased as per requirement
-        default: 0
-    },
 
     givenBy: {
         type: mongoose.Types.ObjectId,              //for user that give rating
@@ -95,12 +86,7 @@ let tasksSchema = new Schema({
         type: Boolean,
         default: false
     },
-    ratingComments: [
-        {
-            type: mongoose.Types.ObjectId,
-            ref: "comments"
-        }
-    ],
+
     verificationComments: [
         {
             type: mongoose.Types.ObjectId,
@@ -111,9 +97,11 @@ let tasksSchema = new Schema({
         type: Boolean,
         default: false
     },
+
     defaultTaskTime:{
-        type:Object
+        type: Number
     },
+
 	timeTaken: {
         type: Number,
         default:0

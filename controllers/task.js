@@ -8,7 +8,7 @@ const commentController = require('./comment');
 const cheerio = require('cheerio');
 const excelJS = require("exceljs");
 
-const { Task, Rating, Project, Comments, TaskLogs, User,ProjectSections } = queryController;
+const { Task, Rating, Project, Comments, TaskLogs, User, ProjectSections } = queryController;
 
 const actionLogController = require("../controllers/actionLogs");
 const userController = require("../controllers/user");
@@ -27,18 +27,18 @@ const insertUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "Please send all required Data fields", 'insertUserTask', null, req.data.signature))
 	}
 
-	if(data.dueDate && !validator.isISO8601(data.dueDate) && validator.isDate(data.dueDate)){
+	if (data.dueDate && !validator.isISO8601(data.dueDate) && validator.isDate(data.dueDate)) {
 		delete data.dueDate
 	}
 
 	let currentDate = new Date()
 	let timeZoneOffsetMinutes = currentDate.getTimezoneOffset();
-	currentDate = new Date(currentDate.getTime()- timeZoneOffsetMinutes*1000*60)
+	currentDate = new Date(currentDate.getTime() - timeZoneOffsetMinutes * 1000 * 60)
 	if (data.dueDate && ((new Date(data.dueDate)).getDate() < currentDate.getDate())) {
 		return res.status(400).send(sendResponse(400, "Task due date can't be less than current day", 'insertUserTask', null, req.data.signature))
 	}
 
-	let projectData = await Project.findSpecificProject({ _id : data.projectId});
+	let projectData = await Project.findSpecificProject({ _id: data.projectId });
 
 	if (!projectData || projectData.isArchived) {
 		return res.status(400).send(sendResponse(400, "Project Archived, can't add task", 'insertUserTask', null, req.data.signature))
@@ -62,7 +62,7 @@ const insertUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(401, 'Not Allowed to add task for this project', 'insertUserTask', null, req.data.signature))
 	}
 
-	if(data.tasklead && data.tasklead.length && data.assignedTo){
+	if (data.tasklead && data.tasklead.length && data.assignedTo) {
 		let ifAllowedToAddAssisgnee = await checkLeadAndAssigneeForTask(data);
 		if (ifAllowedToAddAssisgnee.error) {
 			return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
@@ -72,31 +72,31 @@ const insertUserTask = async (req, res, next) => {
 			return res.status(400).send(sendResponse(401, 'Not Allowed to add task for selected lead/assignee', 'insertUserTask', null, req.data.signature))
 		}
 	}
-	
-	if(!data.defaultTaskTime){
+
+	if (!data.defaultTaskTime) {
 		return res.status(400).send(sendResponse(400, 'Please Provide Estimated time for this task', 'insertUserTask', null, req.data.signature))
 	}
 	data.defaultTaskTime = {
-		hours:data.defaultTaskTime.hours,
-		minutes:data.defaultTaskTime.minutes
+		hours: data.defaultTaskTime.hours,
+		minutes: data.defaultTaskTime.minutes
 	}
-	
+
 
 	let payload = {
-		name:process.env.DEFAULT_SECTION,
-		projectId:data.projectId
+		name: process.env.DEFAULT_SECTION,
+		projectId: data.projectId
 	}
 	let sectionfind = await ProjectSections.findSection(payload)
 
-	if(sectionfind.id == data.section){
+	if (sectionfind.id == data.section) {
 		data.ratingAllowed = false
-		if(!data.miscType){
+		if (!data.miscType) {
 			return res.status(400).send(sendResponse(401, 'Type is required', 'insertUserTask', null, req.data.signature))
 		}
-		
-	}else{
+
+	} else {
 		data.ratingAllowed = true
-		if(data.miscType){
+		if (data.miscType) {
 			return res.status(400).send(sendResponse(401, 'Type is Not required', 'insertUserTask', null, req.data.signature))
 		}
 	}
@@ -110,8 +110,8 @@ const insertUserTask = async (req, res, next) => {
 	let actionLogData = {
 		actionTaken: 'TASK_ADDED',
 		actionBy: data.auth.id,
-		taskId : taskRes.data._id,
-		new:{status:data.status}
+		taskId: taskRes.data._id,
+		new: { status: data.status }
 	}
 	data.actionLogData = actionLogData;
 	let addActionLogRes = await actionLogController.addTaskLog(data);
@@ -127,7 +127,7 @@ exports.insertUserTask = insertUserTask
 const checkIfAllowedToAddTask = async function (data) {
 
 	try {
-		
+
 		let findData = {
 			_id: data.projectId
 		}
@@ -139,7 +139,7 @@ const checkIfAllowedToAddTask = async function (data) {
 			// return { data: { allowed: true }, error: false }
 		}
 		let getProject = await Project.findSpecificProject(findData);
-		
+
 		if (getProject) {
 			if (data.tasklead) {
 
@@ -181,42 +181,42 @@ const createPayloadAndInsertTask = async function (data) {
 		let payload = {
 			title: data.title,
 			description: data.description,
-			status: data.status ||  process.env.TASK_STATUS.split(",")[0],
+			status: data.status || process.env.TASK_STATUS.split(",")[0],
 			section: data.section,
 			projectId: data.projectId,
-			ratingAllowed:data.ratingAllowed,
+			ratingAllowed: data.ratingAllowed,
 			createdBy: data?.auth?.id,    //TODO: Change after auth is updated
 			assignedTo: data.assignedTo,
 			// dueDate: data.dueDate || new Date(new Date().setUTCHours(23, 59, 59, 000)),
 			completedDate: data.completedDate,
-			defaultTaskTime:data.defaultTaskTime,
-			miscType:data.miscType,
+			defaultTaskTime: data.defaultTaskTime,
+			miscType: data.miscType,
 			priority: data.priority,
 			lead: data.tasklead
 		}
-		
+
 		if (data.dueDate) {
-			payload.dueDate =new Date(data.dueDate)
+			payload.dueDate = new Date(data.dueDate)
 		}
 
 		if (data.attachments) {
-			payload["attachments"] = data.attachments 
+			payload["attachments"] = data.attachments
 		}
 
 		let taskRes = await Task.insertUserTask(payload)
 
-		if(data.assignedTo && (data.auth.id != data.assignedTo)){
-			let findUser = { _id : data.assignedTo}
-			let findAssignedBy = { _id : data.auth.id }
+		if (data.assignedTo && (data.auth.id != data.assignedTo)) {
+			let findUser = { _id: data.assignedTo }
+			let findAssignedBy = { _id: data.auth.id }
 			let userData = await User.userfindOneQuery(findUser)
 			let assignedBy = await User.userfindOneQuery(findAssignedBy)
-			let getProject = await Project.findSpecificProject({_id:data.projectId});
+			let getProject = await Project.findSpecificProject({ _id: data.projectId });
 			data.projectName = (getProject && getProject.name) || null
-			data.userName = (userData && userData.name) || null  ;
+			data.userName = (userData && userData.name) || null;
 			data.assignedBy = assignedBy.name
 			data.email = userData.email;
 			data.taskLink = btoa(taskRes._id.toString())
-			console.log("==========task link details",data.taskLink)
+			console.log("==========task link details", data.taskLink)
 			let sendTaskMail = emailUtitlities.sendTaskMail(data)
 		}
 		return { data: taskRes, error: false }
@@ -235,7 +235,7 @@ const editUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "", 'editUserTask', null, req.data.signature))
 	}
 
-	if(data.dueDate && !validator.isISO8601(data.dueDate) && validator.isDate(data.dueDate)){
+	if (data.dueDate && !validator.isISO8601(data.dueDate) && validator.isDate(data.dueDate)) {
 		delete data.dueDate
 	}
 	let task = await getTaskDetails(data);
@@ -243,15 +243,15 @@ const editUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, 'Task Not found..', 'editUserTask', null, req.data.signature))
 	}
 
-	if(!['SUPER_ADMIN'].includes(data.auth.role) && data.filteredProjects && !data.filteredProjects.includes(task.data.projectId.toString())){
+	if (!['SUPER_ADMIN'].includes(data.auth.role) && data.filteredProjects && !data.filteredProjects.includes(task.data.projectId.toString())) {
 		return res.status(400).send(sendResponse(400, "You're not assigned this project", 'editUserTask', null, req.data.signature))
 	}
 
-	if(!['SUPER_ADMIN'].includes(data.auth.role) && task.data.status && task.data.status == process.env.TASK_STATUS.split(",")[2] ){
+	if (!['SUPER_ADMIN'].includes(data.auth.role) && task.data.status && task.data.status == process.env.TASK_STATUS.split(",")[2]) {
 		return res.status(400).send(sendResponse(400, "Can't edit completed task", 'editUserTask', null, req.data.signature))
 	}
-	if(task.data.dueDate && data.status == 'COMPLETED'){
-		if(new Date(task.data.dueDate).getTime()< new Date().getTime()){
+	if (task.data.dueDate && data.status == 'COMPLETED') {
+		if (new Date(task.data.dueDate).getTime() < new Date().getTime()) {
 			data.isDelayTask = true
 		}
 	}
@@ -269,11 +269,11 @@ const editUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(401, 'Not Allowed edit task', 'createPayloadAndEditTask', null, req.data.signature))
 	}
 
-	if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && task.data.isRated) {
-		return res.status(400).send(sendResponse(400, 'You are not permitted to edit task once it is rated', 'rateUserTask', null, req.data.signature))
+	if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && task.data.isVerified) {
+		return res.status(400).send(sendResponse(400, 'You are not permitted to edit task once it is verified', 'rateUserTask', null, req.data.signature))
 	}
 
-	if(data.tasklead && data.tasklead.length && data.assignedTo){
+	if (data.tasklead && data.tasklead.length && data.assignedTo) {
 		let ifAllowedToAddAssisgnee = await checkLeadAndAssigneeForTask(data);
 		if (ifAllowedToAddAssisgnee.error) {
 			return res.status(500).send(sendResponse(500, '', 'createPayloadAndEditTask', null, req.data.signature))
@@ -296,15 +296,15 @@ const editUserTask = async (req, res, next) => {
 		// updatePayload.lead = data.tasklead
 	}
 	let payload = {
-		name:process.env.DEFAULT_SECTION,
-		projectId:data.projectId
+		name: process.env.DEFAULT_SECTION,
+		projectId: data.projectId
 	}
 	let sectionfind = await ProjectSections.findSection(payload)
-	console.log('section =====================================',sectionfind.id)
-	if(data.section==sectionfind.id){
-		data.ratingAllowed=false
-	}else{
-		data.ratingAllowed=true
+	console.log('section =====================================', sectionfind.id)
+	if (data.section == sectionfind.id) {
+		data.ratingAllowed = false
+	} else {
+		data.ratingAllowed = true
 	}
 
 	let taskRes = await createPayloadAndEditTask(data)
@@ -315,9 +315,9 @@ const editUserTask = async (req, res, next) => {
 	let actionTaken = 'TASK_UPDATED'
 	let ifDueDateChanged = false
 
-	if(taskRes && taskRes.data && data.status && data.status != taskRes.data.status){
+	if (taskRes && taskRes.data && data.status && data.status != taskRes.data.status) {
 		actionTaken = 'TASK_STATUS_UPDATED'
-	}else if(taskRes && taskRes.data && (data.dueDate && new Date(data.dueDate).getTime() != new Date(taskRes.data.dueDate).getTime()) || (!data.dueDate && JSON.stringify(data.dueDate) && taskRes.data.dueDate)){
+	} else if (taskRes && taskRes.data && (data.dueDate && new Date(data.dueDate).getTime() != new Date(taskRes.data.dueDate).getTime()) || (!data.dueDate && JSON.stringify(data.dueDate) && taskRes.data.dueDate)) {
 
 		actionTaken = 'TASK_DUEDATE_UPDATED'
 		ifDueDateChanged = true
@@ -325,46 +325,46 @@ const editUserTask = async (req, res, next) => {
 	}
 	let actionLogData = {
 		actionBy: data.auth.id,
-		taskId : data.taskId,
+		taskId: data.taskId,
 	}
 	let previousTaskData = {}
 	let newTaskData = {}
 	let taskUpdatePayload = data.taskUpdatePayload
-	if(taskRes && taskRes.data && taskUpdatePayload){
-		if(taskUpdatePayload.title && taskUpdatePayload.title != task.data.title){
+	if (taskRes && taskRes.data && taskUpdatePayload) {
+		if (taskUpdatePayload.title && taskUpdatePayload.title != task.data.title) {
 			actionTaken = 'TASK_UPDATED'
 			previousTaskData.title = task.data.title
 			newTaskData.title = taskUpdatePayload.title
 		}
-		if(taskUpdatePayload.description && taskUpdatePayload.description != task.data.description){
+		if (taskUpdatePayload.description && taskUpdatePayload.description != task.data.description) {
 			actionTaken = 'TASK_UPDATED'
 			previousTaskData.description = task.data.description
 			newTaskData.description = taskUpdatePayload.description
 		}
-		if(taskUpdatePayload.section && taskUpdatePayload.section != task.data.section){
+		if (taskUpdatePayload.section && taskUpdatePayload.section != task.data.section) {
 			actionTaken = 'TASK_UPDATED'
 			previousTaskData.section = task.data.section
 			newTaskData.section = taskUpdatePayload.section
 		}
-		if(taskUpdatePayload.status && taskUpdatePayload.status != task.data.status){
+		if (taskUpdatePayload.status && taskUpdatePayload.status != task.data.status) {
 			previousTaskData.status = task.data.status
 			newTaskData.status = taskUpdatePayload.status
 		}
-		if(ifDueDateChanged){
+		if (ifDueDateChanged) {
 			previousTaskData.dueDate = task.data.dueDate
 			newTaskData.dueDate = taskUpdatePayload.dueDate
 		}
 		let currentDate = new Date()
-		if(new Date(data.completedDate || currentDate).getTime() != new Date(taskRes.data.completedDate || currentDate).getTime()){
+		if (new Date(data.completedDate || currentDate).getTime() != new Date(taskRes.data.completedDate || currentDate).getTime()) {
 			previousTaskData.completedDate = task.data.completedDate
 			newTaskData.completedDate = taskUpdatePayload.completedDate
 		}
-		if(taskUpdatePayload.priority && taskUpdatePayload.priority != task.data.priority){
+		if (taskUpdatePayload.priority && taskUpdatePayload.priority != task.data.priority) {
 			actionTaken = 'TASK_UPDATED'
 			previousTaskData.priority = task.data.priority
 			newTaskData.priority = taskUpdatePayload.priority
 		}
-		if(JSON.stringify(taskUpdatePayload.assignedTo) && ((taskUpdatePayload.assignedTo && taskUpdatePayload.assignedTo.toString()) || 'r') != ((task.data.assignedTo && task.data.assignedTo._id.toString()) || 'random')){
+		if (JSON.stringify(taskUpdatePayload.assignedTo) && ((taskUpdatePayload.assignedTo && taskUpdatePayload.assignedTo.toString()) || 'r') != ((task.data.assignedTo && task.data.assignedTo._id.toString()) || 'random')) {
 			actionTaken = 'TASK_UPDATED'
 			previousTaskData.assignedTo = task.data.assignedTo
 			newTaskData.assignedTo = taskUpdatePayload.assignedTo
@@ -372,14 +372,14 @@ const editUserTask = async (req, res, next) => {
 	}
 
 
-	if(taskRes && taskRes.data){
+	if (taskRes && taskRes.data) {
 		actionLogData.new = newTaskData
 		actionLogData.previous = previousTaskData
 		actionLogData.actionTaken = actionTaken
-	
+
 		data.actionLogData = actionLogData;
 		let addActionLogRes = await actionLogController.addTaskLog(data);
-	
+
 		if (addActionLogRes.error) {
 			return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
 		}
@@ -402,11 +402,11 @@ const editUserTaskToVerify = async (req, res, next) => {
 	if (!task.data.completedDate) {
 		return res.status(400).send(sendResponse(400, 'Task is not completed', 'rateUserTask', null, req.data.signature))
 	}
-	if(!['SUPER_ADMIN','ADMIN','LEAD'].includes(data.auth.role) && data.filteredProjects && !data.filteredProjects.includes(task.data.projectId.toString())){
+	if (!['SUPER_ADMIN', 'ADMIN', 'LEAD'].includes(data.auth.role) && data.filteredProjects && !data.filteredProjects.includes(task.data.projectId.toString())) {
 		return res.status(400).send(sendResponse(400, "You're not assigned this project", 'editUserTask', null, req.data.signature))
 	}
 
-	if(!['SUPER_ADMIN','ADMIN','LEAD'].includes(data.auth.role) && task.data.status && task.data.status == process.env.TASK_STATUS.split(",")[2] ){
+	if (!['SUPER_ADMIN', 'ADMIN', 'LEAD'].includes(data.auth.role) && task.data.status && task.data.status == process.env.TASK_STATUS.split(",")[2]) {
 		return res.status(400).send(sendResponse(400, "Can't edit completed task", 'editUserTask', null, req.data.signature))
 	}
 
@@ -423,7 +423,7 @@ const editUserTaskToVerify = async (req, res, next) => {
 		return res.status(400).send(sendResponse(401, 'Not Allowed edit task', 'createPayloadAndEditTask', null, req.data.signature))
 	}
 
-	if(data.tasklead && data.tasklead.length && data.assignedTo){
+	if (data.tasklead && data.tasklead.length && data.assignedTo) {
 		let ifAllowedToAddAssisgnee = await checkLeadAndAssigneeForTask(data);
 		if (ifAllowedToAddAssisgnee.error) {
 			return res.status(500).send(sendResponse(500, '', 'createPayloadAndEditTask', null, req.data.signature))
@@ -434,9 +434,9 @@ const editUserTaskToVerify = async (req, res, next) => {
 		}
 	}
 
-	if(data.status == 'VERIFIED'){
+	if (data.status == 'VERIFIED') {
 
-		if (data.verificationsComments){
+		if (data.verificationsComments) {
 			data.givenBy = data.auth.id
 
 			let commentRes = await commentController.createPayloadAndInsertComment(data)
@@ -448,27 +448,27 @@ const editUserTaskToVerify = async (req, res, next) => {
 			console.log(data.verificationsComments)
 			let insertVerifictaiontComment = await updateTaskVerificationAndAddComment(data)
 			console.log(insertVerifictaiontComment)
-		}else{
+		} else {
 			return res.status(400).send(sendResponse(401, 'Comment is Required', 'updateTaskStatus', null, req.data.signature))
 		}
 	}
 	let actionLogData = {
-		actionTaken:'TASK_VERIFIED',
+		actionTaken: 'TASK_VERIFIED',
 		actionBy: data.auth.id,
-		taskId : data.taskId,
+		taskId: data.taskId,
 	}
 	let previousTaskData = {}
 	let newTaskData = {}
 
-		actionLogData.new = newTaskData
-		actionLogData.previous = previousTaskData
-	
-		data.actionLogData = actionLogData;
-		let addActionLogRes = await actionLogController.addTaskLog(data);
-	
-		if (addActionLogRes.error) {
-			return res.status(500).send(sendResponse(500, '', 'editUserTaskToVerify', null, req.data.signature))
-		}
+	actionLogData.new = newTaskData
+	actionLogData.previous = previousTaskData
+
+	data.actionLogData = actionLogData;
+	let addActionLogRes = await actionLogController.addTaskLog(data);
+
+	if (addActionLogRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'editUserTaskToVerify', null, req.data.signature))
+	}
 
 	return res.status(200).send(sendResponse(200, 'Task Edited Successfully', 'editUserTaskToVerify', addActionLogRes, req.data.signature))
 }
@@ -481,7 +481,7 @@ const reopenUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "", 'editUserTask', null, req.data.signature))
 	}
 
-	if(data.dueDate && !validator.isISO8601(data.dueDate) && validator.isDate(data.dueDate)){
+	if (data.dueDate && !validator.isISO8601(data.dueDate) && validator.isDate(data.dueDate)) {
 		delete data.dueDate
 	}
 	let task = await getTaskDetails(data);
@@ -490,90 +490,90 @@ const reopenUserTask = async (req, res, next) => {
 	if (task.error || !task.data) {
 		return res.status(400).send(sendResponse(400, 'Task Not found..', 'reopenUserTask', null, req.data.signature))
 	}
-	if (!task.data.status=='COMPLETED') {
+	if (!task.data.status == 'COMPLETED') {
 		return res.status(400).send(sendResponse(400, 'Task is not Completed', 'reopenUserTask', null, req.data.signature))
 	}
 
-	if(!['SUPER_ADMIN'].includes(data.auth.role) && data.filteredProjects && !data.filteredProjects.includes(task.data.projectId.toString())){
+	if (!['SUPER_ADMIN'].includes(data.auth.role) && data.filteredProjects && !data.filteredProjects.includes(task.data.projectId.toString())) {
 		return res.status(400).send(sendResponse(400, "You're not assigned this project", 'reopenUserTask', null, req.data.signature))
 	}
 
-	if(!['SUPER_ADMIN','ADMIN','LEAD'].includes(data.auth.role) && task.data.status && task.data.status == process.env.TASK_STATUS.split(",")[2] ){
+	if (!['SUPER_ADMIN', 'ADMIN', 'LEAD'].includes(data.auth.role) && task.data.status && task.data.status == process.env.TASK_STATUS.split(",")[2]) {
 		return res.status(400).send(sendResponse(400, "Can't edit completed task", 'reopenUserTask', null, req.data.signature))
 	}
-	if(task.data.dueDate && data.status == 'COMPLETED'){
-		if(new Date(task.data.dueDate).getTime()< new Date().getTime()){
+	if (task.data.dueDate && data.status == 'COMPLETED') {
+		if (new Date(task.data.dueDate).getTime() < new Date().getTime()) {
 			data.isDelayTask = true
 		}
 	}
 	let findPayload = {
-		_id:data.taskId
+		_id: data.taskId
 	}
 	let updatePayload = {
-		rating:0,
-		isReOpen:true
+		rating: 0,
+		isReOpen: true
 		// dueDate:null
 	}
 	let options = {
-		new:true
+		new: true
 	}
 
-	let taskRes = await Task.findOneAndUpdate(findPayload,updatePayload,options)
+	let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload, options)
 
-		if (taskRes.error) {
-			return res.status(500).send(sendResponse(500, '', 'editUserTask', null, req.data.signature))
+	if (taskRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'editUserTask', null, req.data.signature))
+	}
+	if (task.data.isVerified == true) {
+		data.taskDetails = {
+
 		}
-if(task.data.isRated==true){
-	data.taskDetails={
-		
+		data.taskDetails.assignedTo = taskRes.assignedTo
+		console.log(task.data.dueDate)
+		data.taskDetails.dueDate = task.data.dueDate
+
+		let allTasksWithSameDueDate = await getAllTasksWithSameDueDate(data);
+		console.log("allTasksWithSameDueDate=====", allTasksWithSameDueDate)
+		data.allTasksWithSameDueDate = allTasksWithSameDueDate.data;
+
+
+		data.taskDetails.dueDate = task.data.dueDate
+		console.log("this due date is we are gettng", data.taskDetails.dueDate)
+
+		let updatedOverallRating = await updateOverallRatingDoc(data);
+		console.log("upadte===", updatedOverallRating)
+
+		if (updatedOverallRating.error) {
+			return res.status(500).send(sendResponse(500, 'Rating couldnot be updated', 'rateUserTask', null, req.data.signature))
+		}
 	}
-	data.taskDetails.assignedTo = taskRes.assignedTo
-	console.log(task.data.dueDate)
-	data.taskDetails.dueDate = task.data.dueDate
-	
-	let allTasksWithSameDueDate = await getAllTasksWithSameDueDate(data);
-	console.log("allTasksWithSameDueDate=====",allTasksWithSameDueDate)
-	data.allTasksWithSameDueDate = allTasksWithSameDueDate.data;
-	
-	
-	data.taskDetails.dueDate = task.data.dueDate
-	console.log("this due date is we are gettng",data.taskDetails.dueDate)
-	
-	let updatedOverallRating = await updateOverallRatingDoc(data);
-	console.log("upadte===",updatedOverallRating)
-	
-	if (updatedOverallRating.error) {
-		return res.status(500).send(sendResponse(500, 'Rating couldnot be updated', 'rateUserTask', null, req.data.signature))
-	}
-}
 	taskRes.dueDate = data.dueDate
 
-  	// due date resetting here because of average rating updation
+	// due date resetting here because of average rating updation
 	let dueDateFindPayload = {
-		_id:taskRes.id
+		_id: taskRes.id
 	}
 	let dueDateUpdatePayload = {
-		dueDate:null
+		dueDate: null
 	}
 	let dueOptions = {
-		new:true
+		new: true
 	}
-	let resetDueDate = await Task.findOneAndUpdate(dueDateFindPayload,dueDateUpdatePayload,dueOptions)
+	let resetDueDate = await Task.findOneAndUpdate(dueDateFindPayload, dueDateUpdatePayload, dueOptions)
 	let insertNewTask = await createPayloadAndInsertReOpenTask(taskRes)
 	if (insertNewTask.error || !insertNewTask.data) {
 		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
 	}
 	// console.log("insertNewTask================",insertNewTask)
 	let actionLogData = {
-		actionTaken:'REOPEN_TASK',
+		actionTaken: 'REOPEN_TASK',
 		actionBy: data.auth.id,
-		taskId : data.taskId,
-		correspondingTaskId:insertNewTask.data.id,
+		taskId: data.taskId,
+		correspondingTaskId: insertNewTask.data.id,
 	}
 
-	if(data.reason){
+	if (data.reason) {
 		reason = `REOPEN_TASK: ${data.reason}`
-		
+
 		actionLogData.reason = reason
 	}
 	data.actionLogData = actionLogData;
@@ -603,9 +603,9 @@ const createPayloadAndInsertReOpenTask = async function (taskRes) {
 			priority: taskRes.priority,
 			lead: taskRes.lead
 		}
-		
+
 		if (taskRes.attachments) {
-			payload["attachments"] = taskRes.attachments 
+			payload["attachments"] = taskRes.attachments
 		}
 
 		let taskResend = await Task.insertUserTask(payload)
@@ -629,12 +629,12 @@ const createPayloadAndEditTask = async function (data) {
 			updatePayload.title = data.title
 		}
 		if (data.attachments) {
-			updatePayload["attachments"] = data.attachments 
+			updatePayload["attachments"] = data.attachments
 		}
 		if (JSON.stringify(data.description)) {
 			updatePayload.description = data.description
 		}
-		
+
 		if (JSON.stringify(data.section)) {
 			updatePayload.section = data.section
 			updatePayload.ratingAllowed = data.ratingAllowed
@@ -661,7 +661,7 @@ const createPayloadAndEditTask = async function (data) {
 			updatePayload.lead = data.tasklead
 		}
 		data.taskUpdatePayload = updatePayload;
-		let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload, {new : false})
+		let taskRes = await Task.findOneAndUpdate(findPayload, updatePayload, { new: false })
 		return { data: taskRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndEditTask Error : ", err)
@@ -707,7 +707,7 @@ const exportDataToExcel = async (req, res, next) => {
 
 	let taskRes = await createPayloadAndGetGroupByTask(data)
 	let taskData = taskRes.data
-	if (taskRes.error){
+	if (taskRes.error) {
 		return res.status(500).send(sendResponse(500, '', 'exportDataToExcel', null, req.data.signature))
 	}
 
@@ -722,7 +722,7 @@ const exportDataToExcel = async (req, res, next) => {
 		{ header: "Section Name", key: "section", width: 20 },
 		{ header: "Completed Tasks", key: "completedTasks", width: 15 },
 		{ header: "Total Tasks", key: "totalTasks", width: 10 },
-		{ header: 'Task ReOpened', key: 'isReOpen', width: 13	 },
+		{ header: 'Task ReOpened', key: 'isReOpen', width: 13 },
 		{ header: 'Task Title', key: 'taskTitle', width: 20 },
 		{ header: 'Task status', key: 'status', width: 20 },
 		{ header: 'Task description', key: 'description', width: 25 },
@@ -730,7 +730,7 @@ const exportDataToExcel = async (req, res, next) => {
 		{ header: 'Task CreatedBy', key: 'createdBy', width: 20 },
 		{ header: 'Task AssignedTo', key: 'assignedTo', width: 20 },
 		{ header: 'Task DueDate', key: 'dueDate', width: 20 },
-		{ header: 'Task Rated', key: 'isRated', width: 10 },
+		{ header: 'Task Rated', key: 'isVerified', width: 10 },
 		{ header: 'Task Rating', key: 'rating', width: 10 },
 		{ header: 'Task Created On', key: 'createdAt', width: 20 },
 
@@ -740,7 +740,7 @@ const exportDataToExcel = async (req, res, next) => {
 	// Looping through User data
 	let counter = 1;
 	taskData.forEach((task) => {
-	
+
 		let projectIdName = task._id.projectId;
 		let section = task._id.section;
 
@@ -758,15 +758,15 @@ const exportDataToExcel = async (req, res, next) => {
 			let createdBy = tasks.createdBy.name
 			let createdAt = tasks.createdAt;
 			let dueDate = tasks.dueDate;
-			let isRated = tasks.isRated;
+			let isVerified = tasks.isVerified;
 			let isReOpen = tasks.isReOpen;
 			let rating = tasks.rating;
 
 			// console.log("desc-------",description)
-			if(!description){
+			if (!description) {
 				description = "Description Not Available"
 				task.description = description
-			}else{
+			} else {
 				const $ = cheerio.load(tasks.description);
 				const description = $('body').text();
 				task.description = description
@@ -778,15 +778,15 @@ const exportDataToExcel = async (req, res, next) => {
 			task.createdBy = createdBy
 			task.assignedTo = assignedTo
 			task.dueDate = dueDate
-			task.isRated = isRated
+			task.isVerified = isVerified
 			task.isReOpen = isReOpen
 			task.rating = rating
 			task.createdAt = createdAt
 
-			worksheet.addRow(task,task.taskTitle,task.projectName,task.section,task.lead,task.status,task.assignedTo,task.dueDate,task.isRated,task.rating,task.createdBy,task.createdAt,task.isReOpen); 
+			worksheet.addRow(task, task.taskTitle, task.projectName, task.section, task.lead, task.status, task.assignedTo, task.dueDate, task.isVerified, task.rating, task.createdBy, task.createdAt, task.isReOpen);
 
 			counter++;
-		});	
+		});
 	});
 	// Making first line in excel bold
 	worksheet.getRow(1).eachCell((cell) => {
@@ -794,18 +794,18 @@ const exportDataToExcel = async (req, res, next) => {
 	});
 	try {
 
-        workbook.xlsx.writeBuffer().then(buffer => {
-            // Set the response headers for file download
-            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            res.setHeader('Content-Disposition', 'attachment; filename="users.xlsx"');
-            res.send(buffer);
-        })
-    } catch (err) {
-        console.log(err)
-    return res.status(500).send(sendResponse(500, 'error in file downloading', 'exportDataToExcel', err, req.data.signature))
-    }
+		workbook.xlsx.writeBuffer().then(buffer => {
+			// Set the response headers for file download
+			res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+			res.setHeader('Content-Disposition', 'attachment; filename="users.xlsx"');
+			res.send(buffer);
+		})
+	} catch (err) {
+		console.log(err)
+		return res.status(500).send(sendResponse(500, 'error in file downloading', 'exportDataToExcel', err, req.data.signature))
+	}
 }
-	
+
 exports.exportDataToExcel = exportDataToExcel;
 
 
@@ -813,22 +813,22 @@ const createPayloadAndGetGroupByTask = async function (data) {
 	try {
 		let findData = { "isDeleted": false }
 		let filter = {}
-		let sortTaskOrder = { "_id.projectId": 1, "_id.section": 1, "tasks.dueDate" : 1 }
-		let taskOrder = { "tasks.dueDate" : 1 }
+		let sortTaskOrder = { "_id.projectId": 1, "_id.section": 1, "tasks.dueDate": 1 }
+		let taskOrder = { "tasks.dueDate": 1 }
 		let allowedSortType = process.env.ALLOWED_SORT_BY.split(',')
 		let filterAnd = []
 
 
 		if (JSON.stringify(data.isArchived)) {
 			findData["isArchived"] = JSON.parse(data.isArchived)
-		}else {
+		} else {
 			findData["isArchived"] = false
 		}
-		
-		if(data.filteredProjects){
-			findData._id = { $in : data.filteredProjects.map((el)=>mongoose.Types.ObjectId(el))}
+
+		if (data.filteredProjects) {
+			findData._id = { $in: data.filteredProjects.map((el) => mongoose.Types.ObjectId(el)) }
 		}
-		
+
 		let preserveArrays = false
 		if (data.projectIds || data.projectId) {
 			let projectIds = data.projectIds ? JSON.parse(data.projectIds) : [data.projectId]
@@ -872,7 +872,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 					{ "section.isArchived": JSON.parse(data.isArchived) }
 				]
 			})
-		}else {
+		} else {
 			filterAnd.push({
 				$or: [
 					{ section: { $exists: false } },
@@ -880,14 +880,14 @@ const createPayloadAndGetGroupByTask = async function (data) {
 				]
 			})
 		}
-		
-		if(filterAnd.length){
+
+		if (filterAnd.length) {
 			filter["$and"] = filterAnd
 		}
-		
+
 		let filterDate = {};
 		if (data.fromDate) {
-			filterDate["$gte"] = new Date(data.fromDate)	
+			filterDate["$gte"] = new Date(data.fromDate)
 		}
 
 		if (data.toDate) {
@@ -899,36 +899,36 @@ const createPayloadAndGetGroupByTask = async function (data) {
 		}
 
 		data.sortType = (data.sortType && allowedSortType.includes(data.sortType)) ? data.sortType : 'default'
-		if(data.sortType){
+		if (data.sortType) {
 			let sortOrder = data.sortOrder || 1
 			sortOrder = parseInt(sortOrder)
-			if(sortOrder && [1,-1].includes(sortOrder)){
+			if (sortOrder && [1, -1].includes(sortOrder)) {
 				sortOrder = parseInt(sortOrder)
-			}else{
+			} else {
 				sortOrder = 1
 			}
 			sortTaskOrder = sortOrder > 0 ? CONSTANTS.SORTBY_IN_INCREASING_ORDER[data.sortType] : CONSTANTS.SORTBY_IN_DECREASING_ORDER[data.sortType]
 			taskOrder = sortOrder > 0 ? CONSTANTS.SORTBY_IN_INCREASING_ORDER['due-date'] : CONSTANTS.SORTBY_IN_DECREASING_ORDER['due-date']
 		}
 
-		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+		if (!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
 			let deletedUserIds = await userController.createPayloadAndgetDeletedUsers(data)
 			deletedUserIds = deletedUserIds.data || []
-	
-			if(data.assignedTo){
+
+			if (data.assignedTo) {
 				let assignedTo = JSON.parse(data.assignedTo)
 
-				filter["tasks.assignedTo"] = { $nin : deletedUserIds, $in : assignedTo.map(el => mongoose.Types.ObjectId(el))}
-			}else{
-				filter["tasks.assignedTo"] = { $nin : deletedUserIds }
+				filter["tasks.assignedTo"] = { $nin: deletedUserIds, $in: assignedTo.map(el => mongoose.Types.ObjectId(el)) }
+			} else {
+				filter["tasks.assignedTo"] = { $nin: deletedUserIds }
 			}
 
-			if(data.createdBy){
+			if (data.createdBy) {
 				let createdBy = JSON.parse(data.createdBy)
 
-				filter["tasks.createdBy"] = { $nin : deletedUserIds, $in : createdBy.map(el => mongoose.Types.ObjectId(el))}
-			}else{
-				filter["tasks.createdBy"] = { $nin : deletedUserIds }
+				filter["tasks.createdBy"] = { $nin: deletedUserIds, $in: createdBy.map(el => mongoose.Types.ObjectId(el)) }
+			} else {
+				filter["tasks.createdBy"] = { $nin: deletedUserIds }
 			}
 		}
 
@@ -945,7 +945,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 					"as": "section"
 				}
 			},
-			
+
 			{ "$unwind": { "path": "$section" } },
 			{
 				"$lookup": {
@@ -988,9 +988,9 @@ const createPayloadAndGetGroupByTask = async function (data) {
 					_id: 1,
 					tasks: 1,
 					totalTasks: { $size: "$tasks" },
-					projectId : 1,
-					isArchived : 1,
-					sectionId : 1,
+					projectId: 1,
+					isArchived: 1,
+					sectionId: 1,
 					completedTasks: 1,
 					ongoingTasks: 1,
 					onHoldTasks: 1,
@@ -1029,7 +1029,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
 			populate.push({ path: 'tasks.projectId', model: 'projects', select: 'name' })
 			populate.push({ path: 'tasks.lead', model: 'users', select: 'name profilePicture' })
-			
+
 		}
 		if (data.groupBy == 'status' || data.groupBy == 'sections') {
 			populate.push({ path: 'tasks.projectId', model: 'projects', select: 'name' })
@@ -1072,8 +1072,8 @@ const createPayloadAndGetTask = async function (data) {
 			// "comments.comment" : 1
 		}
 		let populate = [
-			{ path: 'comments', model: 'comments', select: 'comment _id createdAt commentedBy'},
-			{ path: 'ratingComments', model: 'comments', select: 'comment _id createdAt commentedBy'},
+			{ path: 'comments', model: 'comments', select: 'comment _id createdAt commentedBy' },
+			{ path: 'ratingComments', model: 'comments', select: 'comment _id createdAt commentedBy' },
 			{ path: 'createdBy', model: 'users', select: 'name _id' },
 			{ path: 'assignedTo', model: 'users', select: 'name' },
 			{ path: 'projectId', model: 'projects', select: 'name _id' },
@@ -1145,7 +1145,7 @@ const payloadGetTaskStatusAnalytics = async function (data) {
 		//     },
 		// ]
 		// let taskRes = await Task.taskAggregate(aggregate)
-		let taskRes = await Task.taskFindQuery({"isDeleted": false}, { status: 1, projectId: 1, _id: 0, dueDate:1, completedDate:1 })
+		let taskRes = await Task.taskFindQuery({ "isDeleted": false }, { status: 1, projectId: 1, _id: 0, dueDate: 1, completedDate: 1 })
 		let sendData = {}
 		for (let i = 0; i < taskRes.length; i++) {
 			if (!sendData[taskRes[i].projectId]) {
@@ -1156,14 +1156,14 @@ const payloadGetTaskStatusAnalytics = async function (data) {
 					ONHOLD: 0,
 					NOT_STARTED: 0,
 					totalTask: 0,
-					overDueTasks : 0
+					overDueTasks: 0
 				}
 
-		
-			} 
+
+			}
 			sendData[taskRes[i].projectId][taskRes[i].status] += 1
 			sendData[taskRes[i].projectId].totalTask += 1
-			if(taskRes[i].completedDate && taskRes[i].dueDate && new Date(taskRes[i].dueDate) < new Date(taskRes[i].completedDate)){
+			if (taskRes[i].completedDate && taskRes[i].dueDate && new Date(taskRes[i].dueDate) < new Date(taskRes[i].completedDate)) {
 				sendData[taskRes[i].projectId].overDueTasks += 1
 			}
 		}
@@ -1225,7 +1225,7 @@ const rateUserTask = async (req, res, next) => {
 
 	let data = req.data;
 
-	if (!data.taskId || data.rating == null) {
+	if (!data.taskId) {
 		return res.status(400).send(sendResponse(400, "Please send all required Data fields", 'rateUserTask', null, req.data.signature))
 	}
 
@@ -1233,23 +1233,18 @@ const rateUserTask = async (req, res, next) => {
 	if (task.error || !task.data) {
 		return res.status(500).send(sendResponse(500, 'Task Not found..', 'rateUserTask', null, req.data.signature))
 	}
-	if(task.data.ratingAllowed===false){
-		return res.status(400).send(sendResponse(400, 'Rating Not Allowed', 'rateUserTask', null, req.data.signature))
-	}
-	let rating = parseInt(data.rating)
-	if (rating > 6) {
-		return res.status(400).send(sendResponse(400, 'Rating should be less than 6', 'rateUserTask', null, req.data.signature))
-	}
-
+	// if(task.data.ratingAllowed===false){
+	// 	return res.status(400).send(sendResponse(400, 'Rating Not Allowed', 'rateUserTask', null, req.data.signature))
+	// }
 	let currentDate = new Date();
 	let taskDueDate = task.data.dueDate;
 	if (!task.data.completedDate) {
 		return res.status(400).send(sendResponse(400, 'Task is not completed', 'rateUserTask', null, req.data.signature))
 	}
 	taskDueDate = new Date(taskDueDate);
-	
-	let timeDifference = ((currentDate.getTime()-taskDueDate.getTime()) || 1)/(1000 * 60 * 60)
-	if (!task.isRated && timeDifference > parseInt(process.env.ratingTimeAllowed)) {
+
+	let timeDifference = ((currentDate.getTime() - taskDueDate.getTime()) || 1) / (1000 * 60 * 60)
+	if (!task.isVerified && timeDifference > parseInt(process.env.ratingTimeAllowed)) {
 		data.isDelayRated = true
 		// return res.status(400).send(sendResponse(400, 'Oops, You are late in rating..', 'rateUserTask', null, req.data.signature))
 	}
@@ -1303,26 +1298,26 @@ const rateUserTask = async (req, res, next) => {
 	if (updatedOverallRating.error || !updateTaskRating.data) {
 		return res.status(500).send(sendResponse(500, 'Rating couldnot be updated', 'rateUserTask', null, req.data.signature))
 	}
-	if(task.isRated = true){
+	if (task.isVerified = true) {
 		let actionLogData = {
-			actionTaken: 'RERATE_TASK',
+			actionTaken: 'REVERIFY_TASK',
 			actionBy: data.auth.id,
-			userId : taskDetails.assignedTo,
+			userId: taskDetails.assignedTo,
 			taskId: data.taskId,
-			ratingId : updatedOverallRating.data._id
+			ratingId: updatedOverallRating.data._id
 		}
 		data.actionLogData = actionLogData;
 		let addActionLogRes = await actionLogController.addRatingLog(data);
 		if (addActionLogRes.error) {
 			return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
 		}
-	}else{
+	} else {
 		let actionLogData = {
 			actionTaken: 'RATE_TASK',
 			actionBy: data.auth.id,
-			userId : taskDetails.assignedTo,
+			userId: taskDetails.assignedTo,
 			taskId: data.taskId,
-			ratingId : updatedOverallRating.data._id
+			ratingId: updatedOverallRating.data._id
 		}
 		data.actionLogData = actionLogData;
 		let addActionLogRes = await actionLogController.addRatingLog(data);
@@ -1330,7 +1325,7 @@ const rateUserTask = async (req, res, next) => {
 			return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
 		}
 	}
-	
+
 
 
 	return res.status(200).send(sendResponse(200, 'Task Rated', 'rateUserTask', updatedOverallRating.data, req.data.signature));
@@ -1359,10 +1354,10 @@ const createPayloadAndInsertTaskRatingComment = async function (data) {
 			commentedBy: data.auth.id,
 			taggedUsers: data.taggedUsers,
 			comment: data.comment,
-			type : data.type
+			type: data.type
 		}
-		console.log("=======payload for comment=====",payload)
-		let commentRes = await Comments.insertRatingComment(payload)
+		console.log("=======payload for comment=====", payload)
+		let commentRes = await Comments.insertComment(payload)
 		return { data: commentRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndInsertComment Error : ", err)
@@ -1375,15 +1370,14 @@ const updateUserTaskRating = async function (data) {
 
 		let findData = {
 			_id: data.taskId,
-			ratingAllowed:true
+			// ratingAllowed:true
 		}
 		let updateData = {
-			rating: data.rating,
-			isRated: true,
+			isVerified: true,
 			ratedBy: data.auth.id,
 			$addToSet: { ratingComments: data.commentId }
 		}
-		if(data.isDelayRated){
+		if (data.isDelayRated) {
 			updateData.isDelayRated = data.isDelayRated
 		}
 		let options = {
@@ -1404,7 +1398,7 @@ const getAllTasksWithSameDueDate = async function (data) {
 		let findData = {
 			assignedTo: data.taskDetails.assignedTo,
 			dueDate: data.taskDetails.dueDate,
-			ratingAllowed:true
+			ratingAllowed: true
 		}
 
 
@@ -1432,10 +1426,10 @@ const updateOverallRatingDoc = async function (data) {
 			date: date,
 			month: month,
 			year: year,
-			dueDate : dueDate
+			dueDate: dueDate
 		}
 
-		let allRatedTasks = data.allTasksWithSameDueDate.filter(task => task.isRated);
+		let allRatedTasks = data.allTasksWithSameDueDate.filter(task => task.isVerified);
 		let sumOfRating = allRatedTasks.reduce((sum, task) => {
 			return sum + task.rating
 		}, 0);
@@ -1542,39 +1536,39 @@ const getTaskListWithPendingRating = async function (req, res, next) {
 exports.getTaskListWithPendingRating = getTaskListWithPendingRating;
 
 //Get task lists for homepage - Set according to role
-const getTaskListToRate = async function (req, res, next) {
+const getTaskListToVerify = async function (req, res, next) {
 
 	let data = req.data;
 
 	if (!data.projectId || !data.userId || (!data.dueDate && (!data.fromDate || !data.toDate))) {
-		return res.status(400).send(sendResponse(400, 'Missing Params', 'getTaskListToRate', null, req.data.signature))
+		return res.status(400).send(sendResponse(400, 'Missing Params', 'getTaskListToVerify', null, req.data.signature))
 	}
-	data.isRated = false;
+	data.isVerified = false;
 	data.ratingAllowed = true;
-	
+
 	data.status = 'COMPLETED'
 	let tasksLists = await createPayloadAndGetTaskLists(data);
 	if (tasksLists.error) {
-		return res.status(500).send(sendResponse(500, '', 'getTaskListToRate', null, req.data.signature))
+		return res.status(500).send(sendResponse(500, '', 'getTaskListToVerify', null, req.data.signature))
 	}
 
-	return res.status(200).send(sendResponse(200, 'Task List', 'getTaskListToRate', tasksLists.data, req.data.signature));
+	return res.status(200).send(sendResponse(200, 'Task List', 'getTaskListToVerify', tasksLists.data, req.data.signature));
 }
-exports.getTaskListToRate = getTaskListToRate;
+exports.getTaskListToVerify = getTaskListToVerify;
 
 const createPayloadAndGetTaskLists = async function (data) {
 	try {
 
 		let findData = {
 			isDeleted: false,
-			isArchived :  false,
+			isArchived: false,
 		};
 
 		let sortCriteria = {
 
 		}
 		let dateFilters = []
-		if(data.status){
+		if (data.status) {
 			findData.status = data.status
 		}
 
@@ -1596,52 +1590,52 @@ const createPayloadAndGetTaskLists = async function (data) {
 			findData.assignedTo = data.userId
 		}
 
-		if (JSON.stringify(data.isRated)) {
-			findData.isRated = data.isRated
+		if (JSON.stringify(data.isVerified)) {
+			findData.isVerified = data.isVerified
 		}
 
 		if (data.dueDate) {
-			dateFilters.push({dueDate : new Date(data.dueDate)})
+			dateFilters.push({ dueDate: new Date(data.dueDate) })
 		}
 
-		if(data.fromDate){
-			dateFilters.push({dueDate : { $gte: new Date(data.fromDate)}})
+		if (data.fromDate) {
+			dateFilters.push({ dueDate: { $gte: new Date(data.fromDate) } })
 		}
-		if(data.toDate){
-			dateFilters.push({dueDate : { $lte: new Date(data.toDate)}})
+		if (data.toDate) {
+			dateFilters.push({ dueDate: { $lte: new Date(data.toDate) } })
 		}
 
-		if (JSON.stringify(data.pendingRatingTasks)) {
+		if (JSON.stringify(data.pendingVerificationTasks)) {
 			findData.status = "COMPLETED";
-			findData.isRated = false
+			findData.isVerified = false
 		}
 		if (JSON.stringify(data.homePageTaskList)) {
 			sortCriteria.dueDate = 1
 			findData.status = { $ne: "COMPLETED" };
 			findData.assignedTo = data.auth.id
 			let currentDate = (data.currentDate && new Date(data.currentDate)) || new Date(new Date().setUTCHours(18, 29, 59, 999))
-			dateFilters.push({dueDate : { $lte : currentDate }})
+			dateFilters.push({ dueDate: { $lte: currentDate } })
 		}
 		let populate = 'lead assignedTo'
 
-		if(JSON.stringify(data.pendingRatingTasks) || !['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+		if (JSON.stringify(data.pendingVerificationTasks) || !['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
 			let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
-			if(deletedUserData.data){
+			if (deletedUserData.data) {
 				let deletedUserIds = deletedUserData.data || []
-				if(findData.assignedTo){
-					let assignedTo = {$nin : deletedUserIds, $eq : findData.assignedTo }
+				if (findData.assignedTo) {
+					let assignedTo = { $nin: deletedUserIds, $eq: findData.assignedTo }
 					findData.assignedTo = assignedTo
-				}else{
-					findData.assignedTo = { $nin : deletedUserIds}
+				} else {
+					findData.assignedTo = { $nin: deletedUserIds }
 				}
-				findData.createdBy = { $nin : deletedUserIds}
+				findData.createdBy = { $nin: deletedUserIds }
 			}
 		}
 
-		if(dateFilters.length){
+		if (dateFilters.length) {
 			findData['$and'] = dateFilters
 		}
-		let taskList = await Task.taskFindQuery(findData, {}, populate,sortCriteria);
+		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
 	} catch (err) {
@@ -1667,39 +1661,39 @@ const deleteTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, 'No Task Found', 'deleteTask', null, req.data.signature))
 	}
 
-	if (!['SUPER_ADMIN'].includes(data.auth.role) && (fetchTaskById.data.status ==  process.env.TASK_STATUS.split(",")[2] || fetchTaskById.data.isRated)) {
+	if (!['SUPER_ADMIN'].includes(data.auth.role) && (fetchTaskById.data.status == process.env.TASK_STATUS.split(",")[2] || fetchTaskById.data.isVerified)) {
 		return res.status(400).send(sendResponse(400, "Can't deleted completed/rated task", 'deleteTask', null, req.data.signature))
 	}
 
 	data.taskDetails = fetchTaskById.data
-	// if (fetchTaskById.data?.isRated) {
+	// if (fetchTaskById.data?.isVerified) {
 	// 	return res.status(400).send(sendResponse(400, 'Task Already Rated', 'deleteTask', null, req.data.signature))
 	// }
 
 	console.log("==========task delete check")
 	if (!['SUPER_ADMIN'].includes(data.auth.role)) {
-		console.log("==========task delete check for non superadmin, project assinged",data.filteredProjects)
+		console.log("==========task delete check for non superadmin, project assinged", data.filteredProjects)
 		if (fetchTaskById.data.projectId && !data.filteredProjects.includes(fetchTaskById.data.projectId.toString())) {
 			return res.status(400).send(sendResponse(400, 'The Project of this task is no longer assigned to you', 'deleteTask', null, req.data.signature))
-		
-		// if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && (data.auth.id.toString() != fetchTaskById.data.createdBy.toString())) {
-		// 	return res.status(400).send(sendResponse(400, 'You are not allowed to delete tasks created by others', 'deleteTask', null, req.data.signature))
-		// }
-		}else{
+
+			// if (["CONTRIBUTOR", "INTERN"].includes(data.auth.role) && (data.auth.id.toString() != fetchTaskById.data.createdBy.toString())) {
+			// 	return res.status(400).send(sendResponse(400, 'You are not allowed to delete tasks created by others', 'deleteTask', null, req.data.signature))
+			// }
+		} else {
 			console.log("=============project assigned==========")
 
 			let ifAllowedToDeleteTask = await checkifAllowedToDeleteTask(data);
-		
+
 			if (ifAllowedToDeleteTask.error) {
 				return res.status(500).send(sendResponse(500, '', 'deleteTask', null, req.data.signature))
 			}
-		
+
 			if (!ifAllowedToDeleteTask.data.allowed) {
 				return res.status(400).send(sendResponse(401, 'Not Allowed to delete task', 'deleteTask', null, req.data.signature))
 			}
 		}
-	
-	}else{
+
+	} else {
 		console.log("==========task delete by superadmin")
 	}
 
@@ -1712,7 +1706,7 @@ const deleteTask = async (req, res, next) => {
 	let actionLogData = {
 		actionTaken: 'TASK_DELETED',
 		actionBy: data.auth.id,
-		taskId : data.taskId
+		taskId: data.taskId
 	}
 	data.actionLogData = actionLogData;
 	let addActionLogRes = await actionLogController.addTaskLog(data);
@@ -1792,72 +1786,72 @@ const updateTaskStatus = async (req, res, next) => {
 	}
 
 
-	if(fetchTaskById.data.dueDate && data.status == 'COMPLETED'){
-		if(new Date(fetchTaskById.data.dueDate).getTime()< new Date().getTime()){
+	if (fetchTaskById.data.dueDate && data.status == 'COMPLETED') {
+		if (new Date(fetchTaskById.data.dueDate).getTime() < new Date().getTime()) {
 			data.isDelayTask = true
 		}
 	}
 
 	// Task Completion time calculator
-	if(data.status == 'ONHOLD'){
+	if (data.status == 'ONHOLD') {
 		let payload = {
-			taskId:data.taskId,
-			$or: [ { actionTaken:"TASK_ADDED"}, { actionTaken:"TASK_STATUS_UPDATED"} ],
-			new:{status:"ONGOING"}
+			taskId: data.taskId,
+			$or: [{ actionTaken: "TASK_ADDED" }, { actionTaken: "TASK_STATUS_UPDATED" }],
+			new: { status: "ONGOING" }
 		}
-		
-		let previousTask = await getTaskLogs(payload,{},'',{createdAt:-1})
-		if(previousTask.length===0){
-			data.timeTaken = 0 
-		}else{
+
+		let previousTask = await getTaskLogs(payload, {}, '', { createdAt: -1 })
+		if (previousTask.length === 0) {
+			data.timeTaken = 0
+		} else {
 			let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime()
 			const totalSeconds = Math.floor(timetakenDate / 1000);
 			const totalMinutes = Math.floor(totalSeconds / 60);
-			console.log("=====================================",totalMinutes)
-			data.timeTaken = totalMinutes 
-			}
+			console.log("=====================================", totalMinutes)
+			data.timeTaken = totalMinutes
 		}
+	}
 	// Task Completion time calculator
-	if(data.status == 'COMPLETED'){
-		if(fetchTaskById.data.timeTaken==0){
+	if (data.status == 'COMPLETED') {
+		if (fetchTaskById.data.timeTaken == 0) {
 			let payload = {
-				taskId:data.taskId,
-				$or: [ { actionTaken:"TASK_ADDED"}, { actionTaken:"TASK_STATUS_UPDATED"} ],
-				new:{status:"ONGOING"}
+				taskId: data.taskId,
+				$or: [{ actionTaken: "TASK_ADDED" }, { actionTaken: "TASK_STATUS_UPDATED" }],
+				new: { status: "ONGOING" }
 			}
-			let previousTask = await getTaskLogs(payload,{},'',{createdAt:-1})
+			let previousTask = await getTaskLogs(payload, {}, '', { createdAt: -1 })
 			console.log(previousTask)
-			if(previousTask.length===0){
-				data.timeTaken = 0 
-			}else{
+			if (previousTask.length === 0) {
+				data.timeTaken = 0
+			} else {
 				let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime()
 				const totalSeconds = Math.floor(timetakenDate / 1000);
 				const totalMinutes = Math.floor(totalSeconds / 60);
-				console.log("=====================================",totalMinutes)
-				data.timeTaken = totalMinutes 
+				console.log("=====================================", totalMinutes)
+				data.timeTaken = totalMinutes
 			}
-		}else{
+		} else {
 			let payload = {
-				taskId:data.taskId,
-				$or: [ { actionTaken:"TASK_ADDED"}, { actionTaken:"TASK_STATUS_UPDATED"} ],
-				new:{status:"ONGOING"}
+				taskId: data.taskId,
+				$or: [{ actionTaken: "TASK_ADDED" }, { actionTaken: "TASK_STATUS_UPDATED" }],
+				new: { status: "ONGOING" }
 			}
-			let previousTask = await getTaskLogs(payload,{},'',{createdAt:-1})
-				let previousTime = fetchTaskById.data.timeTaken
-				let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime() 
-				const totalSeconds = Math.floor(timetakenDate / 1000);
-				const totalMinutes = Math.floor(totalSeconds / 60);
-				let calculatedMinutes = previousTime + totalMinutes
-				data.timeTaken = calculatedMinutes
-				
-			}
-		}
+			let previousTask = await getTaskLogs(payload, {}, '', { createdAt: -1 })
+			let previousTime = fetchTaskById.data.timeTaken
+			let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime()
+			const totalSeconds = Math.floor(timetakenDate / 1000);
+			const totalMinutes = Math.floor(totalSeconds / 60);
+			let calculatedMinutes = previousTime + totalMinutes
+			data.timeTaken = calculatedMinutes
 
-	if(!fetchTaskById.data.dueDate && data.status == 'COMPLETED'){
+		}
+	}
+
+	if (!fetchTaskById.data.dueDate && data.status == 'COMPLETED') {
 		return res.status(400).send(sendResponse(401, "Can't complete task without dueDate", 'updateTaskStatus', null, req.data.signature))
 	}
 
-	if (fetchTaskById.data?.isRated) {
+	if (fetchTaskById.data?.isVerified) {
 		return res.status(400).send(sendResponse(400, 'Task Already Rated', 'updateTaskStatus', null, req.data.signature))
 	}
 
@@ -1876,17 +1870,17 @@ const updateTaskStatus = async (req, res, next) => {
 		return res.status(500).send(sendResponse(500, '', 'updateTaskStatus', null, req.data.signature))
 	}
 
-	if(data.status && data.status != taskRes.data.status){
+	if (data.status && data.status != taskRes.data.status) {
 		let actionLogData = {
 			actionTaken: 'TASK_STATUS_UPDATED',
 			actionBy: data.auth.id,
-			taskId : data.taskId,
-			previous : { status : taskRes && taskRes.data.status},
-			new : { status : data.status }
-		} 
+			taskId: data.taskId,
+			previous: { status: taskRes && taskRes.data.status },
+			new: { status: data.status }
+		}
 		data.actionLogData = actionLogData;
 		let addActionLogRes = await actionLogController.addTaskLog(data);
-	
+
 		if (addActionLogRes.error) {
 			return res.status(500).send(sendResponse(500, '', 'updateTaskStatus', null, req.data.signature))
 		}
@@ -1907,21 +1901,21 @@ const createPayloadAndUpdateTaskStatus = async function (data) {
 			}
 		}
 
-		if(data.status == 'ONHOLD'){
+		if (data.status == 'ONHOLD') {
 			updatePayload['$set'] = {
-					status: data.status,
-					completedDate : new Date(),
-					isDelayTask : data.isDelayTask || false,
-					timeTaken: data.timeTaken
-				}
+				status: data.status,
+				completedDate: new Date(),
+				isDelayTask: data.isDelayTask || false,
+				timeTaken: data.timeTaken
+			}
 		}
-		if(data.status == 'COMPLETED'){
+		if (data.status == 'COMPLETED') {
 			updatePayload['$set'] = {
-					status: data.status,
-					completedDate : new Date(),
-					isDelayTask : data.isDelayTask || false,
-					timeTaken: data.timeTaken
-				}
+				status: data.status,
+				completedDate: new Date(),
+				isDelayTask: data.isDelayTask || false,
+				timeTaken: data.timeTaken
+			}
 		}
 		let options = {
 			new: false
@@ -1970,8 +1964,8 @@ const commentUserTask = async (req, res, next) => {
 	let actionLogData = {
 		actionTaken: "TASK_COMMENT",
 		actionBy: data.auth.id,
-		taskId : data.taskId,
-		commentId : data.commentId
+		taskId: data.taskId,
+		commentId: data.commentId
 	}
 	data.actionLogData = actionLogData;
 	let addActionLogRes = await actionLogController.addTaskLog(data);
@@ -2011,8 +2005,8 @@ const updateTaskVerificationAndAddComment = async function (data) {
 			_id: data.taskId
 		}
 		let updateData = {
-			status:data.status,
-			$addToSet: { verificationComments: data.verificationsComments}
+			status: data.status,
+			$addToSet: { verificationComments: data.verificationsComments }
 		}
 		let options = {
 			new: true
@@ -2031,19 +2025,19 @@ const checkIfLeadAssignedProject = async function (data) {
 	try {
 
 		let findAdmins = {
-			_id : { $in : data.tasklead || []},
-			role : { $nin : ['ADMIN']}
+			_id: { $in: data.tasklead || [] },
+			role: { $nin: ['ADMIN'] }
 		}
-		let userRes = await User.getDistinct("_id",findAdmins)
+		let userRes = await User.getDistinct("_id", findAdmins)
 		let findData = {
 			_id: data.projectId
 		}
 
-		if(userRes && userRes.length){
-			data.findDeletedUsers = { _id : { $in : userRes }, isDeleted : true}
+		if (userRes && userRes.length) {
+			data.findDeletedUsers = { _id: { $in: userRes }, isDeleted: true }
 			let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
 			let deletedUserIds = deletedUserData.data || []
-			findData.managedBy = { $in: userRes, $nin : deletedUserIds}
+			findData.managedBy = { $in: userRes, $nin: deletedUserIds }
 		}
 		let getProject = await Project.findSpecificProject(findData);
 		if (getProject) {
@@ -2078,7 +2072,7 @@ const createPayloadAndGetTaskComments = async function (data) {
 	try {
 
 		let findData = {
-			userId : data.userId,
+			userId: data.userId,
 			isDeleted: false
 		};
 
@@ -2089,7 +2083,7 @@ const createPayloadAndGetTaskComments = async function (data) {
 
 		if (data.projectId) {
 			findData.projectId = data.projectId
-		} 
+		}
 
 		if (data.dueDate) {
 			findData.dueDate = new Date(new Date().setUTCHours(18, 29, 59, 000))
@@ -2123,43 +2117,43 @@ const createPayloadAndGetTodayTaskLists = async function (data) {
 	try {
 
 		let dateFilter = {};
-		if(data.fromDate){
+		if (data.fromDate) {
 			dateFilter['$gte'] = new Date(data.fromDate)
 		}
-		if(data.toDate){
+		if (data.toDate) {
 			dateFilter['$lte'] = new Date(data.toDate)
 		}
-		
+
 		let findData = {
 			isDeleted: false,
-			isArchived :  false,
+			isArchived: false,
 		};
 
-		if(data.fromDate || data.toDate){
+		if (data.fromDate || data.toDate) {
 			findData.dueDate = dateFilter
 		}
 
-		if(!['SUPER_ADMIN'].includes(data.auth.role)){
-			findData.projectId = { $in : data.filteredProjects || []}
+		if (!['SUPER_ADMIN'].includes(data.auth.role)) {
+			findData.projectId = { $in: data.filteredProjects || [] }
 		}
-		if(!['SUPER_ADMIN', 'ADMIN',"GUEST"].includes(data.auth.role)){
+		if (!['SUPER_ADMIN', 'ADMIN', "GUEST"].includes(data.auth.role)) {
 			findData["$or"] = [
 				{ createdBy: data.auth.id },
 				{ assignedTo: data.auth.id },
 				{ lead: data.auth.id }
 			]
 			let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
-			if(deletedUserData.data){
+			if (deletedUserData.data) {
 				let deletedUserIds = deletedUserData.data || []
-				findData.assignedTo = { $nin : deletedUserIds}
-				findData.createdBy = { $nin : deletedUserIds}
+				findData.assignedTo = { $nin: deletedUserIds }
+				findData.createdBy = { $nin: deletedUserIds }
 			}
 		}
 
-		
+
 		let populate = 'assignedTo'
-		
-		let sortCriteria = { dueDate : 1}
+
+		let sortCriteria = { dueDate: 1 }
 		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
@@ -2187,28 +2181,28 @@ const createPayloadAndGetTodayTaskListsByUserId = async function (data) {
 	try {
 
 		let dateFilter = {};
-		if(data.fromDate){
+		if (data.fromDate) {
 			dateFilter['$gte'] = new Date(data.fromDate)
 		}
-		if(data.toDate){
+		if (data.toDate) {
 			dateFilter['$lte'] = new Date(data.toDate)
 		}
-		
+
 		let findData = {
-			assignedTo:data.userId,
+			assignedTo: data.userId,
 			isDeleted: false,
-			isArchived :  false,
+			isArchived: false,
 		};
 
-		if(data.fromDate || data.toDate){
+		if (data.fromDate || data.toDate) {
 			findData.createdAt = dateFilter
 		}
 
 		let populate = 'assignedTo verificationComments'
-		
-		let sortCriteria = { createdAt : 1}
-		
-		let taskList = await Task.taskFindQuery(findData, {}, populate,sortCriteria);
+
+		let sortCriteria = { createdAt: 1 }
+
+		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
 	} catch (err) {
@@ -2236,20 +2230,20 @@ const createPayloadAndGetOverDueTasks = async function (data) {
 
 		let findData = {
 			isDeleted: false,
-			isArchived :  false,
-			status : {$nin : ['ONHOLD','COMPLETED']}, dueDate : { $lte : new Date(new Date().toUTCString())}
+			isArchived: false,
+			status: { $nin: ['ONHOLD', 'COMPLETED'] }, dueDate: { $lte: new Date(new Date().toUTCString()) }
 		};
-		
-		if(data.assignedTo){
+
+		if (data.assignedTo) {
 			findData.assignedTo = data.assignedTo
 		}
 
-		if(!['SUPER_ADMIN'].includes(data.auth.role) && data.filteredProjects){
-			findData.projectId = { $in : data.filteredProjects }
+		if (!['SUPER_ADMIN'].includes(data.auth.role) && data.filteredProjects) {
+			findData.projectId = { $in: data.filteredProjects }
 		}
-		
+
 		let populate = 'lead assignedTo'
-		let sortCriteria = { dueDate : 1}
+		let sortCriteria = { dueDate: 1 }
 		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
@@ -2264,14 +2258,14 @@ const createPayloadAndGetPendingRatingTasks = async function (data) {
 
 		let findData = {
 			isDeleted: false,
-			ratingAllowed:true,
-			isArchived :  false,
-			status : "COMPLETED",
-			isRated : false
+			ratingAllowed: true,
+			isArchived: false,
+			status: "COMPLETED",
+			isVerified: false
 		};
 
-		if(data.memberId){
-			findData.assignedTo = data.memberId 
+		if (data.memberId) {
+			findData.assignedTo = data.memberId
 		}
 		//filter tasks of only those project which are assigned to LEAD, CONTRIBUTOR, INTERN
 		if (!['SUPER_ADMIN'].includes(data.auth.role)) {
@@ -2289,19 +2283,19 @@ const createPayloadAndGetPendingRatingTasks = async function (data) {
 			findData.lead = data.auth.id
 		}
 
-		
+
 		let populate = 'lead assignedTo'
 
-		if(!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)){
+		if (!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
 			let deletedUserData = await userController.createPayloadAndgetDeletedUsers(data)
-			if(deletedUserData.data){
+			if (deletedUserData.data) {
 				let deletedUserIds = deletedUserData.data || []
-				findData.assignedTo = { $nin : deletedUserIds}
-				findData.createdBy = { $nin : deletedUserIds}
+				findData.assignedTo = { $nin: deletedUserIds }
+				findData.createdBy = { $nin: deletedUserIds }
 			}
 		}
 
-		let sortCriteria = { dueDate : 1}
+		let sortCriteria = { dueDate: 1 }
 		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
@@ -2316,47 +2310,47 @@ const checkLeadAndAssigneeForTask = async function (data) {
 	try {
 
 		let findLead = {
-			_id : { $in : data.tasklead || []}
+			_id: { $in: data.tasklead || [] }
 		}
 		let leadRes = await User.userfindOneQuery(findLead)
-		if(!leadRes){
+		if (!leadRes) {
 			return { data: { allowed: false }, error: false }
 		}
 		let selectedLeadRole = leadRes.role
 
 		let findAssignee = {
-			_id : { $in : [data.assignedTo]}
+			_id: { $in: [data.assignedTo] }
 		}
 		let assigneeRes = await User.userfindOneQuery(findAssignee)
-		if(!assigneeRes){
+		if (!assigneeRes) {
 			return { data: { allowed: false }, error: false }
 		}
 		let selectedAssigneeRole = assigneeRes.role
 
 		let selectedLeadRolePriority = utilities.fetchRolePriority(selectedLeadRole)
-		if(selectedLeadRolePriority.error || !selectedLeadRolePriority.data){
+		if (selectedLeadRolePriority.error || !selectedLeadRolePriority.data) {
 			return { data: { allowed: false }, error: false }
 		}
 		selectedLeadRolePriority = parseInt(selectedLeadRolePriority.data)
 
 		let selectedAssigneeRolePriority = utilities.fetchRolePriority(selectedAssigneeRole)
-		if(selectedAssigneeRolePriority.error || !selectedAssigneeRolePriority.data){
+		if (selectedAssigneeRolePriority.error || !selectedAssigneeRolePriority.data) {
 			return { data: { allowed: false }, error: false }
 		}
 		selectedAssigneeRolePriority = parseInt(selectedAssigneeRolePriority.data)
 
 		let authRolePriority = utilities.fetchRolePriority(data.auth.role)
-		if(authRolePriority.error || !authRolePriority.data){
+		if (authRolePriority.error || !authRolePriority.data) {
 			return { data: { allowed: false }, error: false }
 		}
 		authRolePriority = parseInt(authRolePriority.data)
 
-		console.log("============selected lead/asigned/auth=======",selectedLeadRolePriority,selectedAssigneeRolePriority, authRolePriority )
+		console.log("============selected lead/asigned/auth=======", selectedLeadRolePriority, selectedAssigneeRolePriority, authRolePriority)
 
-		if(authRolePriority < selectedAssigneeRolePriority || selectedLeadRolePriority < selectedAssigneeRolePriority || leadRes._id.toString() == assigneeRes._id.toString() ){
+		if (authRolePriority < selectedAssigneeRolePriority || selectedLeadRolePriority < selectedAssigneeRolePriority || leadRes._id.toString() == assigneeRes._id.toString()) {
 			return { data: { allowed: false }, error: false }
 		}
-	
+
 		return { data: { allowed: true }, error: false }
 
 
@@ -2389,28 +2383,28 @@ const checkifAllowedToEditTask = async function (data) {
 
 		let taskDetails = data.taskDetails
 		let taskCreatedByRole = (taskDetails.createdBy && taskDetails.createdBy.role) || null
-		if(!taskCreatedByRole){
+		if (!taskCreatedByRole) {
 			return { data: { allowed: false }, error: false }
 		}
 
 		let taskCreatedRolePriority = utilities.fetchRolePriority(taskCreatedByRole)
-		if(taskCreatedRolePriority.error || !taskCreatedRolePriority.data){
+		if (taskCreatedRolePriority.error || !taskCreatedRolePriority.data) {
 			return { data: { allowed: false }, error: false }
 		}
 		taskCreatedRolePriority = parseInt(taskCreatedRolePriority.data)
 
 		let authRolePriority = utilities.fetchRolePriority(data.auth.role)
-		if(authRolePriority.error || !authRolePriority.data){
+		if (authRolePriority.error || !authRolePriority.data) {
 			return { data: { allowed: false }, error: false }
 		}
 		authRolePriority = parseInt(authRolePriority.data)
 
-		console.log("============created/auth=======",taskCreatedRolePriority, authRolePriority )
+		console.log("============created/auth=======", taskCreatedRolePriority, authRolePriority)
 
-		if(authRolePriority < taskCreatedRolePriority){
+		if (authRolePriority < taskCreatedRolePriority) {
 			return { data: { allowed: false }, error: false }
 		}
-	
+
 		return { data: { allowed: true }, error: false }
 
 
@@ -2424,45 +2418,47 @@ const checkifAllowedToUpdateTaskStatus = async function (data) {
 
 	try {
 
-		if(['SUPER_ADMIN'].includes(data.auth.role)){
+		if (['SUPER_ADMIN'].includes(data.auth.role)) {
 			return { data: { allowed: true }, error: false }
 		}
 
-		let findTask = {_id : data.taskId, isDeleted : false, isArchived : false, $or: [
-			{ createdBy: data.auth.id },
-			{ assignedTo: data.auth.id },
-			{ lead: data.auth.id }
-		]}
+		let findTask = {
+			_id: data.taskId, isDeleted: false, isArchived: false, $or: [
+				{ createdBy: data.auth.id },
+				{ assignedTo: data.auth.id },
+				{ lead: data.auth.id }
+			]
+		}
 
 		let taskDetails = await Task.taskFindOneQuery(findTask, {}, '');
 
-		if(!taskDetails){
-			return { data: { allowed: false, message : "You're not part of this task to update status" }, error: false }
+		if (!taskDetails) {
+			return { data: { allowed: false, message: "You're not part of this task to update status" }, error: false }
 		}
- 
+
 		let taskAssigneeRole = (data.taskDetails && data.taskDetails.assignedTo && data.taskDetails.assignedTo.role) || null
-		if(!taskAssigneeRole){
+		if (!taskAssigneeRole) {
 			return { data: { allowed: false }, error: false }
 		}
 
 		let taskAssigneeRolePriority = utilities.fetchRolePriority(taskAssigneeRole)
-		if(taskAssigneeRolePriority.error || !taskAssigneeRolePriority.data){
+		if (taskAssigneeRolePriority.error || !taskAssigneeRolePriority.data) {
 			return { data: { allowed: false }, error: false }
 		}
 		taskAssigneeRolePriority = parseInt(taskAssigneeRolePriority.data)
 
 		let authRolePriority = utilities.fetchRolePriority(data.auth.role)
-		if(authRolePriority.error || !authRolePriority.data){
+		if (authRolePriority.error || !authRolePriority.data) {
 			return { data: { allowed: false }, error: false }
 		}
 		authRolePriority = parseInt(authRolePriority.data)
 
-		console.log("============created/auth=======",taskAssigneeRolePriority, authRolePriority )
+		console.log("============created/auth=======", taskAssigneeRolePriority, authRolePriority)
 
-		if(authRolePriority < taskAssigneeRolePriority){
+		if (authRolePriority < taskAssigneeRolePriority) {
 			return { data: { allowed: false }, error: false }
 		}
-	
+
 		return { data: { allowed: true }, error: false }
 
 
@@ -2476,50 +2472,52 @@ const checkifAllowedToDeleteTask = async function (data) {
 
 	try {
 
-		if(['SUPER_ADMIN'].includes(data.auth.role)){
+		if (['SUPER_ADMIN'].includes(data.auth.role)) {
 			return { data: { allowed: true }, error: false }
 		}
 
 		let authRolePriority = utilities.fetchRolePriority(data.auth.role)
-		if(authRolePriority.error || !authRolePriority.data){
+		if (authRolePriority.error || !authRolePriority.data) {
 			return { data: { allowed: false }, error: false }
 		}
 		authRolePriority = parseInt(authRolePriority.data)
 
-		console.log("============authRolePriority=========",authRolePriority)
-		
-		
+		console.log("============authRolePriority=========", authRolePriority)
+
+
 		let taskData = data.taskDetails
 		let createdBy = (taskData.createdBy && taskData.createdBy._id) || null
 		let creatorRole = (taskData.createdBy && taskData.createdBy.role) || null
 
 		let taskCreatorRolePriority = utilities.fetchRolePriority(creatorRole)
-		if(taskCreatorRolePriority.error || !taskCreatorRolePriority.data){
+		if (taskCreatorRolePriority.error || !taskCreatorRolePriority.data) {
 			return { data: { allowed: false }, error: false }
 		}
 		taskCreatorRolePriority = parseInt(taskCreatorRolePriority.data)
-		console.log("============creator id/role=========",createdBy, creatorRole, taskCreatorRolePriority)
+		console.log("============creator id/role=========", createdBy, creatorRole, taskCreatorRolePriority)
 
 
-		let findTask = {_id : data.taskId, isDeleted : false, isArchived : false, $or: [
-			{ createdBy: data.auth.id },
-			{ assignedTo: data.auth.id },
-			{ lead: data.auth.id }
-		]}
+		let findTask = {
+			_id: data.taskId, isDeleted: false, isArchived: false, $or: [
+				{ createdBy: data.auth.id },
+				{ assignedTo: data.auth.id },
+				{ lead: data.auth.id }
+			]
+		}
 
 		let taskAssignedDetail = await Task.taskFindOneQuery(findTask, {}, '');
 		//check delete authority
-		if(createdBy.toString() != data.auth.id.toString()){
+		if (createdBy.toString() != data.auth.id.toString()) {
 
 			console.log("==========creator and editor not same")
-			if(authRolePriority > taskCreatorRolePriority){
+			if (authRolePriority > taskCreatorRolePriority) {
 
 				return { data: { allowed: true }, error: false }
-			}else{
+			} else {
 				return { data: { allowed: false }, error: false }
 			}
 		}
-	
+
 		return { data: { allowed: true }, error: false }
 
 
@@ -2540,15 +2538,15 @@ const getTeamTasksList = async function (req, res, next) {
 	data.assignedTo = data.userId
 
 	let tasksLists = null;
-	if(data.todayTasks){
+	if (data.todayTasks) {
 		tasksLists = await createPayloadAndGetTeamTasksList(data);
-	}else if(data.overDueTasks){
+	} else if (data.overDueTasks) {
 		tasksLists = await createPayloadAndGetOverDueTasks(data);
-	}else if(data.pendingRatingTasks){
+	} else if (data.pendingRatingTasks) {
 		tasksLists = await createPayloadAndGetTeamPendingRatingTasks(data);
-	}else if(data.isDelayRated){
+	} else if (data.isDelayRated) {
 		tasksLists = await createPayloadAndGetTeamLateRatedTasksList(data);
-	}else if(data.adhocTasks){
+	} else if (data.adhocTasks) {
 		tasksLists = await createPayloadAndGetTeamAdhocTasksList(data);
 	}
 
@@ -2565,23 +2563,23 @@ exports.getTeamTasksList = getTeamTasksList;
 const createPayloadAndGetTeamTasksList = async function (data) {
 	try {
 
-		let currentDate =  (data.currentDate && new Date(data.currentDate)) || new Date(new Date().toUTCString())
+		let currentDate = (data.currentDate && new Date(data.currentDate)) || new Date(new Date().toUTCString())
 		let findData = {
 			isDeleted: false,
-			isArchived :  false,
-			dueDate : { $gte : currentDate }
+			isArchived: false,
+			dueDate: { $gte: currentDate }
 		};
-		
-		if(data.assignedTo){
+
+		if (data.assignedTo) {
 			findData.assignedTo = data.assignedTo
 		}
-		
-		if(!['SUPER_ADMIN'].includes(data.auth.role) && data.filteredProjects){
-			findData.projectId = { $in : data.filteredProjects }
+
+		if (!['SUPER_ADMIN'].includes(data.auth.role) && data.filteredProjects) {
+			findData.projectId = { $in: data.filteredProjects }
 		}
 
 		let populate = 'lead assignedTo'
-		let sortCriteria = { dueDate : 1}
+		let sortCriteria = { dueDate: 1 }
 		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
@@ -2596,12 +2594,12 @@ const createPayloadAndGetTeamPendingRatingTasks = async function (data) {
 
 		let findData = {
 			isDeleted: false,
-			isArchived :  false,
-			status : "COMPLETED",
-			isRated : false
+			isArchived: false,
+			status: "COMPLETED",
+			isVerified: false
 		};
 
-		if(data.assignedTo){
+		if (data.assignedTo) {
 			findData.assignedTo = data.assignedTo
 		}
 
@@ -2609,10 +2607,10 @@ const createPayloadAndGetTeamPendingRatingTasks = async function (data) {
 		if (!['SUPER_ADMIN'].includes(data.auth.role)) {
 			findData.projectId = { $in: data.filteredProjects || [] }
 		}
-		
+
 		let populate = 'lead assignedTo'
 
-		let sortCriteria = { dueDate : 1}
+		let sortCriteria = { dueDate: 1 }
 		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
@@ -2628,20 +2626,20 @@ const createPayloadAndGetTeamLateRatedTasksList = async function (data) {
 
 		let findData = {
 			isDeleted: false,
-			isArchived :  false,
-			isDelayRated : true
+			isArchived: false,
+			isDelayRated: true
 		};
 
-		if(data.assignedTo){
+		if (data.assignedTo) {
 			findData.assignedTo = data.assignedTo
 		}
-		
-		if(!['SUPER_ADMIN'].includes(data.auth.role) && data.filteredProjects){
-			findData.projectId = { $in : data.filteredProjects }
+
+		if (!['SUPER_ADMIN'].includes(data.auth.role) && data.filteredProjects) {
+			findData.projectId = { $in: data.filteredProjects }
 		}
 
 		let populate = 'lead assignedTo'
-		let sortCriteria = { dueDate : 1}
+		let sortCriteria = { dueDate: 1 }
 		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
@@ -2656,22 +2654,22 @@ const createPayloadAndGetTeamAdhocTasksList = async function (data) {
 
 		let findData = {
 			isDeleted: false,
-			isArchived :  false,
-			status : 'COMPLETED'
+			isArchived: false,
+			status: 'COMPLETED'
 		};
 
-		let projectFilter = [{ projectId : process.env.adhocProjectId }]
-		if(data.assignedTo){
+		let projectFilter = [{ projectId: process.env.adhocProjectId }]
+		if (data.assignedTo) {
 			findData.assignedTo = data.assignedTo
 		}
-		
-		if(!['SUPER_ADMIN'].includes(data.auth.role) && data.filteredProjects){
-			projectFilter.push({projectId : { $in : data.filteredProjects}})
+
+		if (!['SUPER_ADMIN'].includes(data.auth.role) && data.filteredProjects) {
+			projectFilter.push({ projectId: { $in: data.filteredProjects } })
 		}
-		
+
 		findData['$and'] = projectFilter
 		let populate = 'lead assignedTo'
-		let sortCriteria = { dueDate : 1}
+		let sortCriteria = { dueDate: 1 }
 		let taskList = await Task.taskFindQuery(findData, {}, populate, sortCriteria);
 		return { data: taskList, error: false }
 
@@ -2692,15 +2690,15 @@ const getTeamTasksCountReport = async function (req, res, next) {
 	data.assignedTo = data.userId
 
 	let tasksLists = null;
-	if(data.todayTasks){
+	if (data.todayTasks) {
 		tasksLists = await createPayloadAndGetTeamTasksList(data);
-	}else if(data.overDueTasks){
+	} else if (data.overDueTasks) {
 		tasksLists = await createPayloadAndGetOverDueTasks(data);
-	}else if(data.pendingRatingTasks){
+	} else if (data.pendingRatingTasks) {
 		tasksLists = await createPayloadAndGetTeamPendingRatingTasks(data);
-	}else if(data.isDelayRated){
+	} else if (data.isDelayRated) {
 		tasksLists = await createPayloadAndGetTeamLateRatedTasksList(data);
-	}else if(data.adhocTasks){
+	} else if (data.adhocTasks) {
 		tasksLists = await createPayloadAndGetTeamAdhocTasksList(data);
 	}
 
