@@ -52,7 +52,7 @@ router.get("/v1/list/pending/rating", [authenticator, filterProjects], getTaskLi
 router.get("/v1/list/for/rating", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], getTaskListToVerify);
 
 /**Verify Task  */
-router.post("/v1/verify", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], verifyUserTask);
+router.patch("/v1/verify", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD"]), filterProjects], verifyUserTask);
 
 //Delete task API
 router.patch("/v1/delete", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", "LEAD", "CONTRIBUTOR"]), filterProjects], deleteTask);
