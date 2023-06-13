@@ -1224,7 +1224,7 @@ const verifyUserTask = async (req, res, next) => {
 	if (addActionLogRes.error) {
 		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
 	}
-	return res.status(200).send(sendResponse(200, 'Task Rated', 'verifyUserTask', updatedOverallRating.data, req.data.signature));
+	return res.status(200).send(sendResponse(200, 'Task Rated', 'verifyUserTask', null, req.data.signature));
 }
 exports.verifyUserTask = verifyUserTask;
 
