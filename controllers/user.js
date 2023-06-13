@@ -318,7 +318,7 @@ const assignManager = async (req, res, next) => {
         return res.status(500).send(sendResponse(500, 'Something Went Wrong', 'assignManager', null, req.data.signature))
     }
 
-    return res.status(200).send(sendResponse(200, 'Profile updated', 'assignManager', userRes.data, req.data.signature))
+    return res.status(200).send(sendResponse(200, 'Manager assigned successfully!', 'assignManager', userRes.data, req.data.signature))
 }
 exports.assignManager = assignManager
 
