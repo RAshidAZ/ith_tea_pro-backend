@@ -402,6 +402,7 @@ const reopenUserTask = async (req, res, next) => {
 	}
 
 	if (data.dueDate && !validator.isISO8601(data.dueDate) && validator.isDate(data.dueDate)) {
+		console.log("Invalid date----------------------------------------------------------------", data.dueDate)
 		delete data.dueDate
 	}
 	let task = await getTaskDetails(data);
@@ -410,7 +411,7 @@ const reopenUserTask = async (req, res, next) => {
 	if (task.error || !task.data) {
 		return res.status(400).send(sendResponse(400, 'Task Not found..', 'reopenUserTask', null, req.data.signature))
 	}
-	if (!task.data.status == 'COMPLETED') {
+	if (task.data.status != 'COMPLETED') {
 		return res.status(400).send(sendResponse(400, 'Task is not Completed', 'reopenUserTask', null, req.data.signature))
 	}
 
@@ -419,20 +420,14 @@ const reopenUserTask = async (req, res, next) => {
 	}
 
 	if (!['SUPER_ADMIN', 'ADMIN', 'LEAD'].includes(data.auth.role) && task.data.status && task.data.status == process.env.TASK_STATUS.split(",")[2]) {
-		return res.status(400).send(sendResponse(400, "Can't edit completed task", 'reopenUserTask', null, req.data.signature))
+		return res.status(400).send(sendResponse(400, "You're not allowed to perform this action.", 'reopenUserTask', null, req.data.signature))
 	}
-	if (task.data.dueDate && data.status == 'COMPLETED') {
-		if (new Date(task.data.dueDate).getTime() < new Date().getTime()) {
-			data.isDelayTask = true
-		}
-	}
+	
 	let findPayload = {
 		_id: data.taskId
 	}
 	let updatePayload = {
-		rating: 0,
 		isReOpen: true
-		// dueDate:null
 	}
 	let options = {
 		new: true
@@ -443,42 +438,8 @@ const reopenUserTask = async (req, res, next) => {
 	if (taskRes.error) {
 		return res.status(500).send(sendResponse(500, '', 'editUserTask', null, req.data.signature))
 	}
-	if (task.data.isVerified == true) {
-		data.taskDetails = {
 
-		}
-		data.taskDetails.assignedTo = taskRes.assignedTo
-		console.log(task.data.dueDate)
-		data.taskDetails.dueDate = task.data.dueDate
-
-		let allTasksWithSameDueDate = await getAllTasksWithSameDueDate(data);
-		console.log("allTasksWithSameDueDate=====", allTasksWithSameDueDate)
-		data.allTasksWithSameDueDate = allTasksWithSameDueDate.data;
-
-
-		data.taskDetails.dueDate = task.data.dueDate
-		console.log("this due date is we are gettng", data.taskDetails.dueDate)
-
-		let updatedOverallRating = await updateOverallRatingDoc(data);
-		console.log("upadte===", updatedOverallRating)
-
-		if (updatedOverallRating.error) {
-			return res.status(500).send(sendResponse(500, 'Rating couldnot be updated', 'verifyUserTask', null, req.data.signature))
-		}
-	}
-	taskRes.dueDate = data.dueDate
-
-	// due date resetting here because of average rating updation
-	let dueDateFindPayload = {
-		_id: taskRes.id
-	}
-	let dueDateUpdatePayload = {
-		dueDate: null
-	}
-	let dueOptions = {
-		new: true
-	}
-	let resetDueDate = await Task.findOneAndUpdate(dueDateFindPayload, dueDateUpdatePayload, dueOptions)
+	taskRes.isReOpen = true
 	let insertNewTask = await createPayloadAndInsertReOpenTask(taskRes)
 	if (insertNewTask.error || !insertNewTask.data) {
 		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
@@ -488,12 +449,11 @@ const reopenUserTask = async (req, res, next) => {
 		actionTaken: 'REOPEN_TASK',
 		actionBy: data.auth.id,
 		taskId: data.taskId,
-		correspondingTaskId: insertNewTask.data.id,
+		correspondingTaskId: insertNewTask.data._id,
 	}
 
 	if (data.reason) {
 		reason = `REOPEN_TASK: ${data.reason}`
-
 		actionLogData.reason = reason
 	}
 	data.actionLogData = actionLogData;
@@ -519,7 +479,7 @@ const createPayloadAndInsertReOpenTask = async function (taskRes) {
 			createdBy: taskRes.createdBy,    //TODO: Change after auth is updated
 			assignedTo: taskRes.assignedTo,
 			dueDate: taskRes.dueDate,
-			// completedDate: taskRes.completedDate,
+			isReOpen: taskRes.isReOpen,
 			priority: taskRes.priority,
 			lead: taskRes.lead
 		}
