@@ -893,6 +893,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
 			populate.push({ path: 'tasks.assignedTo', model: 'users', select: 'name profilePicture' })
 			populate.push({ path: 'tasks.lead', model: 'users', select: 'name profilePicture' })
+			populate.push({ path: 'tasks.verificationComments', model: 'comments' })
 		}
 		if (data.groupBy == 'projectId') {
 			// populate.push({ path: '_id', model: 'projects', select: 'name' })
@@ -912,6 +913,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			populate.push({ path: 'tasks.createdBy', model: 'users', select: 'name' })
 			populate.push({ path: 'tasks.projectId', model: 'projects', select: 'name' })
 			populate.push({ path: 'tasks.lead', model: 'users', select: 'name profilePicture' })
+			populate.push({ path: 'tasks.verificationComments', model: 'comments' })
 
 		}
 		if (data.groupBy == 'status' || data.groupBy == 'sections') {
