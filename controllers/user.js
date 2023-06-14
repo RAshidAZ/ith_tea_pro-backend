@@ -340,7 +340,7 @@ const createPayloadAndEditUserDetails = async function (data) {
         if (data.managerIds) {
             updatePayload.managerIds = data.managerIds
         }
-        copmnsole.log("Updated Payload------------------------",keys, payload, updatePayload)
+        console.log("Updated Payload------------------------",keys, payload, updatePayload)
         let userRes = await User.editUserDetails(payload, updatePayload)
         return { data: userRes, error: false }
     } catch (err) {
