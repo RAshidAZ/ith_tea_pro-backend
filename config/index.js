@@ -14,7 +14,7 @@ const commonVariables = {
 	rolePriority : '{"SUPER_ADMIN" : 10,"ADMIN" : 7,"LEAD" : 4,"CONTRIBUTOR" : 2,"GUEST" : 0}',
     TASK_STATUS: ["NOT_STARTED", "ONGOING", "COMPLETED", "CLOSED", "ONHOLD","VERIFIED"],
 	PROJECT_STATUS : ["COMPLETED", "ONGOING", "UPCOMING"],
-	COMMENT_TYPE : ["TASK", "RATING"],
+	COMMENT_TYPE : ["TASK", "RATING", "TASK_VERIFICATION"],
     TASK_PRIORITY: ["LOW", "REPEATED", "MEDIUM", "HIGH", "None"],
     ALLOWED_GROUP_BY: ['default', 'section', 'status', 'projectId', 'createdBy', 'assignedTo', 'priority'],
 	ALLOWED_SORT_BY: ['default', 'due-date', 'status', 'date-created', 'date-updated', 'date-completed', 'alphabetically'],
