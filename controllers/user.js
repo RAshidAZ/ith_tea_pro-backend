@@ -340,7 +340,7 @@ const createPayloadAndEditUserDetails = async function (data) {
         if (data.managerIds) {
             updatePayload.managerIds = data.managerIds
         }
-
+        console.log("Updated Payload------------------------", payload, updatePayload)
         let userRes = await User.editUserDetails(payload, updatePayload)
         return { data: userRes, error: false }
     } catch (err) {
