@@ -1164,7 +1164,7 @@ const verifyUserTask = async (req, res, next) => {
 
 	if (data.verificationsComments) {
 		data.type = 'TASK_VERIFICATION'     //TASK_VERIFICATION
-		let insertTaskCommentRes = await createPayloadAndInsertTaskVerificationComment(data);
+		let insertTaskCommentRes = await createPayloadAndInsertCommentForTasks(data);
 		if (insertTaskCommentRes.error || !insertTaskCommentRes.data) {
 			return res.status(500).send(sendResponse(500, 'Task comment could not be added..', 'verifyUserTask', null, req.data.signature))
 		}
@@ -1208,12 +1208,12 @@ const getTaskById = async function (data) {
 	}
 }
 
-const createPayloadAndInsertTaskVerificationComment = async function (data) {
+const createPayloadAndInsertCommentForTasks = async function (data) {
 	try {
 		let payload = {
 			commentedBy: data.auth.id,
 			taggedUsers: data.taggedUsers,
-			comment: data.verificationsComments,
+			comment: data.comment || data.verificationsComments,
 			type: data.type
 		}
 		console.log("=======payload for comment=====", payload)
@@ -1809,7 +1809,7 @@ const commentUserTask = async (req, res, next) => {
 	if (data.comment) {
 		// data.type = process.env.ALLOWED_GROUP_BY.split(',')[0]
 		data.type = "TASK"
-		let insertTaskCommentRes = await createPayloadAndInsertTaskVerificationComment(data);
+		let insertTaskCommentRes = await createPayloadAndInsertCommentForTasks(data);
 		if (insertTaskCommentRes.error || !insertTaskCommentRes.data) {
 			return res.status(500).send(sendResponse(500, 'Task comment could not be added..', 'commentUserTask', null, req.data.signature))
 		}
