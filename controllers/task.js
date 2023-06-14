@@ -633,17 +633,17 @@ const exportDataToExcel = async (req, res, next) => {
 		task.tasks.forEach((tasks) => {
 
 			task.s_no = counter;
-			let taskTitle = tasks.title;
-			let description = tasks.description;
-			let status = tasks.status;
-			let lead = tasks.lead[0].name;
-			let assignedTo = tasks.assignedTo.name
-			let createdBy = tasks.createdBy.name
+			let taskTitle = tasks?.title;
+			let description = tasks?.description;
+			let status = tasks?.status;
+			let lead = tasks.lead[0]?.name;
+			let assignedTo = tasks?.assignedTo?.name
+			let createdBy = tasks?.createdBy?.name
 			let createdAt = tasks.createdAt;
-			let dueDate = tasks.dueDate;
-			let isVerified = tasks.isVerified;
-			let isReOpen = tasks.isReOpen;
-			let rating = tasks.rating;
+			let dueDate = tasks?.dueDate;
+			let isVerified = tasks?.isVerified;
+			let isReOpen = tasks?.isReOpen;
+			let rating = tasks?.rating;
 
 			// console.log("desc-------",description)
 			if (!description) {

@@ -36,8 +36,6 @@ router.get("/v1/all", [authenticator], getAllUsersListingNonPaginated);
 // Get all users (except SA & A) - Pagination
 router.get("/v1/all/pagination", [authenticator, filterProjects], getAllUsers);
 
-
-
 //Users listing - Non Paginated ( for dropdown ) - Only User
 router.get("/v1/list", [authenticator], getAllUsersNonPaginated);
 
@@ -51,19 +49,13 @@ router.get("/v1/unassigned/list", [], getUnAssignedUserLisitng);
 router.patch("/v1/edit/block/status", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], updateUserBlockStatus);
 
 //get team analytics
-router.get("/v1/team/analytics",
-    [authenticator],
-    getTeamAnalytics);
+router.get("/v1/team/analytics", [authenticator], getTeamAnalytics);
 
 //delete user
-router.patch("/v1/delete/user",
-    [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])],
-    deleteUser);
+router.patch("/v1/delete/user", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], deleteUser);
 
 // Active or Inactive Guest
-router.patch("/v1/active/guest",
-    [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])],
-    activeGuest);
+router.patch("/v1/active/guest", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], activeGuest);
 
 // Get all Guest (except SA , A, lEAD, Contributor) - Pagination
 router.get("/v1/guest/pagination", [authenticator, filterProjects], getAllGuest);
@@ -72,9 +64,7 @@ router.get("/v1/guest/pagination", [authenticator, filterProjects], getAllGuest)
 router.get("/v1/all/users", [authenticator], getUserListing);
 
 // Get all leads/admin ( for dropdown )
-router.get("/v1/all/leads",
-    [authenticator],
-    getAllLeadsListing);
+router.get("/v1/all/leads", [authenticator], getAllLeadsListing);
 
 module.exports = router;
 
