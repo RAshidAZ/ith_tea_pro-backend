@@ -332,7 +332,7 @@ const createPayloadAndEditUserDetails = async function (data) {
         let updates = ['name', 'department', 'wings', 'dob', 'designation', 'linkedInLink', 'githubLink', 'facebookLink', 'twitterLink', 'employeeId', 'profilePicture', 'profileCompleted', 'isBlocked'];
         let keys = Object.keys(data)
         for (let i = 0; i < keys.length; i++) {
-            if (updates.includes(JSON.stringify(keys[i]))) {
+            if (updates.includes(keys[i])) {
                 updatePayload[keys[i]] = data[keys[i]]
             }
         }
