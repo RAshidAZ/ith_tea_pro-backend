@@ -33,7 +33,7 @@ let commentSchema = new Schema({
         }
     ],
     comment: String,
-    verificationComment: sString
+    verificationComment: String
 
 }, {
     timestamps: true
