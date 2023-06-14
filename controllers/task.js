@@ -422,7 +422,7 @@ const reopenUserTask = async (req, res, next) => {
 	if (!['SUPER_ADMIN', 'ADMIN', 'LEAD'].includes(data.auth.role) && task.data.status && task.data.status == process.env.TASK_STATUS.split(",")[2]) {
 		return res.status(400).send(sendResponse(400, "You're not allowed to perform this action.", 'reopenUserTask', null, req.data.signature))
 	}
-	
+
 	let findPayload = {
 		_id: data.taskId
 	}
@@ -508,7 +508,7 @@ const createPayloadAndEditTask = async function (data) {
 		if (JSON.stringify(data.title)) {
 			updatePayload.title = data.title
 		}
-		
+
 		if (JSON.stringify(data.description)) {
 			updatePayload.description = data.description
 		}
@@ -540,7 +540,7 @@ const createPayloadAndEditTask = async function (data) {
 		if (data.tasklead) {
 			updatePayload["lead"] = data.tasklead
 		}
-		if(data.defaultTaskTime){
+		if (data.defaultTaskTime) {
 			updatePayload["defaultTaskTime"] = data.defaultTaskTime
 		}
 		data.taskUpdatePayload = updatePayload;
@@ -964,12 +964,14 @@ const createPayloadAndGetTask = async function (data) {
 			{ path: 'section', model: 'projectSections', select: 'name _id' }
 		]
 		let taskRes = await Task.taskFindOneQuery(findData, projection, populate)
-		let commentPopulate = [{
-			path: 'comments.commentedBy', model: 'users', select: 'name _id',
-		},
-		{
-			path: 'verificationComments.commentedBy', model: 'users', select: 'name _id'
-		}]
+		let commentPopulate = [
+			{
+				path: 'comments.commentedBy', model: 'users', select: 'name _id',
+			},
+			{
+				path: 'verificationComments.commentedBy', model: 'users', select: 'name _id'
+			}
+		]
 		let populatedRes = await Task.taskPopulate(taskRes, commentPopulate)
 		return { data: populatedRes, error: false }
 	} catch (err) {
@@ -1158,7 +1160,7 @@ const verifyUserTask = async (req, res, next) => {
 		}
 	}
 
-	if (data.comment) {
+	if (data.verificationsComments) {
 		data.type = 'TASK_VERIFICATION'     //TASK_VERIFICATION
 		let insertTaskCommentRes = await createPayloadAndInsertTaskVerificationComment(data);
 		if (insertTaskCommentRes.error || !insertTaskCommentRes.data) {
@@ -1166,7 +1168,7 @@ const verifyUserTask = async (req, res, next) => {
 		}
 		data.commentId = insertTaskCommentRes.data._id;
 	}
-	let updateTaskRating = await updateTaskDetailsForVerificatioon(data);
+	let updateTaskRating = await updateTaskDetailsForVerification(data);
 
 	if (updateTaskRating.error || !updateTaskRating.data) {
 		return res.status(500).send(sendResponse(500, '', 'verifyUserTask', null, req.data.signature))
@@ -1209,7 +1211,7 @@ const createPayloadAndInsertTaskVerificationComment = async function (data) {
 		let payload = {
 			commentedBy: data.auth.id,
 			taggedUsers: data.taggedUsers,
-			comment: data.comment,
+			comment: data.verificationsComments,
 			type: data.type
 		}
 		console.log("=======payload for comment=====", payload)
@@ -1221,7 +1223,7 @@ const createPayloadAndInsertTaskVerificationComment = async function (data) {
 	}
 }
 
-const updateTaskDetailsForVerificatioon = async function (data) {
+const updateTaskDetailsForVerification = async function (data) {
 	try {
 
 		let findData = {
