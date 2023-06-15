@@ -178,22 +178,27 @@ const createPayloadAndInsertTask = async function (data) {
 			data.dueDate = data.dueDate || new Date(new Date().setUTCHours(18, 29, 59, 999))
 		};
 
-		let payload = {
-			title: data.title,
-			description: data.description,
-			status: data.status || process.env.TASK_STATUS.split(",")[0],
-			section: data.section,
-			projectId: data.projectId,
-			ratingAllowed: data.ratingAllowed,
-			createdBy: data?.auth?.id,    //TODO: Change after auth is updated
-			assignedTo: data.assignedTo,
-			// dueDate: data.dueDate || new Date(new Date().setUTCHours(23, 59, 59, 000)),
-			completedDate: data.completedDate,
-			defaultTaskTime: data.defaultTaskTime,
-			miscType: data.miscType,
-			priority: data.priority,
-			lead: data.tasklead
-		}
+		// let payload = {
+		// 	title: data.title,
+		// 	description: data.description,
+		// 	status: data.status || process.env.TASK_STATUS.split(",")[0],
+		// 	section: data.section,
+		// 	projectId: data.projectId,
+		// 	ratingAllowed: data.ratingAllowed,
+		// 	createdBy: data?.auth?.id,    //TODO: Change after auth is updated
+		// 	assignedTo: data.assignedTo,
+		// 	// dueDate: data.dueDate || new Date(new Date().setUTCHours(23, 59, 59, 000)),
+		// 	completedDate: data.completedDate,
+		// 	defaultTaskTime: data.defaultTaskTime,
+		// 	miscType: data.miscType,
+		// 	priority: data.priority,
+		// 	lead: data.tasklead
+		// }
+
+		let payload = data;
+		payload["status"] = data.status || process.env.TASK_STATUS.split(",")[0]
+		payload["createdBy"] = data?.auth?.id
+		payload["lead"] = data.tasklead
 
 		if (data.dueDate) {
 			payload.dueDate = new Date(data.dueDate)
