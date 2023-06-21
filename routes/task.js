@@ -15,7 +15,7 @@ const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
 
 
-const {getTaskListToVerify, getTodayTasksListByUserId, verfiyUserTask, reopenUserTask, exportDataToExcel, editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTeamTasksCountReport, getTaskStatusAnalytics, getTodayTasksList, getTaskList, verifyUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments, getTeamTasksList } = require('../controllers/task');
+const {getTaskListToVerify,getTodayUsersListByProject,getAllUnassignedUsersList, getTodayTasksListByUserId, verfiyUserTask, reopenUserTask, exportDataToExcel, editUserTask, insertUserTask, getGroupByTasks, getOverDueTasks, getTaskDetailsByTaskId, getTeamTasksCountReport, getTaskStatusAnalytics, getTodayTasksList, getTaskList, verifyUserTask, getTasksByProjectId, deleteTask, getTaskListWithPendingRating, getTaskListToRate, updateTaskStatus, commentUserTask, getUserTaskComments, getTeamTasksList } = require('../controllers/task');
 
 
 //Insert task
@@ -79,5 +79,16 @@ router.get("/v1/get/team/task", [authenticator, authenticateRole(["SUPER_ADMIN",
 router.get("/v1/get/team/task/count", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects], getTeamTasksCountReport)
 
 router.get("/v1/downloadExcel", [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD']), filterProjects], exportDataToExcel)
+
+//get today user list who created tasks today
+router.get("/v1/get/today/taskCreatedUsers",
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD','GUEST']), filterProjects],
+    getTodayUsersListByProject)
+    
+//get today user list who Didn't created any tasks today
+router.get("/v1/get/today/freeUsers",
+    [authenticator, authenticateRole(["SUPER_ADMIN", "ADMIN", 'LEAD','GUEST']), filterProjects],
+    getAllUnassignedUsersList)
+
 
 module.exports = router;

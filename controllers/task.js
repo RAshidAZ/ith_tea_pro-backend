@@ -1175,6 +1175,17 @@ const verifyUserTask = async (req, res, next) => {
 		}
 		data.commentId = insertTaskCommentRes.data._id;
 	}
+
+	if (!["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) {
+		const updatedAt = new Date(task.data.updatedAt);
+		const currentTime = new Date();
+		const timeDifference = currentTime - updatedAt;
+		const hoursDifference = timeDifference / (1000 * 60 * 60);
+		
+		if (hoursDifference > 48) {
+			data.isDelayedVerified = true
+		}
+	}
 	let updateTaskRating = await updateTaskDetailsForVerification(data);
 
 	if (updateTaskRating.error || !updateTaskRating.data) {
@@ -1963,6 +1974,163 @@ const createPayloadAndGetTaskComments = async function (data) {
 		return { data: err, error: true }
 	}
 }
+
+//Get task lists for homepage - Set according to role
+const getTodayUsersListByProject = async function (req, res, next) {
+
+	let data = req.data;
+	if (!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
+		return res.status(400).send(sendResponse(401, 'You are Not Allowed', 'getTodayUsersListByProject', null, req.data.signature))
+	}
+	let tasksLists = await createPayloadAndGetTodayTaskListsByProjectId(data)
+	if (tasksLists.error) {
+		return res.status(500).send(sendResponse(500, '', 'getTaskListForHomePage', null, req.data.signature))
+	}
+
+	return res.status(200).send(sendResponse(200, 'Task List', 'getTaskListForHomePage', tasksLists.data, req.data.signature))
+}
+exports.getTodayUsersListByProject = getTodayUsersListByProject;
+
+const createPayloadAndGetTodayTaskListsByProjectId = async function (data) {
+	try {
+		let dateFilter = {}
+		const fromDate = new Date(new Date().setUTCHours(0, 0, 0, 0))
+		console.log("fromDate", fromDate)
+		data.fromDate = fromDate
+		dateFilter["$gte"] = new Date(data.fromDate)
+
+		const toDate = new Date(new Date().setUTCHours(23, 59, 59, 999))
+		data.toDate = toDate
+		dateFilter["$lte"] = new Date(data.toDate)
+		console.log("toDate", data.toDate)
+
+		let findData = {
+			isDeleted: false,
+			isArchived: false,
+		}
+
+		if (data.fromDate || data.toDate) {
+			findData.createdAt = dateFilter
+		}
+
+		let pipeline = [
+			{
+				$match: findData,
+			},
+			{
+				$group: {
+					_id: "$projectId",
+					tasks: { $push: "$$ROOT" },
+				},
+			},
+			{
+				$lookup: {
+					from: "users",
+					localField: "tasks.assignedTo",
+					foreignField: "_id",
+					as: "assignedTo",
+				},
+			},
+			{
+				$lookup: {
+					from: "projects",
+					localField: "_id",
+					foreignField: "_id",
+					as: "project",
+				},
+			},
+			{
+				$unwind: "$project",
+			},
+			{
+				$unwind: "$assignedTo",
+			},
+			{
+				$group: {
+					_id: "$project._id",
+					projectName: { $first: "$project.name" },
+					users: { $addToSet: "$assignedTo.name" },
+				},
+			},
+		]
+
+		let taskList = await Task.taskAggregate(pipeline)
+		console.log("taskList ===", taskList)
+		return { data: taskList, error: false }
+	} catch (err) {
+		console.log("Error => ", err)
+		return { data: err, error: true }
+	}
+};
+
+//Get task lists for homepage - Set according to role
+const getAllUnassignedUsersList = async function (req, res, next) {
+
+	let data = req.data;
+	if (!['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
+		return res.status(400).send(sendResponse(401, 'You are Not Allowed', 'getTodayUsersListByProject', null, req.data.signature))
+	}
+	let tasksLists = await createPayloadAndGetAllUnassignedUsers(data);
+	if (tasksLists.error) {
+		return res.status(500).send(sendResponse(500, '', 'getTaskListForHomePage', null, req.data.signature))
+	}
+
+	return res.status(200).send(sendResponse(200, 'Task List', 'getTaskListForHomePage', tasksLists.data, req.data.signature));
+}
+exports.getAllUnassignedUsersList = getAllUnassignedUsersList;
+
+const createPayloadAndGetAllUnassignedUsers = async function (data) {
+	try {
+		let dateFilter = {};
+		const fromDate = new Date(new Date().setUTCHours(0, 0, 0, 000))
+		console.log("fromDate", fromDate)
+		data.fromDate = fromDate;
+		dateFilter['$gte'] = new Date(data.fromDate)
+
+		const toDate = new Date(new Date().setUTCHours(23, 59, 59, 999))
+		data.toDate = toDate;
+		dateFilter['$lte'] = new Date(data.toDate)
+		console.log("toDate", data.toDate)
+
+
+		let findData = {
+			isDeleted: false,
+			isArchived: false,
+		};
+
+		if (data.fromDate || data.toDate) {
+			findData.createdAt = dateFilter
+		}
+
+		let projection = {
+			assignedTo: 1
+		}
+
+		let populate = {
+			path: "assignedTo",
+			select: "name",
+			model: "users"
+		}
+		let sortCriteria = { createdAt: 1 }
+		let taskList = await Task.taskFindQuery(findData, projection, populate, sortCriteria);
+
+		let TaskUserIds = taskList.map(task => task.assignedTo);
+		let ExtractTaskUserIds = TaskUserIds.map(user => user._id);
+
+		// console.log(ExtractTaskUserIds)
+
+		data.excludeUsers = ExtractTaskUserIds;
+		let ExcludedUsersList = await userController.findAllUserNonPagination(data)
+		let usersLists = ExcludedUsersList.data.users
+		// console.log("============",usersLists)
+		return { data: usersLists, error: false }
+
+	} catch (err) {
+		console.log("Error => ", err);
+		return { data: err, error: true }
+	}
+}
+
 
 //Get task lists for homepage - Set according to role
 const getTodayTasksList = async function (req, res, next) {
