@@ -546,7 +546,7 @@ const getAllUsersRatingForYear = async function (data) {
 			},
 		];
 
-		let ratingRes = await User.aggregate(payload);
+		let ratingRes = await User.userAggregate(payload);
 		console.log("ratingRes ===", ratingRes);
 		return { data: ratingRes, error: false };
 	} catch (error) {
