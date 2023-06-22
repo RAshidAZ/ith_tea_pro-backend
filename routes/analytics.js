@@ -9,7 +9,6 @@ const clients = {
 };
 const data = {}
 const authenticator = require('../middlewares/authenticator')(clients, data);
-const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
 const analytics = require('../controllers/analytics')
 
