@@ -630,6 +630,7 @@ const createPayloadAndGetDayRating = async function (data) {
 		return { data: error, error: true }
 	}
 }
+exports.createPayloadAndGetDayRating = createPayloadAndGetDayRating
 
 const filteredDistinctProjectsUsers = async function (data) {
 	try {

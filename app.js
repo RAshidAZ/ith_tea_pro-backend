@@ -47,6 +47,7 @@ const user = require('./routes/user')
 const upload = require('./routes/upload')
 const project = require('./routes/project')
 const projectLogs = require('./routes/projectLogs')
+const analytics = require('./routes/analytics')
 const taskLogs = require('./routes/taskLogs')
 
 app.use('/rating', rating)
@@ -57,6 +58,7 @@ app.use('/upload', upload)
 app.use('/projects', project)
 app.use('/projectlogs', projectLogs)
 app.use('/tasklogs', taskLogs)
+app.use('/analytics', analytics)
 const auth = require('./routes/auth');
 
 

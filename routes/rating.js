@@ -29,8 +29,6 @@ router.get("/v1/day/rating", [authenticator], rating.getRatingByDate);
 
 router.get("/v1/year/all/user", [authenticator, filterProjects], rating.getYearAllUserRating);
 
-// Rating of the task by Rating Duration 
-router.get("/v1/all/rating/duration", [authenticator], rating.getAllUsersRatingByRatingDuration);   
 
 module.exports = router;
 
