@@ -387,119 +387,44 @@ const getAllUsersRatingForMonth = async function (data) {
 }
 exports.getAllUsersRatingForMonth = getAllUsersRatingForMonth;
 
-// const getAllUsersRatingForYear = async function (data) {
-// 	try {
-// 		let roleFilter = ["SUPER_ADMIN"];
-// 		let findData = {
-// 			// "ratings.year": parseInt(data.year)
-// 		};
-
-// 		console.log("================find filter in year rating=============", roleFilter);
-// 		let payload = [
-// 			{
-// 				$match: findData
-// 			},
-// 			{
-// 				$lookup: {
-// 					from: "ratings",
-// 					localField: "_id",
-// 					foreignField: "userId",
-// 					as: "ratings"
-// 				}
-// 			},
-// 			{ $unwind: { path: "$ratings", "preserveNullAndEmptyArrays": true } },
-// 			{
-// 				$match: {
-// 					$or: [
-// 						{ ratings: { $exists: false } },
-// 						{
-// 							$and: [
-// 								{ "ratings.year": parseInt(data.year) }
-// 							]
-// 						}
-// 					]
-// 				}
-// 			},
-// 			{
-// 				$group: {
-// 					_id: "$ratings.month",
-// 					count: { $sum: 1 },
-// 					total: { $sum: "$ratings.rating" }
-// 				}
-// 			},
-// 			{
-// 				$sort: {
-// 					_id: 1
-// 				}
-// 			},
-// 			{
-// 				$project: {
-// 					month: "$_id",
-// 					averageRating: { $divide: ["$total", "$count"] }
-// 				}
-// 			}
-// 		];
-
-// 		let ratingRes = await User.getAllUsersRatingForMonth(payload);
-// 		console.log(ratingRes)
-
-// 		if (!ratingRes || !ratingRes.data) {
-// 			throw new Error("No data found for the specified year.");
-// 		}
-
-// 		let monthlyAverages = ratingRes.data.map(entry => entry.averageRating);
-
-// 		return {
-// 			data: monthlyAverages,
-// 			error: false
-// 		};
-// 	} catch (error) {
-// 		console.log("getAllUsersRatingForYear Error: ", error);
-// 		return {
-// 			data: error,
-// 			error: true
-// 		};
-// 	}
-// };
-
 
 const getAllUsersRatingForYear = async function (data) {
 	try {
 		let roleFilter = ["SUPER_ADMIN"];
 		let findData = {};
 		if (data.auth.role == 'CONTRIBUTOR') {
-			findData.isDeleted = false;
-			roleFilter.push('LEAD');
-			roleFilter.push('ADMIN');
+			findData.isDeleted = false
+			roleFilter.push('LEAD')
+			roleFilter.push('ADMIN')
 		}
 		if (data.auth.role == 'LEAD') {
-			findData.isDeleted = false;
-			roleFilter.push('ADMIN');
+			findData.isDeleted = false
+			roleFilter.push('ADMIN')
 		}
-		findData.role = { $nin: roleFilter };
-		// findData.ratingAllowed  = { $nin: [false] };
+		findData.role = { $nin: roleFilter }
+		if (data.userId) {
+			findData._id = mongoose.Types.ObjectId(data.userId)
+		}
 		if (data.userRating) {
-			findData._id = mongoose.Types.ObjectId(data.auth.id);
+			findData._id = mongoose.Types.ObjectId(data.auth.id)
 		}
 		if (!data.userRating && ['LEAD', 'CONTRIBUTOR', 'ADMIN'].includes(data.auth.role) && data.filteredProjects) {
-			let allProjectUsers = await filteredProjectsUsers(data);
+			let allProjectUsers = await filteredProjectsUsers(data)
 			if (allProjectUsers && allProjectUsers.data) {
-				findData._id = { $in: allProjectUsers.data.map((el) => mongoose.Types.ObjectId(el)) };
+				findData._id = { $in: allProjectUsers.data.map(el => mongoose.Types.ObjectId(el)) }
 			}
 		}
 
-		console.log("================find filter in year rating=============", roleFilter);
+		console.log("================find filter in year rating=============", roleFilter)
 		let payload = [
-			{
-				$match: findData,
-			},
+			{ $match: findData },
 			{
 				$lookup: {
 					from: "ratings",
 					localField: "_id",
 					foreignField: "userId",
-					as: "ratings",
-				},
+					as: "ratings"
+				}
 			},
 			{ $unwind: { path: "$ratings", preserveNullAndEmptyArrays: true } },
 			{
@@ -508,11 +433,11 @@ const getAllUsersRatingForYear = async function (data) {
 						{ ratings: { $exists: false } },
 						{
 							$and: [
-								{ "ratings.year": parseInt(data.year) },
-							],
-						},
-					],
-				},
+								{ "ratings.year": parseInt(data.year) }
+							]
+						}
+					]
+				}
 			},
 			{
 				$group: {
@@ -520,38 +445,37 @@ const getAllUsersRatingForYear = async function (data) {
 					name: { $first: "$name" },
 					email: { $first: "$email" },
 					ratings: { $push: "$ratings" },
-				},
+					monthlyAverages: {
+						$push: {
+							month: "$ratings.month",
+							avg: {
+								$avg: {
+									$ifNull: ["$ratings.rating", 0] // Handle missing ratings array or null values
+								}
+							}
+						}
+					}
+				}
 			},
 			{ $sort: { "name": 1, "ratings.date": 1 } },
 			{
 				$project: {
 					name: 1,
 					email: 1,
-					"ratings.rating": 1,
-					"ratings.dueDate": 1,
-					"ratings.date": 1,
-					"ratings.month": 1,
-					"ratings.year": 1,
-					"ratings.taskIds": 1,
+					// ratings: 1,
+					monthlyAverages: 1,
 					yearlyAverage: {
-						$avg: {
-							$map: {
-								input: "$ratings.rating",
-								as: "rating",
-								in: "$$rating",
-							},
-						},
-					},
-				},
-			},
+						$avg: "$monthlyAverages.avg"
+					}
+				}
+			}
 		];
 
-		let ratingRes = await User.userAggregate(payload);
-		console.log("ratingRes ===", ratingRes);
-		return { data: ratingRes, error: false };
+		let ratingRes = await User.getAllUsersRatingForMonth(payload)
+		return { data: ratingRes, error: false }
 	} catch (error) {
-		console.log("getAllUsersRatingForYear Error : ", error);
-		return { data: error, error: true };
+		console.log("getAllUsersRatingForYear Error: ", error)
+		return { data: error, error: true }
 	}
 };
 
