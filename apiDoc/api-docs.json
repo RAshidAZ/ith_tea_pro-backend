@@ -12,68 +12,134 @@
   "consumes": ["application/json"],
   "produces": ["application/json"],
   "paths": {
-	"/test/v1/example": {
-		"get": {
-		  "description": "Test example",
-		  "summary": "Test example",
-		  "tags": ["Test"],
-		  "operationId": "testExample",
-		  "deprecated": false,
-		  "produces": ["application/json"],
-		  "parameters": [
-			{
-			  "name": "x-access-token",
-			  "in": "header",
-			  "required": false,
-			  "type": "string",
-			  "description": "Token"
-			},
-			{
-			  "name": "x-access-user",
-			  "in": "header",
-			  "required": false,
-			  "type": "string",
-			  "description": "Account id"
-			}
-		  ],
-		  "responses": {
-			"200": {
-			  "description": "",
-			  "schema": {
-				"type": "object"
-			  },
-			  "headers": {}
-			},
-			"500": {
-			  "description": "",
-			  "schema": {
-				"type": "object",
-				"$ref": "#/definitions/somethingWentWrong"
-			  },
-			  "headers": {}
-			},
-			"401": {
-			  "description": "",
-			  "schema": {
-				"$ref": "#/definitions/notAllowed"
-			  }
-			},
-			"400": {
-			  "description": "",
-			  "schema": {
-				"$ref": "#/definitions/missingParams"
-			  }
-			}
-		  }
-		}
-	},
+    "/analytics/v1/all/rating": {
+      "get": {
+        "description": "Rating Analytics of all Users monthly and yearly average, This API is used to get all the rating analytics, when no ratingDuration key is passed this api gives day rating of the user which will require userId, date, month and year as payload",
+        "summary": "Rating Analytics of all Users",
+        "tags": ["Analytics"],
+        "operationId": "createEventAgenda",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/payloadForRatingAnalytics"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getAllUsersRatingByRatingDuration"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+            "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+
 
     "/auth/v1/user/login": {
+    "post": {
+      "description": "User Login",
+      "summary": "User Login",
+      "tags": ["Auth"],
+      "operationId": "userLogin",
+      "deprecated": false,
+      "produces": ["application/json"],
+      "parameters": [
+        {
+          "name": "Body",
+          "in": "body",
+          "required": true,
+          "description": "",
+          "schema": {
+            "$ref": "#/definitions/userLoginRequest"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "$ref": "#/definitions/userLoginResponse"
+          },
+          "headers": {}
+        },
+        "500": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "$ref": "#/definitions/somethingWentWrong"
+          },
+          "headers": {}
+        },
+        "401": {
+          "description": "",
+          "schema": {
+            "$ref": "#/definitions/notAllowed"
+          },
+          "headers": {}
+        },
+        "400": {
+          "description": "",
+          "schema": {
+            "$ref": "#/definitions/missingParams"
+          },
+          "headers": {}
+        }
+      }
+    }
+    },
+    "/auth/v1/resend/password/setup": {
       "post": {
-        "description": "User Login",
-        "summary": "User Login",
+        "description": "Resend Password Setup",
+        "summary": "Resend Password Setup",
         "tags": ["Auth"],
-        "operationId": "userLogin",
+        "operationId": "resendPasswordSetup",
         "deprecated": false,
         "produces": ["application/json"],
         "parameters": [
@@ -83,7 +149,7 @@
             "required": true,
             "description": "",
             "schema": {
-              "$ref": "#/definitions/userLoginRequest"
+              "$ref": "#/definitions/userForgotPasswordRequest"
             }
           }
         ],
@@ -104,24 +170,288 @@
             },
             "headers": {}
           },
-          "401": {
+          "400": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/notAllowed"
+            "$ref": "#/definitions/notFound"
+            }
+          }
+        }
+      }
+    },
+    "/auth/v1/user/forgot/password": {
+      "post": {
+        "description": "User Forgot Password",
+        "summary": "Forgot Password",
+        "tags": ["Auth"],
+        "operationId": "ForgotPassword",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/userForgotPasswordRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userLoginResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
             },
             "headers": {}
           },
           "400": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/missingParams"
-            },
-            "headers": {}
+            "$ref": "#/definitions/notFound"
+            }
           }
         }
       }
     },
-	"/auth/v1/verify/token": {
+    "/auth/v1/set/password": {
+      "post": {
+        "description": "Set Password",
+        "summary": "Set Password",
+        "tags": ["Auth"],
+        "operationId": "setPassword",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/userForgotPasswordRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userLoginResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+            "$ref": "#/definitions/notFound"
+            }
+          }
+        }
+      }
+    },
+    "/auth/v1/otp/verify/forgot/password": {
+      "post": {
+        "description": "Verify By Otp",
+        "summary": "Verify By Otp",
+        "tags": ["Auth"],
+        "operationId": "VerifyByOtp",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/userForgotPasswordRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userLoginResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+            "$ref": "#/definitions/notFound"
+            }
+          }
+        }
+      }
+    },
+    "/auth/v1/user/forgot/change/password": {
+      "post": {
+        "description": "Change Password",
+        "summary": "Change Password",
+        "tags": ["Auth"],
+        "operationId": "ChangePassword",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/userForgotPasswordRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userLoginResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+            "$ref": "#/definitions/notFound"
+            }
+          }
+        }
+      }
+    },
+    "/auth/v1/edit/": {
+      "patch": {
+        "description": "Edit User",
+        "summary": "Edit User",
+        "tags": ["Auth"],
+        "operationId": "EditUser",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/userForgotPasswordRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userLoginResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+            "$ref": "#/definitions/notFound"
+            }
+          }
+        }
+      }
+    },
+    "/auth/v1/user/reset/password": {
+      "patch": {
+        "description": "Reset Password",
+        "summary": "Reset Password",
+        "tags": ["Auth"],
+        "operationId": "ResetPassword",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/userForgotPasswordRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userLoginResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+            "$ref": "#/definitions/notFound"
+            }
+          }
+        }
+      }
+    },
+
+
+	  "/auth/v1/all/": {
 		"get": {
 		  "description": "Verify password token for password setup",
 		  "summary": "Verify password token for password setup",
@@ -172,6 +502,2247 @@
 		  }
 		}
 	  },
+	  "/auth/v1/verify/token": {
+		"get": {
+		  "description": "Verify password token for password setup",
+		  "summary": "Verify password token for password setup",
+		  "tags": ["Auth"],
+		  "operationId": "verifyPasswordToken",
+		  "deprecated": false,
+		  "produces": ["application/json"],
+		  "parameters": [
+			{
+			  "name": "token",
+			  "in": "query",
+			  "required": true,
+			  "type": "string",
+			  "description": "Provode token to validate user"
+			}
+		  ],
+		  "responses": {
+			"200": {
+			  "description": "",
+			  "schema": {
+				"type": "object",
+				"$ref": "#/definitions/userProfileResponse"
+			  },
+			  "headers": {}
+			},
+			"500": {
+			  "description": "",
+			  "schema": {
+				"type": "object",
+				"$ref": "#/definitions/somethingWentWrong"
+			  },
+			  "headers": {}
+			},
+			"401": {
+			  "description": "",
+			  "schema": {
+				"$ref": "#/definitions/notAllowed"
+			  },
+			  "headers": {}
+			},
+			"400": {
+			  "description": "",
+			  "schema": {
+				"$ref": "#/definitions/missingParams"
+			  },
+			  "headers": {}
+			}
+		  }
+		}
+	  },
+
+    "/comment/v1/rating/": {
+      "get": {
+        "description": "Get comments on rating",
+        "summary": "Get comments on rating",
+        "tags": ["Comments"],
+        "operationId": "Getcommentsonrating",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Account id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getAttendeesListResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            }
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            }
+          }
+        }
+      }
+    },
+    "/comment/v1/user/insert": {
+      "post": {
+        "description": "Insert User Rating Comment",
+        "summary": "Insert User Rating Comment",
+        "tags": ["Comments"],
+        "operationId": "InsertUserRatingComment",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Account id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getAttendeesListResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            }
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            }
+          }
+        }
+      }
+    },
+    "/comment/v1/user/task/insert": {
+      "post": {
+        "description": "Insert Task Comment",
+        "summary": "Insert Task Comment",
+        "tags": ["Comments"],
+        "operationId": "InsertTaskComment",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Account id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getAttendeesListResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            }
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            }
+          }
+        }
+      }
+    },
+    "/comments/v1/update": {
+      "patch": {
+        "description": "Update Comment",
+        "summary": "Update Comments",
+        "tags": ["Comments"],
+        "operationId": "updateComment",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Account id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getAttendeesListResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            }
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            }
+          }
+        }
+      }
+    },
+
+    "/project/v1/add/new": {
+      "post": {
+        "description": "Create New Project",
+        "summary": "Create New Project",
+        "tags": ["Projects"],
+        "operationId": "CreateNewProject",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/add/section": {
+      "post": {
+        "description": "Add New Section In Project",
+        "summary": "Add New Section In Project",
+        "tags": ["Projects"],
+        "operationId": "AddNewSection",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/all": {
+      "get": {
+        "description": "Get All Projects",
+        "summary": "Get All Projects",
+        "tags": ["Projects"],
+        "operationId": "GetAllProjects",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/specific": {
+      "get": {
+        "description": "Get a Specific Project By Project Id",
+        "summary": "Get a Specific Project",
+        "tags": ["Projects"],
+        "operationId": "GetaSpecificProject",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/user/all": {
+      "get": {
+        "description": "get all users assigned to given projectId",
+        "summary": "get all users assigned to given projectId",
+        "tags": ["Projects"],
+        "operationId": "getallusersassignedgettogivenprojectId",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/user/assigned": {
+      "get": {
+        "description": "Get projects assigned to given userId",
+        "summary": "Get projects assigned to given userId",
+        "tags": ["Projects"],
+        "operationId": "GetprojectsassignedtogivenuserId",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/list/assigned": {
+      "get": {
+        "description": "Get Your Projects Listing ( Get Only Assigned Projects - Homepage )",
+        "summary": "Get Your Projects Listing ( Get Only Assigned Projects - Homepage )",
+        "tags": ["Projects"],
+        "operationId": "ListingGetOnlyAssignedProjects",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/categories": {
+      "get": {
+        "description": "get all project categories",
+        "summary": "get all project categories",
+        "tags": ["Projects"],
+        "operationId": "getallprojectcategories",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/project/users": {
+      "get": {
+        "description": "Get specific Projects - For Projects Module",
+        "summary": "Get specific Projects - For Projects Module",
+        "tags": ["Projects"],
+        "operationId": "ForProjectsModule",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/project/users/for/rating": {
+      "get": {
+        "description": "find Specific Project Users For Rating",
+        "summary": "find Specific Project Users For Rating",
+        "tags": ["Projects"],
+        "operationId": "findSpecificProjectUsersForRating",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+
+    "/project/v1/project/leads": {
+      "get": {
+        "description": "Get specific Projects lead list",
+        "summary": "Get specific Projects lead list",
+        "tags": ["Projects"],
+        "operationId": "GetspecificProjectsleadlist",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+
+    "/project/v1/edit": {
+      "patch": {
+        "description": "Edit The Projects",
+        "summary": "Edit The Projects",
+        "tags": ["Projects"],
+        "operationId": "EditTheProjects",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/delete": {
+      "patch": {
+        "description": "Delete Project",
+        "summary": "Delete Project",
+        "tags": ["Projects"],
+        "operationId": "DeleteProject",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/update/archive": {
+      "patch": {
+        "description": "change project archive status",
+        "summary": "change project archive status",
+        "tags": ["Projects"],
+        "operationId": "changeprojectarchivestatus",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/assign/users": {
+      "patch": {
+        "description": "assign users to project",
+        "summary": "assign users to project",
+        "tags": ["Projects"],
+        "operationId": "assignuserstoproject",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/assign/leads": {
+      "patch": {
+        "description": "Assign leads to project",
+        "summary": "Assign leads to project",
+        "tags": ["Projects"],
+        "operationId": "Assignleadstoproject",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/remove/lead": {
+      "patch": {
+        "description": "Remove lead from a project",
+        "summary": "Remove lead from a project",
+        "tags": ["Projects"],
+        "operationId": "Removeleadfromproject",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/remove/users": {
+      "patch": {
+        "description": "Remove CONTRIBUTOR / GUEST Users from Projects",
+        "summary": "Get specific Projects lead list",
+        "tags": ["Projects"],
+        "operationId": "GetspecificProjectsleadlist",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/edit/section": {
+      "patch": {
+        "description": "Edit Project Section/category",
+        "summary": "Edit Project Section/category",
+        "tags": ["Projects"],
+        "operationId": "EditProjectSection/category",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/delete/section": {
+      "patch": {
+        "description": "Delete specific section from a Project ",
+        "summary": "Delete specific section from a Project",
+        "tags": ["Projects"],
+        "operationId": "DeletespecificsectionfromProject",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/archive/section": {
+      "patch": {
+        "description": "Update Section Archive Status",
+        "summary": "Update Section Archive Status",
+        "tags": ["Projects"],
+        "operationId": "UpdateSectionArchiveStatus",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/assign/projects": {
+      "patch": {
+        "description": "Assign projects to User",
+        "summary": "Assign projects to User",
+        "tags": ["Projects"],
+        "operationId": "AssignprojectstoUser",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/project/v1/unassign/projects": {
+      "patch": {
+        "description": "Unassign projects of User",
+        "summary": "Unassign projects of User",
+        "tags": ["Projects"],
+        "operationId": "unassignprojectsofUser",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createPackageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+
+    
+    "/rating/v1/user/insert": {
+      "post": {
+        "description": "Insert User Rating",
+        "summary": "Insert User Rating",
+        "tags": ["Ratings"],
+        "operationId": "InsertUserRating",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/applyAsAttendeeRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/applyAsAttendeeResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    
+    "/rating/v1/user/": {
+      "get": {
+        "description": "Get User Rating",
+        "summary": "Get User Rating",
+        "tags": ["Ratings"],
+        "operationId": "GetUserRating",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/applyAsAttendeeRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/applyAsAttendeeResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/rating/v1/month/all/user": {
+      "get": {
+        "description": "Get User Rating By month",
+        "summary": "Get User Rating By month",
+        "tags": ["Ratings"],
+        "operationId": "GetUserRatingBymonth",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/applyAsAttendeeRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/applyAsAttendeeResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/rating/v1/week/rating": {
+      "get": {
+        "description": "Get Weekly User Rating",
+        "summary": "Get Weekly User Rating",
+        "tags": ["Ratings"],
+        "operationId": "GetWeeklyUserRating",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/applyAsAttendeeRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/applyAsAttendeeResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/rating/v1/day/rating": {
+      "get": {
+        "description": "Get User Rating By date",
+        "summary": "Get User Rating By date",
+        "tags": ["Ratings"],
+        "operationId": "GetUserRatingBydate",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/applyAsAttendeeRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/applyAsAttendeeResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/rating/v1/year/all/user": {
+      "get": {
+        "description": "Get yearly User Rating",
+        "summary": "Get yearly User Rating",
+        "tags": ["Ratings"],
+        "operationId": "GetyearlyUserRating",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/applyAsAttendeeRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/applyAsAttendeeResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     "/users/v1/update/profile": {
       "patch": {
@@ -299,73 +2870,7 @@
       }
     },
 
-    "/projectsv1/create": {
-      "post": {
-        "description": "Create event package",
-        "summary": "Create event package",
-        "tags": ["Projects"],
-        "operationId": "createPackage",
-        "deprecated": false,
-        "produces": ["application/json"],
-        "parameters": [
-          {
-            "name": "x-access-token",
-            "in": "header",
-            "required": true,
-            "type": "string",
-            "Description": "Enter x-access-token"
-          },
-          {
-            "name": "x-access-user",
-            "in": "header",
-            "required": true,
-            "type": "string",
-            "Description": "Enter x-access-user"
-          },
-          {
-            "name": "Body",
-            "in": "body",
-            "required": true,
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/createPackageRequest"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "type": "object",
-              "$ref": "#/definitions/createEventResponse"
-            },
-            "headers": {}
-          },
-          "500": {
-            "description": "",
-            "schema": {
-              "type": "object",
-              "$ref": "#/definitions/somethingWentWrong"
-            },
-            "headers": {}
-          },
-          "401": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/notAllowed"
-            },
-            "headers": {}
-          },
-          "400": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/missingParams"
-            },
-            "headers": {}
-          }
-        }
-      }
-    },
+
     
 
     "/tasks/v1/add/task": {
@@ -538,129 +3043,7 @@
       }
     },
 
-    "/rating/v1/apply": {
-      "post": {
-        "description": "Apply as attendee",
-        "summary": "Apply as attendee",
-        "tags": ["Ratings"],
-        "operationId": "applyAsAttendee",
-        "deprecated": false,
-        "produces": ["application/json"],
-        "parameters": [
-          {
-            "name": "x-access-token",
-            "in": "header",
-            "required": true,
-            "type": "string",
-            "Description": "Enter x-access-token"
-          },
-          {
-            "name": "x-access-user",
-            "in": "header",
-            "required": true,
-            "type": "string",
-            "Description": "Enter x-access-user"
-          },
-          {
-            "name": "Body",
-            "in": "body",
-            "required": true,
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/applyAsAttendeeRequest"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "type": "object",
-              "$ref": "#/definitions/applyAsAttendeeResponse"
-            },
-            "headers": {}
-          },
-          "500": {
-            "description": "",
-            "schema": {
-              "type": "object",
-              "$ref": "#/definitions/somethingWentWrong"
-            },
-            "headers": {}
-          },
-          "401": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/notAllowed"
-            },
-            "headers": {}
-          },
-          "400": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/missingParams"
-            },
-            "headers": {}
-          }
-        }
-      }
-    },
-    "/comments/v1/comments": {
-      "get": {
-        "description": "get all attendees list",
-        "summary": "get attendees list",
-        "tags": ["Comments"],
-        "operationId": "getAttendeesList",
-        "deprecated": false,
-        "produces": ["application/json"],
-        "parameters": [
-          {
-            "name": "x-access-token",
-            "in": "header",
-            "required": true,
-            "type": "string",
-            "description": "Token"
-          },
-          {
-            "name": "x-access-user",
-            "in": "header",
-            "required": true,
-            "type": "string",
-            "description": "Account id"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "type": "object",
-              "$ref": "#/definitions/getAttendeesListResponse"
-            },
-            "headers": {}
-          },
-          "500": {
-            "description": "",
-            "schema": {
-              "type": "object",
-              "$ref": "#/definitions/somethingWentWrong"
-            },
-            "headers": {}
-          },
-          "401": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/notAllowed"
-            }
-          },
-          "400": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/missingParams"
-            }
-          }
-        }
-      }
-    },
+
 
 	"/upload/v1/admin/file": {
 		"put": {
@@ -727,75 +3110,9 @@
 			}
 		  }
 		}
-	  },
+	  }
 
-    "/analytics/v1/all/rating": {
-      "get": {
-        "description": "Rating Analytics of all Users monthly and yearly average, This API is used to get all the rating analytics, when no ratingDuration key is passed this api gives day rating of the user which will require userId, date, month and year as payload",
-        "summary": "Rating Analytics of all Users",
-        "tags": ["Analytics"],
-        "operationId": "createEventAgenda",
-        "deprecated": false,
-        "produces": ["application/json"],
-        "parameters": [
-          {
-            "name": "x-access-token",
-            "in": "header",
-            "required": true,
-            "type": "string",
-            "Description": "Enter x-access-token"
-          },
-          {
-            "name": "x-access-user",
-            "in": "header",
-            "required": true,
-            "type": "string",
-            "Description": "Enter x-access-user"
-          },
-          {
-            "name": "Body",
-            "in": "body",
-            "required": true,
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/payloadForRatingAnalytics"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "type": "object",
-              "$ref": "#/definitions/getAllUsersRatingByRatingDuration"
-            },
-            "headers": {}
-          },
-          "400": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/missingParams"
-            },
-            "headers": {}
-          },
-          "401": {
-            "description": "",
-            "schema": {
-            "$ref": "#/definitions/notAllowed"
-            },
-            "headers": {}
-          },
-          "500": {
-            "description": "",
-            "schema": {
-              "type": "object",
-              "$ref": "#/definitions/somethingWentWrong"
-            },
-            "headers": {}
-          }
-        }
-      }
-    }
+ 
   },
 
   "definitions": {
@@ -808,32 +3125,6 @@
          "userId":"(optional)"
     },
       "type": "object",
-      "properties": {
-        "eventId": {
-          "type": "ObjectId"
-        },
-        "stageLocation": {
-          "type": "string"
-        },
-        "title": {
-          "type": "string"
-        },
-        "speakers": {
-          "type": "array"
-        },
-        "sessionType": {
-          "type": "string"
-        },
-        "date": {
-          "type": "date"
-        },
-        "startTime": {
-          "type": "date"
-        },
-        "endTime": {
-          "type": "date"
-        }
-      },
       "required": [
         "eventId",
         "stageLocation",
@@ -1037,32 +3328,6 @@
           "signature": "1687777339340.8HTHCGzbwbGgS"
     },
       "type": "object",
-      "properties": {
-        "eventId": {
-          "type": "ObjectId"
-        },
-        "stageLocation": {
-          "type": "string"
-        },
-        "title": {
-          "type": "string"
-        },
-        "speakers": {
-          "type": "array"
-        },
-        "sessionType": {
-          "type": "string"
-        },
-        "date": {
-          "type": "date"
-        },
-        "startTime": {
-          "type": "date"
-        },
-        "endTime": {
-          "type": "date"
-        }
-      },
       "required": [
         "eventId",
         "stageLocation",
@@ -1093,32 +3358,6 @@
 
     },
       "type": "object",
-      "properties": {
-        "eventId": {
-          "type": "ObjectId"
-        },
-        "stageLocation": {
-          "type": "string"
-        },
-        "title": {
-          "type": "string"
-        },
-        "speakers": {
-          "type": "array"
-        },
-        "sessionType": {
-          "type": "string"
-        },
-        "date": {
-          "type": "date"
-        },
-        "startTime": {
-          "type": "date"
-        },
-        "endTime": {
-          "type": "date"
-        }
-      },
       "required": [
         "eventId",
         "stageLocation",
@@ -1354,32 +3593,6 @@
         "signature": "1687774023774.WLiPwo2H1Mw5l"
     },
       "type": "object",
-      "properties": {
-        "eventId": {
-          "type": "ObjectId"
-        },
-        "stageLocation": {
-          "type": "string"
-        },
-        "title": {
-          "type": "string"
-        },
-        "speakers": {
-          "type": "array"
-        },
-        "sessionType": {
-          "type": "string"
-        },
-        "date": {
-          "type": "date"
-        },
-        "startTime": {
-          "type": "date"
-        },
-        "endTime": {
-          "type": "date"
-        }
-      },
       "required": [
         "eventId",
         "stageLocation",
@@ -1404,6 +3617,17 @@
         "status": 401,
         "message": "Not Allowed.",
         "error": true
+      }
+    },
+    "notFound": {
+      "title": "notallowed",
+      "example": {
+          "signature": "1687787010107.cWlC0ll52zyXx",
+          "action": "forgotPassword",
+          "status": 400,
+          "message": "User not found",
+          "data": null,
+          "error": true
       }
     },
     "missingParams": {
@@ -1498,6 +3722,22 @@
       },
       "type": "object"
     },
+    "userForgotPasswordRequest": {
+      "title": "userForgotPasswordRequest",
+      "example": {
+        "email": "ankit@ith.tech"
+      },
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      },
+      "required": ["email", "password"]
+    },
     "userLoginRequest": {
       "title": "userLoginRequest",
       "example": {
@@ -1514,6 +3754,19 @@
         }
       },
       "required": ["email", "password"]
+    },
+    "userForgotPasswordResponse": {
+      "title": "userLoginResponse",
+      "example": {
+          "action": "forgotPassword",
+          "status": 200,
+          "message": "Otp sent on email successfully",
+          "data": null,
+          "error": false,
+          "signature": null
+      
+      },
+      "type": "object"
     },
     "userLoginResponse": {
       "title": "userLoginResponse",
@@ -11633,34 +13886,34 @@
 	  }
   },
   "tags": [
-	{
-		"name": "Test",
-		"description": "Test API"
-	},
+    {
+      "name": "Analytics",
+      "description": "API for User Analytics"
+    },
     {
       "name": "Auth",
       "description": "API for login and signup"
     },
     {
-      "name": "Users",
-      "description": "API for Users"
+      "name": "Comments",
+      "description" : "API related to comments"
     },
     {
       "name": "Projects",
       "description": "API related to projects"
     },
     {
+      "name": "Ratings",
+      "description": "API related to ratings"
+    },
+    {
       "name": "Tasks",
       "description": "API related to tasks"
     },
-	{
-		"name": "Ratings",
-		"description": "API related to ratings"
-	},
-	{
-		"name": "Comments",
-		"description" : "API related to comments"
-	}
+    {
+      "name": "Users",
+      "description": "API for Users"
+    }
   ]
   
 }
