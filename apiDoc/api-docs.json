@@ -435,6 +435,108 @@
         }
       }
     },
+      "task/v1/get/today/freeUsers": {
+      "get": {
+        "description": "Users list who didn't created any tasks for the day",
+        "summary": "Free Resources",
+        "tags": ["Tasks"],
+        "operationId": "createEventAgenda",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePage"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+      "task/v1/get/today/taskCreatedUsers": {
+      "get": {
+        "description": "Users list who created tasks for the day",
+        "summary": "occupied resources",
+        "tags": ["Tasks"],
+        "operationId": "createEventAgenda",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePageOfAssignedUsers"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
 
     "/rating/v1/apply": {
       "post": {
@@ -625,10 +727,669 @@
 			}
 		  }
 		}
-	  }
+	  },
 
+    "/analytics/v1/all/rating": {
+      "get": {
+        "description": "Rating Analytics of all Users monthly and yearly average, This API is used to get all the rating analytics, when no ratingDuration key is passed this api gives day rating of the user which will require userId, date, month and year as payload",
+        "summary": "Rating Analytics of all Users",
+        "tags": ["Analytics"],
+        "operationId": "createEventAgenda",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/payloadForRatingAnalytics"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getAllUsersRatingByRatingDuration"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+            "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          }
+        }
+      }
+    }
   },
+
   "definitions": {
+    "payloadForRatingAnalytics": {
+      "title": "getTaskListForHomePage",
+      "example": {
+         "ratingDuration":"'monthly' or 'yearly'",
+         "month":"input is in numbers '2', required only in monthly ratingDuration and not required in yearly ratingDuration",
+         "year":"input is in numbers '2023', required in monthly ratingDuration and also required in yearly ratingDuration",
+         "userId":"(optional)"
+    },
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "ObjectId"
+        },
+        "stageLocation": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "speakers": {
+          "type": "array"
+        },
+        "sessionType": {
+          "type": "string"
+        },
+        "date": {
+          "type": "date"
+        },
+        "startTime": {
+          "type": "date"
+        },
+        "endTime": {
+          "type": "date"
+        }
+      },
+      "required": [
+        "eventId",
+        "stageLocation",
+        "sessionType",
+        "title",
+        "date",
+        "startTime",
+        "endTime"
+      ]
+    },
+    
+          
+    "getAllUsersRatingByRatingDuration": {
+      "title": "getAllUsersRatingByRatingDuration",
+      "example": {
+          "action": "getYearAllUserRating",
+          "status": 200,
+          "message": "Ratings Fetched",
+          "data": [
+              {
+                  "_id": "648800f87c0057a179357219",
+                  "name": "Aditya singh",
+                  "email": "adityakumar950489@gmail.com",
+                  "monthlyAverages": [
+                      {
+                          "month": 5,
+                          "avg": 6
+                      },
+                      {
+                          "month": 6,
+                          "avg": 3.5
+                      }
+                  ],
+                  "yearlyAverage": 4.75
+              },
+              {
+                  "_id": "6488203b7c0057a17935a20c",
+                  "name": "Akshay Kumar",
+                  "email": "akshay@yopmail.com",
+                  "monthlyAverages": [
+                      {
+                          "month": 6,
+                          "avg": 6
+                      }
+                  ],
+                  "yearlyAverage": 6
+              },
+              {
+                  "_id": "648820257c0057a17935a1ea",
+                  "name": "Aman katiyar",
+                  "email": "aman@ith.tech",
+                  "monthlyAverages": [
+                      {
+                          "month": 4,
+                          "avg": 5
+                      },
+                      {
+                          "month": 6,
+                          "avg": 5.5
+                      }
+                  ],
+                  "yearlyAverage": 5.25
+              },
+              {
+                  "_id": "648802c87c0057a179357621",
+                  "name": "Anshul",
+                  "email": "anshul@ith.tech",
+                  "monthlyAverages": [
+                      {
+                          "avg": 0
+                      }
+                  ],
+                  "yearlyAverage": 0
+              },
+              {
+                  "_id": "64905bb57c0057a1793bf965",
+                  "name": "Ayush Jaiswal",
+                  "email": "ayushcodez@gmail.com",
+                  "monthlyAverages": [
+                      {
+                          "avg": 0
+                      }
+                  ],
+                  "yearlyAverage": 0
+              },
+              {
+                  "_id": "6499568daed168baad3948db",
+                  "name": "Guest User",
+                  "email": "guest123@mailinator.com",
+                  "monthlyAverages": [
+                      {
+                          "avg": 0
+                      }
+                  ],
+                  "yearlyAverage": 0
+              },
+              {
+                  "_id": "648820527c0057a17935a235",
+                  "name": "Mohit yadav",
+                  "email": "mohit@yopmail.com",
+                  "monthlyAverages": [
+                      {
+                          "avg": 0
+                      }
+                  ],
+                  "yearlyAverage": 0
+              },
+              {
+                  "_id": "64883ac37c0057a17935c324",
+                  "name": "Vijay pandey",
+                  "email": "vijay@yopmail.com",
+                  "monthlyAverages": [
+                      {
+                          "avg": 0
+                      }
+                  ],
+                  "yearlyAverage": 0
+              },
+              {
+                  "_id": "648c2d187c0057a17939006e",
+                  "name": "aditya",
+                  "email": "adityanottysingh@gmail.com",
+                  "monthlyAverages": [
+                      {
+                          "month": 6,
+                          "avg": 4.5
+                      },
+                      {
+                          "month": 6,
+                          "avg": 3.5
+                      }
+                  ],
+                  "yearlyAverage": 4
+              },
+              {
+                  "_id": "601e3c6ef5eb242d4408dcc6",
+                  "name": "admin",
+                  "email": "admin@ith.tech",
+                  "monthlyAverages": [
+                      {
+                          "avg": 0
+                      }
+                  ],
+                  "yearlyAverage": 0
+              },
+              {
+                  "_id": "64880b977c0057a17935885d",
+                  "name": "hamza",
+                  "email": "hamza.ith@yopmail.com",
+                  "monthlyAverages": [
+                      {
+                          "month": 6,
+                          "avg": 4.5
+                      },
+                      {
+                          "month": 6,
+                          "avg": 5.5
+                      },
+                      {
+                          "month": 6,
+                          "avg": 4.5
+                      }
+                  ],
+                  "yearlyAverage": 4.833333333333333
+              },
+              {
+                  "_id": "601e3c6ef5eb242d4408dcc7",
+                  "name": "lead",
+                  "email": "lead@ith.tech",
+                  "monthlyAverages": [
+                      {
+                          "avg": 0
+                      }
+                  ],
+                  "yearlyAverage": 0
+              },
+              {
+                  "_id": "64883ad47c0057a17935c341",
+                  "name": "manik Gupta",
+                  "email": "manik@yopmail.com",
+                  "monthlyAverages": [
+                      {
+                          "avg": 0
+                      }
+                  ],
+                  "yearlyAverage": 0
+              },
+              {
+                  "_id": "649958a5aed168baad394b19",
+                  "name": "qwerty user",
+                  "email": "qwertyuser@mailinator",
+                  "monthlyAverages": [
+                      {
+                          "avg": 0
+                      }
+                  ],
+                  "yearlyAverage": 0
+              }
+          ],
+          "error": false,
+          "signature": "1687777339340.8HTHCGzbwbGgS"
+    },
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "ObjectId"
+        },
+        "stageLocation": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "speakers": {
+          "type": "array"
+        },
+        "sessionType": {
+          "type": "string"
+        },
+        "date": {
+          "type": "date"
+        },
+        "startTime": {
+          "type": "date"
+        },
+        "endTime": {
+          "type": "date"
+        }
+      },
+      "required": [
+        "eventId",
+        "stageLocation",
+        "sessionType",
+        "title",
+        "date",
+        "startTime",
+        "endTime"
+      ]
+    },
+    "getTaskListForHomePageOfAssignedUsers": {
+      "title": "getTaskListForHomePage",
+      "example": {
+          "action": "getTaskListForHomePage",
+          "status": 200,
+          "message": "Task List",
+          "data": [
+              {
+                  "_id": "648822d270bd5a4601e0817c",
+                  "projectName": "TDX launchpad Project",
+                  "users": [
+                      "Akshay Kumar"
+                  ]
+              }
+          ],
+          "error": false,
+          "signature": "1687775559084.V6kSxVf5RpL1T"
+
+    },
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "ObjectId"
+        },
+        "stageLocation": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "speakers": {
+          "type": "array"
+        },
+        "sessionType": {
+          "type": "string"
+        },
+        "date": {
+          "type": "date"
+        },
+        "startTime": {
+          "type": "date"
+        },
+        "endTime": {
+          "type": "date"
+        }
+      },
+      "required": [
+        "eventId",
+        "stageLocation",
+        "sessionType",
+        "title",
+        "date",
+        "startTime",
+        "endTime"
+      ]
+    },
+
+    "getTaskListForHomePage": {
+      "title": "getTaskListForHomePage",
+      "example": {
+        "action": "getTaskListForHomePage",
+        "status": 200,
+        "message": "Free Users list",
+        "data": [
+            {
+                "_id": "649958a5aed168baad394b19",
+                "email": "qwertyuser@mailinator",
+                "__v": 0,
+                "createdAt": "2023-06-26T09:21:41.097Z",
+                "isDeleted": false,
+                "managerIds": [],
+                "name": "qwerty user",
+                "profileCompleted": false,
+                "provider": "email",
+                "role": "GUEST",
+                "updatedAt": "2023-06-26T09:21:41.097Z"
+            },
+            {
+                "_id": "6499568daed168baad3948db",
+                "email": "guest123@mailinator.com",
+                "__v": 0,
+                "createdAt": "2023-06-26T09:12:45.842Z",
+                "isDeleted": false,
+                "managerIds": [],
+                "name": "Guest User",
+                "profileCompleted": false,
+                "provider": "email",
+                "role": "GUEST",
+                "updatedAt": "2023-06-26T09:12:45.842Z"
+            },
+            {
+                "_id": "64905bb57c0057a1793bf965",
+                "email": "ayushcodez@gmail.com",
+                "__v": 0,
+                "createdAt": "2023-06-19T13:44:21.221Z",
+                "isDeleted": false,
+                "managerIds": [
+                    "601e3c6ef5eb242d4408dcc6",
+                    "601e3c6ef5eb242d4408dcc7"
+                ],
+                "name": "Ayush Jaiswal",
+                "profileCompleted": false,
+                "provider": "email",
+                "role": "CONTRIBUTOR",
+                "updatedAt": "2023-06-20T10:53:56.594Z"
+            },
+            {
+                "_id": "648c2d187c0057a17939006e",
+                "email": "adityanottysingh@gmail.com",
+                "__v": 0,
+                "createdAt": "2023-06-16T09:36:24.492Z",
+                "isDeleted": false,
+                "managerIds": [
+                    "648820527c0057a17935a235",
+                    "601e3c6ef5eb242d4408dcc7"
+                ],
+                "name": "aditya",
+                "profileCompleted": true,
+                "provider": "email",
+                "role": "CONTRIBUTOR",
+                "updatedAt": "2023-06-16T13:29:22.959Z"
+            },
+            {
+                "_id": "64883ad47c0057a17935c341",
+                "email": "manik@yopmail.com",
+                "__v": 0,
+                "createdAt": "2023-06-13T09:45:56.356Z",
+                "isDeleted": false,
+                "managerIds": [],
+                "name": "manik Gupta",
+                "profileCompleted": false,
+                "provider": "email",
+                "role": "LEAD",
+                "updatedAt": "2023-06-13T09:45:56.356Z"
+            },
+            {
+                "_id": "64883ac37c0057a17935c324",
+                "email": "vijay@yopmail.com",
+                "__v": 0,
+                "createdAt": "2023-06-13T09:45:39.540Z",
+                "isDeleted": false,
+                "managerIds": [
+                    "601e3c6ef5eb242d4408dcc7"
+                ],
+                "name": "Vijay pandey",
+                "profileCompleted": false,
+                "provider": "email",
+                "role": "LEAD",
+                "updatedAt": "2023-06-14T12:42:01.759Z"
+            },
+            {
+                "_id": "648820527c0057a17935a235",
+                "email": "mohit@yopmail.com",
+                "__v": 0,
+                "createdAt": "2023-06-13T07:52:50.521Z",
+                "isDeleted": false,
+                "managerIds": [],
+                "name": "Mohit yadav",
+                "profileCompleted": false,
+                "provider": "email",
+                "role": "LEAD",
+                "updatedAt": "2023-06-13T07:52:50.521Z"
+            },
+            {
+                "_id": "6488203b7c0057a17935a20c",
+                "email": "akshay@yopmail.com",
+                "__v": 0,
+                "createdAt": "2023-06-13T07:52:27.216Z",
+                "isDeleted": false,
+                "managerIds": [
+                    "64883ac37c0057a17935c324"
+                ],
+                "name": "Akshay Kumar",
+                "profileCompleted": true,
+                "provider": "email",
+                "role": "CONTRIBUTOR",
+                "updatedAt": "2023-06-15T07:34:58.572Z"
+            },
+            {
+                "_id": "648820257c0057a17935a1ea",
+                "email": "aman@ith.tech",
+                "__v": 0,
+                "createdAt": "2023-06-13T07:52:05.101Z",
+                "isDeleted": false,
+                "managerIds": [
+                    "64883ac37c0057a17935c324",
+                    "64883ad47c0057a17935c341"
+                ],
+                "name": "Aman katiyar",
+                "profileCompleted": false,
+                "provider": "email",
+                "role": "CONTRIBUTOR",
+                "updatedAt": "2023-06-13T09:48:26.573Z"
+            },
+            {
+                "_id": "64880b977c0057a17935885d",
+                "email": "hamza.ith@yopmail.com",
+                "__v": 0,
+                "createdAt": "2023-06-13T06:24:23.843Z",
+                "isDeleted": false,
+                "managerIds": [
+                    "601e3c6ef5eb242d4408dcc7",
+                    "601e3c6ef5eb242d4408dcc6"
+                ],
+                "name": "hamza",
+                "profileCompleted": true,
+                "provider": "email",
+                "role": "CONTRIBUTOR",
+                "updatedAt": "2023-06-15T10:52:57.034Z",
+                "department": "ITH tech",
+                "designation": "SDE -1",
+                "dob": null,
+                "employeeId": "ITH 123456789",
+                "githubLink": "",
+                "linkedInLink": "",
+                "profilePicture": "",
+                "twitterLink": ""
+            },
+            {
+                "_id": "648802c87c0057a179357621",
+                "email": "anshul@ith.tech",
+                "__v": 0,
+                "createdAt": "2023-06-13T05:46:48.931Z",
+                "isDeleted": false,
+                "managerIds": [
+                    "601e3c6ef5eb242d4408dcc7",
+                    "601e3c6ef5eb242d4408dcc6"
+                ],
+                "name": "Anshul",
+                "profileCompleted": false,
+                "provider": "email",
+                "role": "CONTRIBUTOR",
+                "updatedAt": "2023-06-13T05:56:19.736Z"
+            },
+            {
+                "_id": "648800f87c0057a179357219",
+                "email": "adityakumar950489@gmail.com",
+                "__v": 0,
+                "createdAt": "2023-06-13T05:39:04.093Z",
+                "isDeleted": false,
+                "managerIds": [
+                    "601e3c6ef5eb242d4408dcc6"
+                ],
+                "name": "Aditya singh",
+                "profileCompleted": false,
+                "provider": "email",
+                "role": "CONTRIBUTOR",
+                "updatedAt": "2023-06-21T06:46:50.314Z",
+                "department": "tech",
+                "designation": "Engineer",
+                "dob": null,
+                "employeeId": "",
+                "githubLink": "https://github.com/Adityanotty",
+                "linkedInLink": "https://www.linkedin.com/in/aditya-kumar-6b544418b",
+                "profilePicture": "https://aio-dev.s3.ap-southeast-1.amazonaws.com/tpro/image/1687242584885.JPG",
+                "twitterLink": ""
+            },
+            {
+                "_id": "601e3c6ef5eb242d4408dcc7",
+                "name": "lead",
+                "email": "lead@ith.tech",
+                "provider": "email",
+                "department": "TECH",
+                "wings": "Backend",
+                "designation": "TEA PRO LEAD",
+                "employeeId": "ITH2022184",
+                "profileCompleted": true,
+                "role": "LEAD",
+                "isDeleted": false,
+                "managerIds": [
+                    "601e3c6ef5eb242d4408dcc6"
+                ],
+                "createdAt": "2023-06-09T09:03:12.582Z",
+                "updatedAt": "2023-06-13T05:35:59.931Z",
+                "__v": 0
+            }
+        ],
+        "error": false,
+        "signature": "1687774023774.WLiPwo2H1Mw5l"
+    },
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "ObjectId"
+        },
+        "stageLocation": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "speakers": {
+          "type": "array"
+        },
+        "sessionType": {
+          "type": "string"
+        },
+        "date": {
+          "type": "date"
+        },
+        "startTime": {
+          "type": "date"
+        },
+        "endTime": {
+          "type": "date"
+        }
+      },
+      "required": [
+        "eventId",
+        "stageLocation",
+        "sessionType",
+        "title",
+        "date",
+        "startTime",
+        "endTime"
+      ]
+    },
     "somethingWentWrong": {
       "title": "somethingWentWrong",
       "example": {
@@ -10901,4 +11662,5 @@
 		"description" : "API related to comments"
 	}
   ]
+  
 }
