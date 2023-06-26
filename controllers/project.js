@@ -311,13 +311,11 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 		}
 
 		let allUsers = await User.getAllUsers(findUsers)
-		console.log(allUsers)
 		data.allUsers = allUsers
 		allUsers = allUsers.length ? allUsers : []
 		let usersToAssign = allUsers.filter((el) => el.role == 'CONTRIBUTOR')
 		let leadsToAssign = allUsers.filter((el) => el.role == 'LEAD')
 		let guestToAssign = allUsers.filter((el) => el.role == 'GUEST')
-		console.log("=================assign user/lead data=========",usersToAssign, leadsToAssign,guestToAssign)
 		if(usersToAssign.length && !usersToAssign[0].role){
 			usersToAssign = []
 		}
@@ -330,9 +328,18 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 			leadsToAssign = []
 		}
 		let updatePayload = {
-			$addToSet: { accessibleBy: { $each: usersToAssign }, accessibleBy: { $each: guestToAssign  },managedBy: { $each: leadsToAssign } }
+			$addToSet: { accessibleBy: { $each: usersToAssign}, managedBy: { $each: leadsToAssign } }
 		}
 
+		if(guestToAssign.length != 0){
+		let updatePayload = {
+			$addToSet: { accessibleBy: { $each: guestToAssign }, managedBy: { $each: leadsToAssign } }
+			}
+			let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
+			data.projectRes = projectRes;
+			let sendAssignedProjectMail = sendUsersProjectAssignedMail(data)
+			return { data: projectRes, error: false }
+		}
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
 		data.projectRes = projectRes;
 		let sendAssignedProjectMail = sendUsersProjectAssignedMail(data)
