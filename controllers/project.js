@@ -401,7 +401,7 @@ exports.removeUserFromProject = removeUserFromProject
 
 const removeLeadFromProject = async (req, res, next) => {
 	let data = req.data;
-	if (!data.projectId || !data.userId) {
+	if (!data.projectId || !data.userIds) {
 		return res.status(400).send(sendResponse(400, "", 'removeUserFromProject', null, req.data.signature))
 	}
 
@@ -428,6 +428,7 @@ const createPayloadAndUnAssignUser = async function (data) {
 				$pull: { managedBy: data.userId }
 			}
 		}
+		console.log('updated====',updatePayload)
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
 		return { data: projectRes, error: false }
 	} catch (err) {
@@ -1522,7 +1523,17 @@ const createPayloadAndRemoveUsersFromProject = async function (data) {
 			leadsToUnAssign = []
 		}
 		let updatePayload = {
-			$pull: { accessibleBy: { $in: usersToUnAssign },accessibleBy: { $in: guestsToUnAssign }, managedBy: { $in: leadsToUnAssign } }
+			$pull: { accessibleBy: { $in: usersToUnAssign }, managedBy: { $in: leadsToUnAssign } }
+		}
+
+		if(guestsToUnAssign.length!=0){
+			let updatePayload = {
+				$pull: { accessibleBy: { $in: guestsToUnAssign }, managedBy: { $in: leadsToUnAssign } }
+			}
+			let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
+			data.projectRes = projectRes;
+			return { data: projectRes, error: false }
+			
 		}
 
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
