@@ -515,7 +515,7 @@ const createPayloadAndgetAllProjects = async function (data) {
 			"isDeleted": false
 		}
 		
-		if(data.filteredProjects?.length){
+		if(data.filteredProjects){
 			let filterProjects = data.filteredProjects.map(el=> mongoose.Types.ObjectId(el))
 			findData['_id'] = { $in : filterProjects}
 		}
@@ -1388,16 +1388,17 @@ const createPayloadAndAssignProjectsToUser = async function (data) {
 
 		
 		let user = data.user
+		console.log("user-------------",user.role)
 		if(!user){
 			return { data: "User not found", error: true }
 		}
 
 		let updatePayload = { }
 		
-		if(user.role == 'CONTRIBUTOR','GUEST'){
-			updatePayload = { $addToSet: { accessibleBy: user._id }}
-		}else{
+		if(user.role === 'LEAD'){
 			updatePayload = { $addToSet: { managedBy: user._id }}
+		}else{
+			updatePayload = { $addToSet: { accessibleBy: user._id }}
 		}
 
 		let projectRes = await Project.updateMany(payload, updatePayload)
