@@ -240,6 +240,9 @@ const findAllUserNonPagination = async function (data) {
             role: { $nin: ["ADMIN", "SUPER_ADMIN"] },
             isDeleted: false
         }
+        if(data.excludeUsers){
+            payload._id = {$nin : data.excludeUsers}
+        }
         if (data.search) {
             payload["$or"] = [
                 { "name": { "$regex": data.search, "$options": "i" } },
@@ -264,6 +267,7 @@ const findAllUserNonPagination = async function (data) {
     }
 }
 exports.findAllUserNonPagination = findAllUserNonPagination
+
 
 
 const editUserDetails = async (req, res, next) => {
