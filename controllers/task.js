@@ -2096,6 +2096,7 @@ const createPayloadAndGetAllUnassignedUsers = async function (data) {
 		let findData = {
 			isDeleted: false,
 			isArchived: false,
+			assignedTo : {$exists : true}
 		};
 
 		if (data.fromDate || data.toDate) {
