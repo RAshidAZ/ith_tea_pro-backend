@@ -2729,52 +2729,37 @@
     },
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    "/users/v1/update/profile": {
-      "patch": {
-        "description": "Update user profile",
-        "summary": "Update user profile",
-        "tags": ["Users"],
-        "operationId": "updateUserProfile",
+    "/task/v1/user/insert": {
+      "post": {
+        "description": "Insert User Tasks",
+        "summary": "Insert User Tasks",
+        "tags": ["Tasks"],
+        "operationId": "InsertUserTasks",
         "deprecated": false,
         "produces": ["application/json"],
         "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
           {
             "name": "Body",
             "in": "body",
             "required": true,
             "description": "",
             "schema": {
-              "$ref": "#/definitions/updateUserProfileRequest"
+              "$ref": "#/definitions/createEventAgendaRequest"
             }
-          },
-          {
-            "name": "x-access-token",
-            "in": "header",
-            "required": true,
-            "type": "string",
-            "description": "Provide User Token"
-          },
-          {
-            "name": "x-access-user",
-            "in": "header",
-            "required": true,
-            "type": "string",
-            "description": "Provide User Id"
           }
         ],
         "responses": {
@@ -2782,7 +2767,7 @@
             "description": "",
             "schema": {
               "type": "object",
-              "$ref": "#/definitions/updateUserProfileResponse"
+              "$ref": "#/definitions/createEventAgendaResponse"
             },
             "headers": {}
           },
@@ -2811,12 +2796,12 @@
         }
       }
     },
-    "/users/v1/profile": {
-      "get": {
-        "description": "",
-        "summary": "Get User Profile",
-        "tags": ["Users"],
-        "operationId": "getUserProfile",
+    "/task/v1/reopen": {
+      "post": {
+        "description": "API to Re-open Tasks of the user",
+        "summary": "Task Re-open API",
+        "tags": ["Tasks"],
+        "operationId": "TaskRe-openAPI",
         "deprecated": false,
         "produces": ["application/json"],
         "parameters": [
@@ -2825,14 +2810,23 @@
             "in": "header",
             "required": true,
             "type": "string",
-            "description": ""
+            "Description": "Enter x-access-token"
           },
           {
             "name": "x-access-user",
             "in": "header",
             "required": true,
             "type": "string",
-            "description": ""
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createEventAgendaRequest"
+            }
           }
         ],
         "responses": {
@@ -2840,7 +2834,7 @@
             "description": "",
             "schema": {
               "type": "object",
-              "$ref": "#/definitions/userProfileResponse"
+              "$ref": "#/definitions/createEventAgendaResponse"
             },
             "headers": {}
           },
@@ -2869,16 +2863,280 @@
         }
       }
     },
-
-
-    
-
-    "/tasks/v1/add/task": {
+    "/task/v1/add/comment": {
       "post": {
-        "description": "Create event agenda",
-        "summary": "Create event agenda",
+        "description": "Insert Task Comment",
+        "summary": "Add Task Comment",
         "tags": ["Tasks"],
-        "operationId": "createEventAgenda",
+        "operationId": "AddTaskComment",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createEventAgendaRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventAgendaResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/task/v1/edit": {
+      "patch": {
+        "description": "Edit User Task ",
+        "summary": "Edit User Task",
+        "tags": ["Tasks"],
+        "operationId": "EditUserTask",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createEventAgendaRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventAgendaResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/task/v1/verify": {
+      "patch": {
+        "description": "Verify User Task",
+        "summary": "Verify User Task",
+        "tags": ["Tasks"],
+        "operationId": "VerifyUserTask",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createEventAgendaRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventAgendaResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/task/v1/delete": {
+      "patch": {
+        "description": "Delete Task API ",
+        "summary": "Delete Task",
+        "tags": ["Tasks"],
+        "operationId": "DeleteTaskAPI",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          },
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/createEventAgendaRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/createEventAgendaResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/task/v1/update/status": {
+      "patch": {
+        "description": "Update Task Status",
+        "summary": "Update Task Status",
+        "tags": ["Tasks"],
+        "operationId": "UpdateTaskStatus",
         "deprecated": false,
         "produces": ["application/json"],
         "parameters": [
@@ -2945,7 +3203,7 @@
         "description": "Users list who didn't created any tasks for the day",
         "summary": "Free Resources",
         "tags": ["Tasks"],
-        "operationId": "createEventAgenda",
+        "operationId": "FreeResources",
         "deprecated": false,
         "produces": ["application/json"],
         "parameters": [
@@ -2996,7 +3254,7 @@
         "description": "Users list who created tasks for the day",
         "summary": "occupied resources",
         "tags": ["Tasks"],
-        "operationId": "createEventAgenda",
+        "operationId": "occupiedresources",
         "deprecated": false,
         "produces": ["application/json"],
         "parameters": [
@@ -3042,6 +3300,1784 @@
         }
       }
     },
+      "task/v1/list/homepage": {
+      "get": {
+        "description": "Get task list for homepage",
+        "summary": "Get task list for homepage",
+        "tags": ["Tasks"],
+        "operationId": "Gettasklistforhomepage",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePageOfAssignedUsers"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+      "task/v1/downloadExcel": {  
+      "get": {
+        "description": "Use Filter In Task Module To Get Desired Data Exported In Excel file",
+        "summary": "Export Data To Excel",
+        "tags": ["Tasks"],
+        "operationId": "exportDataToExcel",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePageOfAssignedUsers"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+      "task/v1/get/team/task/count": {
+      "get": {
+        "description": "get team-member tasks count",
+        "summary": "get team-member tasks count",
+        "tags": ["Tasks"],
+        "operationId": "getteammembertaskscount",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePageOfAssignedUsers"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+      "task/v1/get/team/task": {
+      "get": {
+        "description": "get team-member tasks list",
+        "summary": "get team-member tasks list",
+        "tags": ["Tasks"],
+        "operationId": "getteamMembertaskslist",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePageOfAssignedUsers"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+      "task/v1/get/today/tasks": {
+      "get": {
+        "description": "get today tasks list for team work",
+        "summary": "get today tasks list for team work",
+        "tags": ["Tasks"],
+        "operationId": "taskslistforteamwork",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePageOfAssignedUsers"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+      "task/v1/comments": {
+      "get": {
+        "description": "Get comments of tasks and rating of user for given date",
+        "summary": "Get comments of tasks and rating of user for given date",
+        "tags": ["Tasks"],
+        "operationId": "Getcommentsoftask",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePageOfAssignedUsers"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+      "task/v1/all/of/project": {
+      "get": {
+        "description": "Get Task List By ProjectId",
+        "summary": "Get Task List By ProjectId",
+        "tags": ["Tasks"],
+        "operationId": "getTasksByProjectId",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePageOfAssignedUsers"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+      "task/v1/list/for/rating": {
+      "get": {
+        "description": "Get Task List To Verify",
+        "summary": "Get Task List To Verify",
+        "tags": ["Tasks"],
+        "operationId": "getTaskListToVerify",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePageOfAssignedUsers"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+      "task/v1/list/pending/rating": {
+      "get": {
+        "description": "Get Task List With Pending Verification",
+        "summary": "Get Task List With Pending Verification",
+        "tags": ["Tasks"],
+        "operationId": "getTaskListWithPendingRating",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePageOfAssignedUsers"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+      "task/v1/status/analytics": {
+      "get": {
+        "description": "get Task Status Analytics",
+        "summary": "get Task Status Analytics",
+        "tags": ["Tasks"],
+        "operationId": "getTaskStatusAnalytics",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePageOfAssignedUsers"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+      "task/v1/user/tasks": {
+      "get": {
+        "description": "get Today Tasks List By UserId",
+        "summary": "get Today Tasks List By UserId",
+        "tags": ["Tasks"],
+        "operationId": "getTodayTasksListByUserId",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePageOfAssignedUsers"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+      "task/v1/overdue/tasks": {
+      "get": {
+        "description": "Overdue Task listing API",
+        "summary": "Get Overdue Task list",
+        "tags": ["Tasks"],
+        "operationId": "OverdueTaskAPI",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePageOfAssignedUsers"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+      "task/v1/by/taskId": {
+      "get": {
+        "description": "Get task detail by taskId",
+        "summary": "Get task detail by taskId",
+        "tags": ["Tasks"],
+        "operationId": "taskdetailbytaskId",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePageOfAssignedUsers"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+      "task/v1/groupby": {
+      "get": {
+        "description": "Task Listing Main API For",
+        "summary": "Task Listing Main API",
+        "tags": ["Tasks"],
+        "operationId": "TaskListingMain ",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "Description": "Enter x-access-user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/getTaskListForHomePageOfAssignedUsers"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    "/user/v1/add": {
+      "post": {
+        "description": " Superadmin, Admin Add New Team Member",
+        "summary": " Superadmin, Admin Add New Team Member",
+        "tags": ["Users"],
+        "operationId": "SuperadminAdminAddNewTeamMember",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/updateUserProfileRequest"
+            }
+          },
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Provide User Token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Provide User Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/updateUserProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+
+    
+    "/user/v1/edit": {
+      "patch": {
+        "description": "Edit Any User Details With UserId",
+        "summary": "Edit Any User Details With UserId",
+        "tags": ["Users"],
+        "operationId": "EditAnyUserDetailsWithUserId",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/updateUserProfileRequest"
+            }
+          },
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Provide User Token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Provide User Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/updateUserProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/user/v1/assign/manager": {
+      "patch": {
+        "description": "Route to assign Manager",
+        "summary": "Route to assign Manager",
+        "tags": ["Users"],
+        "operationId": "RoutetoassignManager",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/updateUserProfileRequest"
+            }
+          },
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Provide User Token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Provide User Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/updateUserProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/user/v1/edit/block/status": {
+      "patch": {
+        "description": "Update User Blocking Status",
+        "summary": "Update User Blocking Status",
+        "tags": ["Users"],
+        "operationId": "UpdateUserBlockingStatus",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/updateUserProfileRequest"
+            }
+          },
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Provide User Token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Provide User Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/updateUserProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/user/v1/delete/user": {
+      "patch": {
+        "description": "Delete User API",
+        "summary": "Delete User API",
+        "tags": ["Users"],
+        "operationId": "DeleteUserAPI",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/updateUserProfileRequest"
+            }
+          },
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Provide User Token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Provide User Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/updateUserProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/user/v1/active/guest": {
+      "patch": {
+        "description": "Active or Inactive Guest API",
+        "summary": "Active or Inactive Guest",
+        "tags": ["Users"],
+        "operationId": "ActiveorInactiveGuest",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "required": true,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/updateUserProfileRequest"
+            }
+          },
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Provide User Token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Provide User Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/updateUserProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+
+
+
+    "/user/v1/verify/manager": {
+      "get": {
+        "description": "Verify the manager to give rating",
+        "summary": "Verify the manager to give rating",
+        "tags": ["Users"],
+        "operationId": "VerifyManagertogiverating",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/user/v1/userId": {
+      "get": {
+        "description": "Get User Details By UserId",
+        "summary": "Get User Details By UserId",
+        "tags": ["Users"],
+        "operationId": "getUserDetails",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/user/v1/all": {
+      "get": {
+        "description": "Get all users Non-Paginated API (except SA & A)",
+        "summary": "Get all users (except SA & A)",
+        "tags": ["Users"],
+        "operationId": "Getallusers",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/user/v1/all/pagination": {
+      "get": {
+        "description": "Get all users Paginated API (except SA & A)",
+        "summary": "Get all users Paginated API (except SA & A)",
+        "tags": ["Users"],
+        "operationId": "usersPaginatedAPI",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/user/v1/list": {
+      "get": {
+        "description": "Users listing - Non Paginated ( for dropdown ) - Only User",
+        "summary": "Users listing - Non Paginated ( for dropdown ) - Only User",
+        "tags": ["Users"],
+        "operationId": "Userslisting",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/user/v1/leads/list": {
+      "get": {
+        "description": "Get list of leads role - Non Paginated( for dropdown ) - Only Lead",
+        "summary": "Get list of leads role - Non Paginated( for dropdown ) - Only Lead",
+        "tags": ["Users"],
+        "operationId": "Getlistofleadsrole",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/user/v1/unassigned/list": {
+      "get": {
+        "description": "Get list of unassigned leads/user role - Non Paginated( for dropdown )",
+        "summary": "Get list of unassigned leads/user role - Non Paginated( for dropdown )",
+        "tags": ["Users"],
+        "operationId": "Getlistofunassignedleads",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/user/v1/team/analytics": {
+      "get": {
+        "description": "Get Team Analytics",
+        "summary": "Get Team Analytics",
+        "tags": ["Users"],
+        "operationId": "GetTeamAnalytics",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/user/v1/guest/pagination": {
+      "get": {
+        "description": "Get all Guest (except SA , A, lEAD, Contributor) - Pagination",
+        "summary": "Get all Guest (except SA , A, lEAD, Contributor) - Pagination",
+        "tags": ["Users"],
+        "operationId": "GetallGuest",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/user/v1/all/users": {
+      "get": {
+        "description": "Get all users (except SA) - Non Paginated ( for dropdown )",
+        "summary": "Get all users (except SA) - Non Paginated ( for dropdown )",
+        "tags": ["Users"],
+        "operationId": "GetallusersexceptSA",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+    "/user/v1/all/leads": {
+      "get": {
+        "description": "Get all leads/admin ( for dropdown )",
+        "summary": "Get all leads/admin ( for dropdown )",
+        "tags": ["Users"],
+        "operationId": "GetAllLeadsAdminfordropdown",
+        "deprecated": false,
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/userProfileResponse"
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/somethingWentWrong"
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/notAllowed"
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/missingParams"
+            },
+            "headers": {}
+          }
+        }
+      }
+    },
+
+
+    
+
+
 
 
 
