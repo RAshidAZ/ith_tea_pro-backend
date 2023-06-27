@@ -515,7 +515,7 @@ const createPayloadAndgetAllProjects = async function (data) {
 			"isDeleted": false
 		}
 		
-		if(data.filteredProjects){
+		if(data.filteredProjects?.length){
 			let filterProjects = data.filteredProjects.map(el=> mongoose.Types.ObjectId(el))
 			findData['_id'] = { $in : filterProjects}
 		}

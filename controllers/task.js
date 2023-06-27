@@ -713,7 +713,7 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			findData["isArchived"] = false
 		}
 
-		if (data.filteredProjects) {
+		if (data.filteredProjects?.length) {
 			findData._id = { $in: data.filteredProjects.map((el) => mongoose.Types.ObjectId(el)) }
 		}
 
