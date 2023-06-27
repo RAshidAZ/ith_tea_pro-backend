@@ -2115,7 +2115,7 @@ const createPayloadAndGetAllUnassignedUsers = async function (data) {
 		let taskList = await Task.taskFindQuery(findData, projection, populate, sortCriteria);
 
 		let TaskUserIds = taskList.map(task => task.assignedTo);
-		let ExtractTaskUserIds = TaskUserIds.map(user => user._id);
+		let ExtractTaskUserIds = TaskUserIds.map(user => user?._id);
 
 		// console.log(ExtractTaskUserIds)
 
