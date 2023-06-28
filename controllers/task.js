@@ -522,6 +522,9 @@ const createPayloadAndEditTask = async function (data) {
 		if (JSON.stringify(data.section)) {
 			updatePayload.section = data.section
 			updatePayload.ratingAllowed = data.ratingAllowed
+		}
+		
+		if (JSON.stringify(data.miscType)) {
 			updatePayload.miscType = data.miscType
 		}
 
