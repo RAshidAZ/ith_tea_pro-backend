@@ -311,13 +311,11 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 		}
 
 		let allUsers = await User.getAllUsers(findUsers)
-		console.log(allUsers)
 		data.allUsers = allUsers
 		allUsers = allUsers.length ? allUsers : []
 		let usersToAssign = allUsers.filter((el) => el.role == 'CONTRIBUTOR')
 		let leadsToAssign = allUsers.filter((el) => el.role == 'LEAD')
 		let guestToAssign = allUsers.filter((el) => el.role == 'GUEST')
-		console.log("=================assign user/lead data=========",usersToAssign, leadsToAssign,guestToAssign)
 		if(usersToAssign.length && !usersToAssign[0].role){
 			usersToAssign = []
 		}
@@ -330,9 +328,18 @@ const createPayloadAndAssignProjectToUser = async function (data) {
 			leadsToAssign = []
 		}
 		let updatePayload = {
-			$addToSet: { accessibleBy: { $each: usersToAssign }, accessibleBy: { $each: guestToAssign  },managedBy: { $each: leadsToAssign } }
+			$addToSet: { accessibleBy: { $each: usersToAssign}, managedBy: { $each: leadsToAssign } }
 		}
 
+		if(guestToAssign.length != 0){
+		let updatePayload = {
+			$addToSet: { accessibleBy: { $each: guestToAssign }, managedBy: { $each: leadsToAssign } }
+			}
+			let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
+			data.projectRes = projectRes;
+			let sendAssignedProjectMail = sendUsersProjectAssignedMail(data)
+			return { data: projectRes, error: false }
+		}
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
 		data.projectRes = projectRes;
 		let sendAssignedProjectMail = sendUsersProjectAssignedMail(data)
@@ -394,7 +401,7 @@ exports.removeUserFromProject = removeUserFromProject
 
 const removeLeadFromProject = async (req, res, next) => {
 	let data = req.data;
-	if (!data.projectId || !data.userId) {
+	if (!data.projectId || !data.userIds) {
 		return res.status(400).send(sendResponse(400, "", 'removeUserFromProject', null, req.data.signature))
 	}
 
@@ -421,6 +428,7 @@ const createPayloadAndUnAssignUser = async function (data) {
 				$pull: { managedBy: data.userId }
 			}
 		}
+		console.log('updated====',updatePayload)
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
 		return { data: projectRes, error: false }
 	} catch (err) {
@@ -1515,7 +1523,17 @@ const createPayloadAndRemoveUsersFromProject = async function (data) {
 			leadsToUnAssign = []
 		}
 		let updatePayload = {
-			$pull: { accessibleBy: { $in: usersToUnAssign },accessibleBy: { $in: guestsToUnAssign }, managedBy: { $in: leadsToUnAssign } }
+			$pull: { accessibleBy: { $in: usersToUnAssign }, managedBy: { $in: leadsToUnAssign } }
+		}
+
+		if(guestsToUnAssign.length!=0){
+			let updatePayload = {
+				$pull: { accessibleBy: { $in: guestsToUnAssign }, managedBy: { $in: leadsToUnAssign } }
+			}
+			let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
+			data.projectRes = projectRes;
+			return { data: projectRes, error: false }
+			
 		}
 
 		let projectRes = await Project.projectFindOneAndUpdate(payload, updatePayload)
