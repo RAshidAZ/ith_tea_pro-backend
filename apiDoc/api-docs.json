@@ -2353,7 +2353,7 @@
             "required": true,
             "description": "",
             "schema": {
-              "$ref": "#/definitions/applyAsAttendeeRequest"
+              "$ref": "#/definitions/ratingFromToDateData"
             }
           }
         ],
@@ -2362,7 +2362,7 @@
             "description": "",
             "schema": {
               "type": "object",
-              "$ref": "#/definitions/applyAsAttendeeResponse"
+              "$ref": "#/definitions/ratingUserDataResponse"
             },
             "headers": {}
           },
@@ -2421,7 +2421,7 @@
             "required": true,
             "description": "",
             "schema": {
-              "$ref": "#/definitions/applyAsAttendeeRequest"
+              "$ref": "#/definitions/ratingFromToDateData"
             }
           }
         ],
@@ -2430,7 +2430,7 @@
             "description": "",
             "schema": {
               "type": "object",
-              "$ref": "#/definitions/applyAsAttendeeResponse"
+              "$ref": "#/definitions/ratingFromToDateDataResponse"
             },
             "headers": {}
           },
@@ -2481,15 +2481,6 @@
             "required": true,
             "type": "string",
             "Description": "Enter x-access-user"
-          },
-          {
-            "name": "Body",
-            "in": "body",
-            "required": true,
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/applyAsAttendeeRequest"
-            }
           }
         ],
         "responses": {
@@ -2497,7 +2488,7 @@
             "description": "",
             "schema": {
               "type": "object",
-              "$ref": "#/definitions/applyAsAttendeeResponse"
+              "$ref": "#/definitions/monthlyUserRatingFromToDateDataResponse"
             },
             "headers": {}
           },
@@ -2564,7 +2555,7 @@
             "description": "",
             "schema": {
               "type": "object",
-              "$ref": "#/definitions/applyAsAttendeeResponse"
+              "$ref": "#/definitions/ratingFromToDateDataResponse"
             },
             "headers": {}
           },
@@ -2622,7 +2613,7 @@
             "required": true,
             "description": "",
             "schema": {
-              "$ref": "#/definitions/applyAsAttendeeRequest"
+              "$ref": "#/definitions/fromToDateData"
             }
           }
         ],
@@ -5910,6 +5901,305 @@
       "properties": {
         "groupBy": {
           "type": "string"
+        }
+      }
+    },
+    "ratingUserDataResponse":{
+      "title": "deleteUserData",
+      "example": {
+        "action": "insertUserRating",
+        "status": 200,
+        "message": "Rating Inserted",
+        "data": null,
+        "error": false,
+        "signature": "1688133333028.SOcIR0kwKSvxu"
+    },
+      "type": "object",
+      "properties": {
+        "groupBy": {
+          "type": "string"
+        }
+      }
+    },
+    "ratingUserResponse":{
+      "title": "deleteUserData",
+      "example":{
+        "action": "getUserRating",
+        "status": 200,
+        "message": "Rating Fetched",
+        "data": {
+            "rating": 6
+        },
+        "error": false,
+        "signature": "1688133527750.vrKGSDOQxRbOb"
+    },
+      "type": "object",
+      "properties": {
+        "groupBy": {
+          "type": "string"
+        }
+      }
+    },
+    "monthlyUserRatingFromToDateDataResponse":{
+      "title": "deleteUserData",
+      "example":{
+        "action": "getMonthAllUserRating",
+        "status": 200,
+        "message": "Ratings Fetched",
+        "data": [
+            {
+                "_id": "648800f87c0057a179357219",
+                "name": "Aditya singh",
+                "email": "adityakumar950489@gmail.com",
+                "ratings": [
+                    {
+                        "rating": 3.5,
+                        "taskIds": [],
+                        "date": 20,
+                        "month": 6,
+                        "year": 2023
+                    },
+                    {
+                        "rating": 6,
+                        "taskIds": [],
+                        "date": 16,
+                        "month": 6,
+                        "year": 2023
+                    }
+                ],
+                "monthlyAverage": 4.75
+            },
+            {
+                "_id": "6488203b7c0057a17935a20c",
+                "name": "Akshay Kumar",
+                "email": "akshay@yopmail.com",
+                "ratings": [
+                    {
+                        "rating": 6,
+                        "taskIds": [],
+                        "date": 13,
+                        "month": 6,
+                        "year": 2023
+                    }
+                ],
+                "monthlyAverage": 6
+            },
+            {
+                "_id": "648820257c0057a17935a1ea",
+                "name": "Aman katiyar",
+                "email": "aman@ith.tech",
+                "ratings": [
+                    {
+                        "rating": 5.5,
+                        "taskIds": [],
+                        "date": 14,
+                        "month": 6,
+                        "year": 2023
+                    }
+                ],
+                "monthlyAverage": 5.5
+            },
+            {
+                "_id": "649ac038aed168baad39906d",
+                "name": "Aman tiwari",
+                "email": "tiwari@yopmail.com",
+                "ratings": [],
+                "monthlyAverage": null
+            },
+            {
+                "_id": "648802c87c0057a179357621",
+                "name": "Anshul",
+                "email": "anshul@ith.tech",
+                "ratings": [],
+                "monthlyAverage": null
+            },
+            {
+                "_id": "64905bb57c0057a1793bf965",
+                "name": "Ayush Jaiswal",
+                "email": "ayushcodez@gmail.com",
+                "ratings": [],
+                "monthlyAverage": null
+            },
+            {
+                "_id": "649aad00aed168baad39844b",
+                "name": "Foodcoach",
+                "email": "foodcoach@yopmail.com",
+                "ratings": [],
+                "monthlyAverage": null
+            },
+            {
+                "_id": "6499568daed168baad3948db",
+                "name": "Guest User",
+                "email": "guest123@mailinator.com",
+                "ratings": [],
+                "monthlyAverage": null
+            },
+            {
+                "_id": "648820527c0057a17935a235",
+                "name": "Mohit yadav",
+                "email": "mohit@yopmail.com",
+                "ratings": [],
+                "monthlyAverage": null
+            },
+            {
+                "_id": "64883ac37c0057a17935c324",
+                "name": "Vijay pandey",
+                "email": "vijay@yopmail.com",
+                "ratings": [],
+                "monthlyAverage": null
+            },
+            {
+                "_id": "648c2d187c0057a17939006e",
+                "name": "aditya",
+                "email": "adityanottysingh@gmail.com",
+                "ratings": [
+                    {
+                        "rating": 4.5,
+                        "taskIds": [],
+                        "date": 16,
+                        "month": 6,
+                        "year": 2023
+                    },
+                    {
+                        "rating": 3.5,
+                        "taskIds": [],
+                        "date": 21,
+                        "month": 6,
+                        "year": 2023
+                    }
+                ],
+                "monthlyAverage": 4
+            },
+            {
+                "_id": "601e3c6ef5eb242d4408dcc6",
+                "name": "admin",
+                "email": "admin@ith.tech",
+                "ratings": [],
+                "monthlyAverage": null
+            },
+            {
+                "_id": "649aac44aed168baad3983d2",
+                "name": "ayux",
+                "email": "ayux@yopmail.com",
+                "ratings": [],
+                "monthlyAverage": null
+            },
+            {
+                "_id": "64880b977c0057a17935885d",
+                "name": "hamza",
+                "email": "hamza.ith@yopmail.com",
+                "ratings": [
+                    {
+                        "rating": 4.5,
+                        "taskIds": [],
+                        "date": 13,
+                        "month": 6,
+                        "year": 2023
+                    },
+                    {
+                        "rating": 5.5,
+                        "taskIds": [],
+                        "date": 15,
+                        "month": 6,
+                        "year": 2023
+                    },
+                    {
+                        "rating": 4.5,
+                        "taskIds": [],
+                        "date": 14,
+                        "month": 6,
+                        "year": 2023
+                    }
+                ],
+                "monthlyAverage": 4.833333333333333
+            },
+            {
+                "_id": "601e3c6ef5eb242d4408dcc7",
+                "name": "lead",
+                "email": "lead@ith.tech",
+                "ratings": [],
+                "monthlyAverage": null
+            },
+            {
+                "_id": "649ac441aed168baad3994ae",
+                "name": "manav",
+                "email": "manav@yopmail.com",
+                "ratings": [],
+                "monthlyAverage": null
+            },
+            {
+                "_id": "64883ad47c0057a17935c341",
+                "name": "manik Gupta",
+                "email": "manik@yopmail.com",
+                "ratings": [],
+                "monthlyAverage": null
+            },
+            {
+                "_id": "649958a5aed168baad394b19",
+                "name": "qwerty user",
+                "email": "qwertyuser@mailinator",
+                "ratings": [],
+                "monthlyAverage": null
+            },
+            {
+                "_id": "649ab07caed168baad398645",
+                "name": "test LEAD",
+                "email": "testlead@yopmail.com",
+                "ratings": [],
+                "monthlyAverage": null
+            },
+            {
+                "_id": "649abbd2aed168baad398c74",
+                "name": "test user",
+                "email": "test123@yopmail.com",
+                "ratings": [],
+                "monthlyAverage": null
+            }
+        ],
+        "error": false,
+        "signature": "1688133662597.TAdFpO5xHdBag"
+    },
+      "type": "object",
+      "properties": {
+        "userId": {
+          "fromDate": "Date",
+          "toDate": "Date"
+        }
+      }
+    },
+    "ratingFromToDateDataResponse":{
+      "title": "deleteUserData",
+      "example": {
+        "userId":"648800f87c0057a179357219",
+        "rating":"6",
+        "comment":"data",
+         "year":2023,
+         "month":6,
+         "date":16
+     
+     },
+      "type": "object",
+      "properties": {
+        "userId": {
+          "fromDate": "Date",
+          "toDate": "Date"
+        }
+      }
+    },
+    "ratingFromToDateData":{
+      "title": "deleteUserData",
+      "example": {
+        "userId":"648800f87c0057a179357219",
+         "year":2023,
+         "month":6,
+         "date":16
+     
+     },
+      "type": "object",
+      "properties": {
+        "userId": {
+          "fromDate": "Date",
+          "toDate": "Date"
         }
       }
     },
