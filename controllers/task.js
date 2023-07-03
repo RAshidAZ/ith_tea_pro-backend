@@ -484,6 +484,7 @@ const createPayloadAndInsertReOpenTask = async function (taskRes) {
 			createdBy: taskRes.createdBy,    //TODO: Change after auth is updated
 			assignedTo: taskRes.assignedTo,
 			dueDate: taskRes.dueDate,
+			defaultTaskTime:taskRes.defaultTaskTime,
 			isReOpen: taskRes.isReOpen,
 			priority: taskRes.priority,
 			lead: taskRes.lead
