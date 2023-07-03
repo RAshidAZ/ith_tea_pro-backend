@@ -1,9 +1,8 @@
-
 const mongoose = require('mongoose');
 const moment = require('moment');
 const { sendResponse } = require('../helpers/sendResponse')
 const queryController = require('../query')
-const { Rating, User, Project } = queryController;
+const { Rating, User, Project, Task } = queryController;
 
 const commentController = require('./comment');
 
@@ -52,6 +51,60 @@ const insertUserRating = async (req, res, next) => {
 	}
 	data.commentId = commentRes.data._id
 
+	if (!["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) {
+		const time = '23:59:59:000Z';
+		const dateString = `${data.year}-${data.month}-${data.date}`;
+		const dateTimeString = `${dateString} ${time}`;
+		const dateTime = new Date(dateTimeString);
+
+		const gteTime = '00:00:00:000Z';
+		const greaterthsnDateTimeString = `${dateString} ${gteTime}`;
+		const gteDateTime = new Date(greaterthsnDateTimeString);
+		console.log(dateTime)
+		console.log(gteDateTime)
+
+		let payload = {
+			assignedTo: data.userId,
+			isVerified: false,
+			ratingAllowed: true,
+			updatedAt: { $gte: gteDateTime, $lte: dateTime }
+		}
+		let sortCriteria = {
+			updatedAt: -1
+		}
+		let taskRes = await Task.taskFindQuery(payload, {}, '', sortCriteria)
+
+		console.log('taskres========', taskRes)
+
+		if (!taskRes.length == 0) {
+			return res.status(400).send(sendResponse(400, "You Are Not Allowed To Rate Because There Are Tasks Pending For Verification", 'insertUserRating', null, req.data.signature))
+		}
+
+		let payloadForVerifiedTasks = {
+			assignedTo: data.userId,
+			isVerified: true,
+			ratingAllowed: true,
+			updatedAt: { $gte: gteDateTime, $lte: dateTime }
+		}
+
+		let verifiedTasksRes = await Task.taskFindQuery(payloadForVerifiedTasks, {}, '', sortCriteria)
+		console.log('verifiedTasksRes =======', verifiedTasksRes)
+
+		const updatedAt = new Date(verifiedTasksRes[0].updatedAt);
+		const currentTime = new Date();
+		const timeDifference = currentTime - updatedAt;
+		const hoursDifference = timeDifference / (1000 * 60 * 60);
+		console.log('=========', updatedAt)
+		if (hoursDifference > 72) {
+			console.log("hoursDifference true")
+			data.isDelayedRated = true
+		}
+		let ratingRes = await createPayloadAndInsertRating(data)
+		if (ratingRes.error || !ratingRes.data) {
+			return res.status(500).send(sendResponse(500, '', 'insertUserRating', null, req.data.signature))
+		}
+		return res.status(200).send(sendResponse(200, 'Rating Inserted', 'insertUserRating', null, req.data.signature))
+	}
 	let ratingRes = await createPayloadAndInsertRating(data)
 	if (ratingRes.error || !ratingRes.data) {
 		return res.status(500).send(sendResponse(500, '', 'insertUserRating', null, req.data.signature))
@@ -104,6 +157,22 @@ const getMonthAllUserRating = async (req, res, next) => {
 }
 exports.getMonthAllUserRating = getMonthAllUserRating
 
+const getYearAllUserRating = async (req, res, next) => {
+	let data = req.data;
+
+	console.log("=============year", data.year)
+	if (!data.year) {
+		return res.status(400).send(sendResponse(400, "Params Missing", 'getYearAllUserRating', null, req.data.signature))
+	}
+
+	let ratingRes = await getAllUsersRatingForYear(data)
+	if (ratingRes.error) {
+		return res.status(500).send(sendResponse(500, '', 'getYearAllUserRating', null, req.data.signature))
+	}
+	return res.status(200).send(sendResponse(200, 'Ratings Fetched', 'getYearAllUserRating', ratingRes.data, req.data.signature))
+}
+exports.getYearAllUserRating = getYearAllUserRating
+
 const createPayloadAndInsertRating = async function (data) {
 	try {
 		let payload = {
@@ -114,6 +183,7 @@ const createPayloadAndInsertRating = async function (data) {
 			date: data.date,
 			month: data.month,
 			year: data.year,
+			isDelayedRated: data.isDelayedRated
 		}
 		let insertRes = await Rating.insertUserRating(payload)
 		return { data: insertRes, error: false }
@@ -175,6 +245,43 @@ const addCommnetIdInRatingById = async function (data) {
 }
 exports.addCommnetIdInRatingById = addCommnetIdInRatingById;
 
+const getAllUsersRatingByRatingDuration = async (req, res, next) => {
+	let data = req.data
+
+	if (data.ratingDuration == "Yearly") {
+		if (!data.year) {
+			return res.status(400).send(sendResponse(400, "Params Missing", 'getAllUsersRatingByRatingDuration', null, req.data.signature))
+		}
+		let ratingRes = await getAllUsersRatingForYear(data)
+		if (ratingRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'getAllUsersRatingByRatingDuration', null, req.data.signature))
+		}
+		return res.status(200).send(sendResponse(200, 'Ratings Fetched', 'getAllUsersRatingByRatingDuration', ratingRes.data, req.data.signature))
+
+	} else if (data.ratingDuration == "Monthly") {
+
+		if (!data.month || !data.year) {
+			return res.status(400).send(sendResponse(400, "Params Missing", 'getAllUsersRatingByRatingDuration', null, req.data.signature))
+		}
+		let ratingRes = await getAllUsersRatingForMonth(data)
+		if (ratingRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'getAllUsersRatingByRatingDuration', null, req.data.signature))
+		}
+		return res.status(200).send(sendResponse(200, 'Ratings Fetched', 'getAllUsersRatingByRatingDuration', ratingRes.data, req.data.signature))
+
+	} else {
+		if (!data.date || data.month || data.year) {
+			return res.status(400).send(sendResponse(400, 'Missing params', 'getRatingByDate', null, req.data.signature))
+		}
+		let ratingRes = await getRatingByDate(data)
+		if (ratingRes.error) {
+			return res.status(500).send(sendResponse(500, '', 'getAllUsersRatingByRatingDuration', null, req.data.signature))
+		}
+		return res.status(200).send(sendResponse(200, 'Ratings Fetched', 'getAllUsersRatingByRatingDuration', ratingRes.data, req.data.signature))
+	}
+}
+exports.getAllUsersRatingByRatingDuration = getAllUsersRatingByRatingDuration;
+
 const getAllUsersRatingForMonth = async function (data) {
 	try {
 		let roleFilter = ["SUPER_ADMIN"]
@@ -190,6 +297,9 @@ const getAllUsersRatingForMonth = async function (data) {
 		}
 		findData.role = { $nin: roleFilter }
 		// findData.ratingAllowed  = { $nin: [false] }
+		if (data.userId) {
+			findData._id = mongoose.Types.ObjectId(data.userId)
+		}
 		if (data.userRating) {
 			findData._id = mongoose.Types.ObjectId(data.auth.id)
 		}
@@ -276,6 +386,101 @@ const getAllUsersRatingForMonth = async function (data) {
 	}
 }
 exports.getAllUsersRatingForMonth = getAllUsersRatingForMonth;
+
+
+const getAllUsersRatingForYear = async function (data) {
+	try {
+		let roleFilter = ["SUPER_ADMIN"];
+		let findData = {};
+		if (data.auth.role == 'CONTRIBUTOR') {
+			findData.isDeleted = false
+			roleFilter.push('LEAD')
+			roleFilter.push('ADMIN')
+		}
+		if (data.auth.role == 'LEAD') {
+			findData.isDeleted = false
+			roleFilter.push('ADMIN')
+		}
+		findData.role = { $nin: roleFilter }
+		if (data.userId) {
+			findData._id = mongoose.Types.ObjectId(data.userId)
+		}
+		if (data.userRating) {
+			findData._id = mongoose.Types.ObjectId(data.auth.id)
+		}
+		if (!data.userRating && ['LEAD', 'CONTRIBUTOR', 'ADMIN'].includes(data.auth.role) && data.filteredProjects) {
+			let allProjectUsers = await filteredProjectsUsers(data)
+			if (allProjectUsers && allProjectUsers.data) {
+				findData._id = { $in: allProjectUsers.data.map(el => mongoose.Types.ObjectId(el)) }
+			}
+		}
+
+		console.log("================find filter in year rating=============", roleFilter)
+		let payload = [
+			{ $match: findData },
+			{
+				$lookup: {
+					from: "ratings",
+					localField: "_id",
+					foreignField: "userId",
+					as: "ratings"
+				}
+			},
+			{ $unwind: { path: "$ratings", preserveNullAndEmptyArrays: true } },
+			{
+				$match: {
+					$or: [
+						{ ratings: { $exists: false } },
+						{
+							$and: [
+								{ "ratings.year": parseInt(data.year) }
+							]
+						}
+					]
+				}
+			},
+			{
+				$group: {
+					_id: "$_id",
+					name: { $first: "$name" },
+					email: { $first: "$email" },
+					ratings: { $push: "$ratings" },
+					monthlyAverages: {
+						$push: {
+							month: "$ratings.month",
+							avg: {
+								$avg: {
+									$ifNull: ["$ratings.rating", 0] // Handle missing ratings array or null values
+								}
+							}
+						}
+					}
+				}
+			},
+			{ $sort: { "name": 1, "ratings.date": 1 } },
+			{
+				$project: {
+					name: 1,
+					email: 1,
+					// ratings: 1,
+					monthlyAverages: 1,
+					yearlyAverage: {
+						$avg: "$monthlyAverages.avg"
+					}
+				}
+			}
+		];
+
+		let ratingRes = await User.getAllUsersRatingForMonth(payload)
+		return { data: ratingRes, error: false }
+	} catch (error) {
+		console.log("getAllUsersRatingForYear Error: ", error)
+		return { data: error, error: true }
+	}
+};
+
+exports.getAllUsersRatingForYear = getAllUsersRatingForYear;
+
 
 
 const createPayloadAndGetComments = async function (data) {
@@ -380,7 +585,7 @@ exports.createPayloadAndGetWeekRating = createPayloadAndGetWeekRating;
 const getRatingByDate = async (req, res, next) => {
 	let data = req.data;
 
-	if(data.date || data.month || data.year){
+	if (data.date || data.month || data.year) {
 		return res.status(400).send(sendResponse(400, 'Missing params', 'getRatingByDate', null, req.data.signature))
 	}
 	let ratingRes = await createPayloadAndGetDayRating(data)
@@ -425,6 +630,7 @@ const createPayloadAndGetDayRating = async function (data) {
 		return { data: error, error: true }
 	}
 }
+exports.createPayloadAndGetDayRating = createPayloadAndGetDayRating
 
 const filteredDistinctProjectsUsers = async function (data) {
 	try {

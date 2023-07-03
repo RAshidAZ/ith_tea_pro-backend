@@ -240,6 +240,9 @@ const findAllUserNonPagination = async function (data) {
             role: { $nin: ["ADMIN", "SUPER_ADMIN"] },
             isDeleted: false
         }
+        if(data.excludeUsers){
+            payload._id = {$nin : data.excludeUsers}
+        }
         if (data.search) {
             payload["$or"] = [
                 { "name": { "$regex": data.search, "$options": "i" } },
@@ -264,6 +267,7 @@ const findAllUserNonPagination = async function (data) {
     }
 }
 exports.findAllUserNonPagination = findAllUserNonPagination
+
 
 
 const editUserDetails = async (req, res, next) => {
@@ -340,18 +344,28 @@ const createPayloadAndEditUserDetails = async function (data) {
         if (data.managerIds) {
             updatePayload.managerIds = data.managerIds
         }
+
         if (data.profileCompleted) {
             updatePayload.profileCompleted = data.profileCompleted
         }
         console.log("Updated Payload------------------------",keys, payload, updatePayload)
+
+        const requiredFields = ['name', 'department', 'dob', 'employeeId', 'profilePicture']
+        const hasAllRequiredFields = requiredFields.every(field => keys.includes(field) && data[field])
+        
+        // Set profileCompleted based on the presence of required fields
+        updatePayload.profileCompleted = hasAllRequiredFields
+        console.log("Updated Payload------------------------", keys, payload, updatePayload)
         let userRes = await User.editUserDetails(payload, updatePayload)
-        return { data: userRes, error: false }
+        return { data: userRes, error: false };
     } catch (err) {
-        console.log("createPayloadAndEditUserDetails Error : ", err)
-        return { data: err, error: true }
+        console.log("createPayloadAndEditUserDetails Error: ", err);
+        return { data: err, error: true };
     }
 }
-exports.createPayloadAndEditUserDetails = createPayloadAndEditUserDetails
+
+exports.createPayloadAndEditUserDetails = createPayloadAndEditUserDetails;
+
 
 const addNewUser = async (req, res, next) => {
     let data = req.data;
@@ -693,10 +707,10 @@ const verifyUserForRating = async function (req, res, next) {
         return res.status(500).send(sendResponse(500, '', 'verifyUserForRating', null, req.data.signature))
     }
 
-    if(userRes.data.managerIds.includes(data.auth.id) || ['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
+    if (userRes.data.managerIds.includes(data.auth.id) || ['SUPER_ADMIN', 'ADMIN'].includes(data.auth.role)) {
         ratingAllowed = true;
     }
-    return res.status(200).send(sendResponse(200, '', 'verifyUserForRating', {ratingAllowed}, req.data.signature))
+    return res.status(200).send(sendResponse(200, '', 'verifyUserForRating', { ratingAllowed }, req.data.signature))
 }
 exports.verifyUserForRating = verifyUserForRating;
 

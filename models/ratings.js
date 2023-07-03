@@ -17,6 +17,10 @@ let ratingSchema = new Schema({
             ref: "comments"
         }
     ],
+    isDelayedRated:{
+        type:Boolean,
+        default:false  
+    },
     taskIds: [
         {
             type: mongoose.Types.ObjectId,
