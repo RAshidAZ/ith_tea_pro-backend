@@ -117,13 +117,6 @@
           },
           "headers": {}
         },
-        "401": {
-          "description": "",
-          "schema": {
-            "$ref": "#/definitions/notAllowed"
-          },
-          "headers": {}
-        },
         "400": {
           "description": "",
           "schema": {
@@ -149,7 +142,7 @@
             "required": true,
             "description": "",
             "schema": {
-              "$ref": "#/definitions/userForgotPasswordRequest"
+              "$ref": "#/definitions/deleteUserData"
             }
           }
         ],
@@ -158,7 +151,7 @@
             "description": "",
             "schema": {
               "type": "object",
-              "$ref": "#/definitions/userLoginResponse"
+              "$ref": "#/definitions/resendPasswordDataResponse"
             },
             "headers": {}
           },
@@ -203,7 +196,7 @@
             "description": "",
             "schema": {
               "type": "object",
-              "$ref": "#/definitions/userLoginResponse"
+              "$ref": "#/definitions/forgotPasswordResponse"
             },
             "headers": {}
           },
@@ -248,7 +241,7 @@
             "description": "",
             "schema": {
               "type": "object",
-              "$ref": "#/definitions/userLoginResponse"
+              "$ref": "#/definitions/setPasswordResponse"
             },
             "headers": {}
           },
@@ -284,7 +277,7 @@
             "required": true,
             "description": "",
             "schema": {
-              "$ref": "#/definitions/userForgotPasswordRequest"
+              "$ref": "#/definitions/verifyOtpforgotPasswordRequest"
             }
           }
         ],
@@ -293,7 +286,7 @@
             "description": "",
             "schema": {
               "type": "object",
-              "$ref": "#/definitions/userLoginResponse"
+              "$ref": "#/definitions/verifyOtpPasswordResponse"
             },
             "headers": {}
           },
@@ -329,7 +322,7 @@
             "required": true,
             "description": "",
             "schema": {
-              "$ref": "#/definitions/userForgotPasswordRequest"
+              "$ref": "#/definitions/changeForgotPasswordRequest"
             }
           }
         ],
@@ -338,7 +331,7 @@
             "description": "",
             "schema": {
               "type": "object",
-              "$ref": "#/definitions/userLoginResponse"
+              "$ref": "#/definitions/changeForgotPasswordResponse"
             },
             "headers": {}
           },
@@ -369,12 +362,26 @@
         "produces": ["application/json"],
         "parameters": [
           {
+            "name": "x-access-token",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Token"
+          },
+          {
+            "name": "x-access-user",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Account id"
+          },
+          {
             "name": "Body",
             "in": "body",
             "required": true,
             "description": "",
             "schema": {
-              "$ref": "#/definitions/userForgotPasswordRequest"
+              "$ref": "#/definitions/editUserRequest"
             }
           }
         ],
@@ -383,7 +390,7 @@
             "description": "",
             "schema": {
               "type": "object",
-              "$ref": "#/definitions/userLoginResponse"
+              "$ref": "#/definitions/editUserResponse"
             },
             "headers": {}
           },
@@ -398,7 +405,7 @@
           "400": {
             "description": "",
             "schema": {
-            "$ref": "#/definitions/notFound"
+            "$ref": "#/definitions/missingParams"
             }
           }
         }
@@ -419,7 +426,7 @@
             "required": true,
             "description": "",
             "schema": {
-              "$ref": "#/definitions/userForgotPasswordRequest"
+              "$ref": "#/definitions/editUserPasswordRequest"
             }
           }
         ],
@@ -428,7 +435,7 @@
             "description": "",
             "schema": {
               "type": "object",
-              "$ref": "#/definitions/userLoginResponse"
+              "$ref": "#/definitions/editUserPasswordResponse"
             },
             "headers": {}
           },
@@ -460,13 +467,20 @@
 		  "deprecated": false,
 		  "produces": ["application/json"],
 		  "parameters": [
-			{
-			  "name": "token",
-			  "in": "query",
-			  "required": true,
-			  "type": "string",
-			  "description": "Provode token to validate user"
-			}
+        {
+          "name": "x-access-token",
+          "in": "header",
+          "required": true,
+          "type": "string",
+          "description": "Token"
+        },
+        {
+          "name": "x-access-user",
+          "in": "header",
+          "required": true,
+          "type": "string",
+          "description": "Account id"
+        }
 		  ],
 		  "responses": {
 			"200": {
@@ -5547,7 +5561,84 @@
     "userForgotPasswordRequest": {
       "title": "userForgotPasswordRequest",
       "example": {
-        "email": "ankit@ith.tech"
+        "email": "ankit@ith.tech",
+        "password":"Test@123",
+        "confirmPassword":"Test@123"
+      },
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      },
+      "required": ["email", "password"]
+    },
+    "editUserPasswordRequest": {
+      "title": "userForgotPasswordRequest",
+      "example": {
+        "oldPassword": "ankit@ith",
+        "password":"Test@123",
+        "confirmPassword":"Test@123"
+      },
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      },
+      "required": ["email", "password"]
+    },
+    "editUserPasswordResponse": {
+      "title": "userLoginResponse",
+      "example": {
+          "action": "resetPassword",
+          "status": 200,
+          "message": "Password Changed successfully",
+          "data": null,
+          "error": false,
+          "signature": null
+      
+      },
+      "type": "object"
+    },
+    "editUserRequest": {
+      "title": "userForgotPasswordRequest",
+      "example": {
+        "name": "Aman tiwari",
+        "role": "CONTRIBUTOR",
+        "email": "tiwari@yopmail.com",
+        "employeeId": "12345678",
+        "designation": "sde",
+        "department": "Tech",
+        "dob": "2008-06-19T00:00:00.000Z",
+        "githubLink": "",
+        "twitterLink": "",
+        "linkedInLink": "",
+        "profilePicture": "https://aio-dev.s3.ap-southeast-1.amazonaws.com/tpro/image/1687863956603.png"
+    },
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      },
+      "required": ["email", "password"]
+    },
+    "changeForgotPasswordRequest": {
+      "title": "userForgotPasswordRequest",
+      "example": {
+        "otpLogId": "6058f5e8b3a3333aa704f54b",
+        "password":"Test@123",
+        "repeat":"Test@123"
       },
       "type": "object",
       "properties": {
@@ -5590,6 +5681,19 @@
       },
       "type": "object"
     },
+    "changeForgotPasswordResponse": {
+      "title": "userLoginResponse",
+      "example": {
+          "action": "forgotPassword",
+          "status": 200,
+          "message": "Password Changed successfully",
+          "data": null,
+          "error": false,
+          "signature": null
+      
+      },
+      "type": "object"
+    },
     "userLoginResponse": {
       "title": "userLoginResponse",
       "example": {
@@ -5598,13 +5702,15 @@
         "message": "Successfully Logged In!",
         "data": {
           "user": {
-            "email": "ankit@ith.tech",
-            "name": "Ankit kumar",
-            "accountId": 79259964,
-            "provider": "email",
-            "role": "user",
-            "id": "635240773b27b133a893be71"
-          },
+            "id": "649ac038aed168baad39906d",
+            "email": "tiwari@yopmail.com",
+            "accountId": 26761276,
+            "profileCompleted": true,
+            "createdAt": "2023-07-03 12:42:30",
+            "tokenType": "auth",
+            "role": "CONTRIBUTOR",
+            "provider": "email"
+        },
           "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYzMzJmMmU5MzliZWZiNDNhYzI3MjY1OSIsImVtYWlsIjoiYXJjaGl0YUBpdGgudGVjaCIsImFjY291bnRJZCI6NzkyNTk5NjQsIm5hbWUiOiJBcmNoaXRhIiwicm9sZSI6InVzZXIiLCJjcmVhdGVkQXQiOiIyMDIyLTExLTA5IDEzOjA0OjI4IiwidG9rZW5UeXBlIjoiYXV0aCIsImlhdCI6MTY2Nzk3OTI2OCwiZXhwIjoxNjY4MDAwODY4LCJhdWQiOiJzb2NpYWxDb2xsaWRlciIsImlzcyI6IkF1dGhvcml6YXRpb24iLCJzdWIiOiJpYW1AdXNlci5tZSJ9.4Dq2JJkmLNiv5mYR0zREYxS4--bOm6NVdZVktS57Wg0"
         },
         "error": false
@@ -5624,13 +5730,87 @@
       },
       "required": ["email"]
     },
+    "editUserResponse": {
+      "title": "forgotPasswordRequest",
+      "example":{
+        "action": "editUserDetails",
+        "status": 200,
+        "message": "Profile updated",
+        "data": {
+            "_id": "649ac038aed168baad39906d",
+            "email": "tiwari@yopmail.com",
+            "__v": 0,
+            "createdAt": "2023-06-27T10:55:52.012Z",
+            "isDeleted": false,
+            "managerIds": [],
+            "name": "Aman tiwari",
+            "profileCompleted": true,
+            "provider": "email",
+            "role": "CONTRIBUTOR",
+            "updatedAt": "2023-06-27T11:05:59.368Z",
+            "department": "Tech",
+            "designation": "sde",
+            "dob": "2008-06-19T00:00:00.000Z",
+            "employeeId": "12345678",
+            "githubLink": "",
+            "linkedInLink": "",
+            "profilePicture": "https://aio-dev.s3.ap-southeast-1.amazonaws.com/tpro/image/1687863956603.png",
+            "twitterLink": ""
+        },
+        "error": false,
+        "signature": "1688371894205.lO2oi7KVh0zNq"
+    },
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        }
+      },
+      "required": ["email"]
+    },
+    "verifyOtpforgotPasswordRequest": {
+      "title": "verifyOtpforgotPasswordRequest",
+      "example": {
+        "email": "alok@ith.tech",
+        "otp":3233
+      },
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        }
+      },
+      "required": ["email"]
+    },
     "forgotPasswordResponse": {
       "title": "forgotPasswordResponse",
       "example": {
-        "action": "sendForgotPasswordLink",
+        "action": "forgotPassword",
         "status": 200,
-        "message": "Verified Link send",
+        "message": "Otp sent on email successfully",
         "data": null,
+        "error": false
+      },
+      "type": "object"
+    },
+    "setPasswordResponse": {
+      "title": "forgotPasswordResponse",
+      "example": {
+        "action": "setpassword",
+        "status": 200,
+        "message": "Successfully password setup",
+        "data": "setpassword",
+        "error": false
+      },
+      "type": "object"
+    },
+    "verifyOtpPasswordResponse": {
+      "title": "verifyOtpPasswordResponse",
+      "example": {
+        "action": "forgotPassword",
+        "status": 200,
+        "message": "Otp verified",
+        "data": {"emailVerified": true},
         "error": false
       },
       "type": "object"
@@ -12233,6 +12413,23 @@
         "action": "deleteProjectSection",
         "status": 200,
         "message": "Section Deleted Successfully",
+        "data": null,
+        "error": false,
+        "signature": "1688242714160.B0WaVF62Gvtmb"
+    },
+      "type": "object",
+      "properties": {
+        "groupBy": {
+          "type": "string"
+        }
+      }
+    },
+    "resendPasswordDataResponse":{
+      "title": "projectSectionDeletedDataResponse",
+      "example":{
+        "action": "resendPasswordSetupLink",
+        "status": 200,
+        "message": "Successfully password setup link sent",
         "data": null,
         "error": false,
         "signature": "1688242714160.B0WaVF62Gvtmb"
