@@ -533,6 +533,9 @@ const createPayloadAndEditTask = async function (data) {
 			data.dueDate = (data.dueDate && new Date(data.dueDate)) || null
 			updatePayload.dueDate = data.dueDate
 		}
+		if (JSON.stringify(data.defaultTaskTime)) {
+			updatePayload.defaultTaskTime = data.defaultTaskTime
+		}
 		if (JSON.stringify(data.priority)) {
 			updatePayload.priority = data.priority
 		}
