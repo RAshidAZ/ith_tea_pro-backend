@@ -11,7 +11,7 @@ const authenticator = require('../middlewares/authenticator')(clients, data);
 const authenticateRole = require("../middlewares/authenticateRole");
 const filterProjects = require("../middlewares/filterProjectsForRoles")();
 
-const { assignManager, activeGuest, getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getUserListing, getAllLeadsListing, deleteUser, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng, getTeamAnalytics, getAllGuest, verifyUserForRating } = require('../controllers/user');
+const { assignManager,getManagerAllUserList, activeGuest, getAllUsers, editUserDetails, addNewUser, getUserDetailsByUserId, getUserListing, getAllLeadsListing, deleteUser, getAllLeadsLisitng, getAllUsersNonPaginated, updateUserBlockStatus, getAllUsersListingNonPaginated, getUnAssignedUserLisitng, getTeamAnalytics, getAllGuest, verifyUserForRating } = require('../controllers/user');
 
 // Superadmin, Admin Add New Team Member
 router.post("/v1/add", [authenticator, authenticateRole(["ADMIN", "SUPER_ADMIN"])], addNewUser);
@@ -65,6 +65,9 @@ router.get("/v1/all/users", [authenticator], getUserListing);
 
 // Get all leads/admin ( for dropdown )
 router.get("/v1/all/leads", [authenticator], getAllLeadsListing);
+
+// Get all users list for manager (Manager's Team View)
+router.get("/v1/all/manager/users", [authenticator], getManagerAllUserList);
 
 module.exports = router;
 
