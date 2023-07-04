@@ -484,6 +484,7 @@ const createPayloadAndInsertReOpenTask = async function (taskRes) {
 			createdBy: taskRes.createdBy,    //TODO: Change after auth is updated
 			assignedTo: taskRes.assignedTo,
 			dueDate: taskRes.dueDate,
+			defaultTaskTime:taskRes.defaultTaskTime,
 			isReOpen: taskRes.isReOpen,
 			priority: taskRes.priority,
 			lead: taskRes.lead
@@ -533,6 +534,9 @@ const createPayloadAndEditTask = async function (data) {
 		if (JSON.stringify(data.dueDate)) {
 			data.dueDate = (data.dueDate && new Date(data.dueDate)) || null
 			updatePayload.dueDate = data.dueDate
+		}
+		if (JSON.stringify(data.defaultTaskTime)) {
+			updatePayload.defaultTaskTime = data.defaultTaskTime
 		}
 		if (JSON.stringify(data.priority)) {
 			updatePayload.priority = data.priority

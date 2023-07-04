@@ -240,8 +240,8 @@ const findAllUserNonPagination = async function (data) {
             role: { $nin: ["ADMIN", "SUPER_ADMIN"] },
             isDeleted: false
         }
-        if(data.excludeUsers){
-            payload._id = {$nin : data.excludeUsers}
+        if (data.excludeUsers) {
+            payload._id = { $nin: data.excludeUsers }
         }
         if (data.search) {
             payload["$or"] = [
@@ -344,9 +344,15 @@ const createPayloadAndEditUserDetails = async function (data) {
         if (data.managerIds) {
             updatePayload.managerIds = data.managerIds
         }
+
+        if (data.profileCompleted) {
+            updatePayload.profileCompleted = data.profileCompleted
+        }
+        console.log("Updated Payload------------------------", keys, payload, updatePayload)
+
         const requiredFields = ['name', 'department', 'dob', 'employeeId', 'profilePicture']
         const hasAllRequiredFields = requiredFields.every(field => keys.includes(field) && data[field])
-        
+
         // Set profileCompleted based on the presence of required fields
         updatePayload.profileCompleted = hasAllRequiredFields
         console.log("Updated Payload------------------------", keys, payload, updatePayload)
@@ -1274,6 +1280,38 @@ const findAllLeads = async function (data) {
         }
 
         let userRes = await User.getAllUsers(payload, projection, sortCriteria);
+
+        let sendData = {
+            users: userRes,
+        }
+        return { data: sendData, error: false }
+    } catch (err) {
+        console.log("findAllUserNonPagination Error : ", err)
+        return { data: err, error: true }
+    }
+}
+const getManagerAllUserList = async (req, res, next) => {
+    let data = req.data;
+
+    let userRes = await findManagerAllUserList(data)
+    if (userRes.error) {
+        return res.status(500).send(sendResponse(500, '', 'getManagerAllUserList', null, req.data.signature))
+    }
+
+    return res.status(200).send(sendResponse(200, 'Team Fetched', 'getManagerAllUserList', userRes.data, req.data.signature))
+}
+exports.getManagerAllUserList = getManagerAllUserList;
+
+const findManagerAllUserList = async function (data) {
+    try {
+        let payload = {
+            managerIds: data.auth.id
+        }
+        let projection = {
+            name: 1
+        };
+
+        let userRes = await User.getAllUsers(payload, projection);
 
         let sendData = {
             users: userRes,
