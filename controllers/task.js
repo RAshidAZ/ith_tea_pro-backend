@@ -26,8 +26,8 @@ const insertUserTask = async (req, res, next) => {
 	if (!data.title || !data.section || !data.projectId || !data.tasklead || !data.tasklead.length) {
 		return res.status(400).send(sendResponse(400, "Please send all required Data fields", 'insertUserTask', null, req.data.signature))
 	}
-	
-	if(['ONGOING','COMPLETED'].includes(data.status)){
+
+	if(['ONGOING','COMPLETED','ONHOLD'].includes(data.status)){
 		return res.status(400).send(sendResponse(400, " Sudhar jao Bete...  You are not Allowed to add task with this Status", 'insertUserTask', null, req.data.signature))
 	}
 
