@@ -319,28 +319,24 @@ const getAllUsersRatingForMonth = async function (data) {
 			{
 				$lookup: {
 					from: "ratings",
-					localField: "_id",
-					foreignField: "userId",
+					let: { "userId": "$_id" },
+					pipeline: [
+						{
+							$match: {
+								"$expr": {
+									$and: [
+										{ $eq: ["$userId", "$$userId"] },
+										{ $eq: ["$year", parseInt(data.year)] },
+										{ $eq: ["$month", parseInt(data.month)] }
+									]
+								}
+							}
+						}
+					],
 					as: "ratings"
 				}
 			},
-
-
 			{ $unwind: { path: "$ratings", "preserveNullAndEmptyArrays": true } },
-			{
-				$match: {
-					$or: [
-						{ ratings: { $exists: false } },
-						{
-							$and: [
-								{ "ratings.month": parseInt(data.month) },
-								{ "ratings.year": parseInt(data.year) }
-							]
-						}
-					]
-				}
-			},
-
 			{
 				$group: {
 					_id: "$_id",
