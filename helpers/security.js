@@ -13,7 +13,7 @@ const encryptData = function (data) {
             subject: "teapro@ith.tech",
             audience: "teapro",
             // expiresIn: "30d", // 30 days validity
-            expiresIn: "1d", // 30 days validity
+            expiresIn: "2d", // 30 days validity
             algorithm: "HS256"
         };
         let encryptedData = jwt.sign(data, process.env.ENCRYPT_SALT_STATIC, signOptions);
@@ -42,7 +42,7 @@ const decryptData = async function (encryptedData) {
             subject: "teapro@ith.tech",
             audience: "teapro",
             // expiresIn: "1d", // 30 days validity
-            expiresIn: "1d", // 30 days validity
+            expiresIn: "2d", // 30 days validity
             algorithm: "HS256"
         };
         let decryptedData = jwt.verify(encryptedData.token, process.env.ENCRYPT_SALT_STATIC, verifyOptions);
