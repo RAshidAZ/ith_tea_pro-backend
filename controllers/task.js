@@ -90,6 +90,7 @@ const insertUserTask = async (req, res, next) => {
 
 	if (sectionfind.id == data.section) {
 		data.ratingAllowed = false
+		data.isVerified = true
 		if (!data.miscType) {
 			return res.status(400).send(sendResponse(401, 'Type is required', 'insertUserTask', null, req.data.signature))
 		}
