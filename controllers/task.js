@@ -1667,6 +1667,9 @@ const updateTaskStatus = async (req, res, next) => {
 		return res.status(400).send(sendResponse(401, 'Not Allowed update task status', 'updateTaskStatus', null, req.data.signature))
 	}
 
+	if (fetchTaskById.data.status!= 'ONGOING' && data.status == 'COMPLETED') {
+		return res.status(400).send(sendResponse(401, "Change Status to ONGOING Before Completing Task", 'updateTaskStatus', null, req.data.signature))
+	}
 
 	if (fetchTaskById.data.dueDate && data.status == 'COMPLETED') {
 		if (new Date(fetchTaskById.data.dueDate).getTime() < new Date().getTime()) {
@@ -1683,6 +1686,7 @@ const updateTaskStatus = async (req, res, next) => {
 		}
 
 		let previousTask = await getTaskLogs(payload, {}, '', { createdAt: -1 })
+		console.log(previousTask)
 		if (previousTask.length === 0) {
 			data.timeTaken = 0
 		} else {
@@ -1788,6 +1792,8 @@ const createPayloadAndUpdateTaskStatus = async function (data) {
 				status: data.status,
 				completedDate: new Date(),
 				isDelayTask: data.isDelayTask || false,
+			}
+			updatePayload['$inc'] = {
 				timeTaken: data.timeTaken
 			}
 		}
