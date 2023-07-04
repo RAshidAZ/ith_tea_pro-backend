@@ -1308,7 +1308,8 @@ const findManagerAllUserList = async function (data) {
             managerIds: data.auth.id
         }
         let projection = {
-            name: 1
+            name: 1,
+            profilePicture:1
         };
 
         let userRes = await User.getAllUsers(payload, projection);
