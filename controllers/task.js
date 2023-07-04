@@ -257,6 +257,10 @@ const editUserTask = async (req, res, next) => {
 		return res.status(400).send(sendResponse(400, "You're not assigned this project", 'editUserTask', null, req.data.signature))
 	}
 
+	if (task.data.status!= 'ONGOING' && data.status == 'COMPLETED') {
+		return res.status(400).send(sendResponse(401, "Change Status to ONGOING Before Completing Task", 'updateTaskStatus', null, req.data.signature))
+	}
+
 	if (!['SUPER_ADMIN'].includes(data.auth.role) && task.data.status && task.data.status == process.env.TASK_STATUS.split(",")[2]) {
 		return res.status(400).send(sendResponse(400, "Can't edit completed task", 'editUserTask', null, req.data.signature))
 	}
