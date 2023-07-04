@@ -345,9 +345,6 @@ const createPayloadAndEditUserDetails = async function (data) {
             updatePayload.managerIds = data.managerIds
         }
 
-        if (data.profileCompleted) {
-            updatePayload.profileCompleted = data.profileCompleted
-        }
         console.log("Updated Payload------------------------", keys, payload, updatePayload)
 
         const requiredFields = ['name', 'department', 'dob', 'employeeId', 'profilePicture']
@@ -355,7 +352,10 @@ const createPayloadAndEditUserDetails = async function (data) {
 
         // Set profileCompleted based on the presence of required fields
         updatePayload.profileCompleted = hasAllRequiredFields
-        console.log("Updated Payload------------------------", keys, payload, updatePayload)
+        if (data.profileCompleted) {
+            updatePayload.profileCompleted = data.profileCompleted
+        }
+        console.log("Updated Payload------------------------",updatePayload)
         let userRes = await User.editUserDetails(payload, updatePayload)
         return { data: userRes, error: false };
     } catch (err) {
