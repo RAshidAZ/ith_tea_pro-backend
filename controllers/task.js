@@ -91,7 +91,6 @@ const insertUserTask = async (req, res, next) => {
 
 	if (sectionfind.id == data.section) {
 		data.ratingAllowed = false
-		data.isVerified = true
 		if (!data.miscType) {
 			return res.status(400).send(sendResponse(401, 'Type is required', 'insertUserTask', null, req.data.signature))
 		}
@@ -1753,6 +1752,9 @@ const updateTaskStatus = async (req, res, next) => {
 	// 		return res.status(400).send(sendResponse(400, 'You are not allowed to update tasks status', 'updateTaskStatus', null, req.data.signature))
 	// 	}
 	// }
+	if(fetchTaskById.data.ratingAllowed==false && data.status =='COMPLETED'){
+		data.isVerified = true 
+	}
 
 	let taskRes = await createPayloadAndUpdateTaskStatus(data)
 	// console.log(taskRes)
@@ -1808,6 +1810,9 @@ const createPayloadAndUpdateTaskStatus = async function (data) {
 				isDelayTask: data.isDelayTask || false,
 				timeTaken: data.timeTaken
 			}
+		}
+		if(data.isVerified){
+			updatePayload.isVerified = data.isVerified
 		}
 		let options = {
 			new: false
