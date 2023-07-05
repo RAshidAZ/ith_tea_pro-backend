@@ -485,7 +485,7 @@ const createPayloadAndInsertReOpenTask = async function (taskRes) {
 			createdBy: taskRes.createdBy,    //TODO: Change after auth is updated
 			assignedTo: taskRes.assignedTo,
 			dueDate: taskRes.dueDate,
-			defaultTaskTime:taskRes.defaultTaskTime,
+			defaultTaskTime: taskRes.defaultTaskTime,
 			isReOpen: taskRes.isReOpen,
 			priority: taskRes.priority,
 			lead: taskRes.lead
@@ -524,7 +524,7 @@ const createPayloadAndEditTask = async function (data) {
 			updatePayload.section = data.section
 			updatePayload.ratingAllowed = data.ratingAllowed
 		}
-		
+
 		if (JSON.stringify(data.miscType)) {
 			updatePayload.miscType = data.miscType
 		}
@@ -1190,7 +1190,7 @@ const verifyUserTask = async (req, res, next) => {
 		const currentTime = new Date();
 		const timeDifference = currentTime - updatedAt;
 		const hoursDifference = timeDifference / (1000 * 60 * 60);
-		
+
 		if (hoursDifference > 48) {
 			data.isDelayedVerified = true
 		}
@@ -1670,7 +1670,7 @@ const updateTaskStatus = async (req, res, next) => {
 		return res.status(400).send(sendResponse(401, 'Not Allowed update task status', 'updateTaskStatus', null, req.data.signature))
 	}
 
-	if (fetchTaskById.data.status!= 'ONGOING' && data.status == 'COMPLETED') {
+	if (fetchTaskById.data.status != 'ONGOING' && data.status == 'COMPLETED') {
 		return res.status(400).send(sendResponse(401, "Change Status to ONGOING Before Completing Task", 'updateTaskStatus', null, req.data.signature))
 	}
 
@@ -1693,13 +1693,20 @@ const updateTaskStatus = async (req, res, next) => {
 		if (previousTask.length === 0) {
 			data.timeTaken = 0
 		} else {
-			let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime()
-			const totalSeconds = Math.floor(timetakenDate / 1000);
-			const totalMinutes = Math.floor(totalSeconds / 60);
-			console.log("=====================================", totalMinutes)
-			data.timeTaken = totalMinutes
+			if (fetchTaskById.data.timeTaken !== 0) {
+				let timetakenDate = new Date().getTime() - new Date(previousTask[0].createdAt).getTime();
+				const totalSeconds = Math.floor(timetakenDate / 1000);
+				const totalMinutes = Math.floor(totalSeconds / 60);
+				console.log("=====================================", totalMinutes);
+				let addTotalTime = fetchTaskById.data.timeTaken + totalMinutes;
+				console.log("test time on hold ", addTotalTime);
+				data.timeTaken = addTotalTime;
+			} else {
+				data.timeTaken
+			}
 		}
 	}
+
 	// Task Completion time calculator
 	if (data.status == 'COMPLETED') {
 		if (fetchTaskById.data.timeTaken == 0) {
@@ -1713,7 +1720,7 @@ const updateTaskStatus = async (req, res, next) => {
 			if (previousTask.length === 0) {
 				data.timeTaken = 0
 			} else {
-				let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime()
+				let timetakenDate = new Date().getTime() - new Date(previousTask[0].createdAt).getTime();
 				const totalSeconds = Math.floor(timetakenDate / 1000);
 				const totalMinutes = Math.floor(totalSeconds / 60);
 				console.log("=====================================", totalMinutes)
@@ -1727,12 +1734,11 @@ const updateTaskStatus = async (req, res, next) => {
 			}
 			let previousTask = await getTaskLogs(payload, {}, '', { createdAt: -1 })
 			let previousTime = fetchTaskById.data.timeTaken
-			let timetakenDate = new Date().getTime() - new Date(previousTask[0].updatedAt).getTime()
+			let timetakenDate = new Date().getTime() - new Date(previousTask[0].createdAt).getTime();
 			const totalSeconds = Math.floor(timetakenDate / 1000);
 			const totalMinutes = Math.floor(totalSeconds / 60);
 			let calculatedMinutes = previousTime + totalMinutes
 			data.timeTaken = calculatedMinutes
-
 		}
 	}
 
@@ -1752,8 +1758,8 @@ const updateTaskStatus = async (req, res, next) => {
 	// 		return res.status(400).send(sendResponse(400, 'You are not allowed to update tasks status', 'updateTaskStatus', null, req.data.signature))
 	// 	}
 	// }
-	if(fetchTaskById.data.ratingAllowed==false && data.status =='COMPLETED'){
-		data.isVerified = true 
+	if (fetchTaskById.data.ratingAllowed==false && data.status =='COMPLETED'){
+		data.isVerified = true
 	}
 
 	let taskRes = await createPayloadAndUpdateTaskStatus(data)
@@ -1798,8 +1804,6 @@ const createPayloadAndUpdateTaskStatus = async function (data) {
 				status: data.status,
 				completedDate: new Date(),
 				isDelayTask: data.isDelayTask || false,
-			}
-			updatePayload['$inc'] = {
 				timeTaken: data.timeTaken
 			}
 		}
@@ -1811,7 +1815,7 @@ const createPayloadAndUpdateTaskStatus = async function (data) {
 				timeTaken: data.timeTaken
 			}
 		}
-		if(data.isVerified){
+		if (data.isVerified) {
 			updatePayload.isVerified = data.isVerified
 		}
 		let options = {
@@ -2117,7 +2121,7 @@ const createPayloadAndGetAllUnassignedUsers = async function (data) {
 		let findData = {
 			isDeleted: false,
 			isArchived: false,
-			assignedTo : {$exists : true}
+			assignedTo: { $exists: true }
 		};
 
 		if (data.fromDate || data.toDate) {
@@ -2455,6 +2459,8 @@ const checkifAllowedToEditTask = async function (data) {
 		authRolePriority = parseInt(authRolePriority.data)
 
 		console.log("============created/auth=======", taskCreatedRolePriority, authRolePriority)
+		console.log("============1234567auth=======", data.auth.role)
+		
 
 		if (authRolePriority < taskCreatedRolePriority) {
 			return { data: { allowed: false }, error: false }
