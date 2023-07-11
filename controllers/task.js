@@ -60,7 +60,7 @@ const insertUserTask = async (req, res, next) => {
 	}
 
 	if (!ifAllowedToAddTask.data.allowed) {
-		return res.status(400).send(sendResponse(401, 'Not Allowed to add task for this project', 'insertUserTask', null, req.data.signature))
+		return res.status(400).send(sendResponse(400, 'Not Allowed to add task for this project', 'insertUserTask', null, req.data.signature))
 	}
 
 	if (data.tasklead && data.tasklead.length && data.assignedTo) {
@@ -70,18 +70,13 @@ const insertUserTask = async (req, res, next) => {
 		}
 
 		if (!ifAllowedToAddAssisgnee.data.allowed) {
-			return res.status(400).send(sendResponse(401, 'Not Allowed to add task for selected lead/assignee', 'insertUserTask', null, req.data.signature))
+			return res.status(400).send(sendResponse(400, 'Not Allowed to add task for selected lead/assignee', 'insertUserTask', null, req.data.signature))
 		}
 	}
 
 	if (!data.defaultTaskTime) {
 		return res.status(400).send(sendResponse(400, 'Please Provide Estimated time for this task', 'insertUserTask', null, req.data.signature))
 	}
-	data.defaultTaskTime = {
-		hours: data.defaultTaskTime.hours,
-		minutes: data.defaultTaskTime.minutes
-	}
-
 
 	let payload = {
 		name: process.env.DEFAULT_SECTION,
@@ -89,16 +84,15 @@ const insertUserTask = async (req, res, next) => {
 	}
 	let sectionfind = await ProjectSections.findSection(payload)
 
-	if (sectionfind.id == data.section) {
+	if (sectionfind._id == data.section) {
 		data.ratingAllowed = false
 		if (!data.miscType) {
-			return res.status(400).send(sendResponse(401, 'Type is required', 'insertUserTask', null, req.data.signature))
+			return res.status(400).send(sendResponse(400, 'MISC Type is required', 'insertUserTask', null, req.data.signature))
 		}
 
 	} else {
-		data.ratingAllowed = true
 		if (data.miscType) {
-			return res.status(400).send(sendResponse(401, 'Type is Not required', 'insertUserTask', null, req.data.signature))
+			return res.status(400).send(sendResponse(400, 'No need to send MISC Type', 'insertUserTask', null, req.data.signature))
 		}
 	}
 

@@ -71,7 +71,7 @@ let tasksSchema = new Schema({
 
     ratingAllowed: {
         type: Boolean,
-        default: false
+        default: true
     },
     
 	isDelayTask: {

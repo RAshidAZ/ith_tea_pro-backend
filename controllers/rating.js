@@ -30,7 +30,7 @@ exports.getUserRating = getUserRating
 const insertUserRating = async (req, res, next) => {
 	let data = req.data;
 
-	if (!data.rating || !data.userId || !data.date || !data.month || !data.year || !data.comment) {
+	if (!data.rating || !data.userId || !data.date || !data.month || !data.year) {
 		return res.status(400).send(sendResponse(400, "Params Missing", 'insertUserRating', null, req.data.signature))
 	}
 	//TODO: Change after auth is updated
@@ -44,12 +44,13 @@ const insertUserRating = async (req, res, next) => {
 	if (checkRes.data) {
 		return res.status(400).send(sendResponse(400, "Rating Already Given", 'insertUserRating', null, req.data.signature))
 	}
-
-	let commentRes = await commentController.createPayloadAndInsertComment(data)
-	if (commentRes.error || !commentRes.data) {
-		return res.status(500).send(sendResponse(500, '', 'insertUserRating', null, req.data.signature))
+	if(data.comment){
+		let commentRes = await commentController.createPayloadAndInsertComment(data)
+		if (commentRes.error || !commentRes.data) {
+			return res.status(500).send(sendResponse(500, '', 'insertUserRating', null, req.data.signature))
+		}
+		data.commentId = commentRes.data._id
 	}
-	data.commentId = commentRes.data._id
 
 	if (!["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) {
 		const time = '23:59:59:000Z';
@@ -80,30 +81,13 @@ const insertUserRating = async (req, res, next) => {
 			return res.status(400).send(sendResponse(400, "You Are Not Allowed To Rate Because There Are Tasks Pending For Verification", 'insertUserRating', null, req.data.signature))
 		}
 
-		let payloadForVerifiedTasks = {
-			assignedTo: data.userId,
-			isVerified: true,
-			ratingAllowed: true,
-			updatedAt: { $gte: gteDateTime, $lte: dateTime }
-		}
-
-		let verifiedTasksRes = await Task.taskFindQuery(payloadForVerifiedTasks, {}, '', sortCriteria)
-		console.log('verifiedTasksRes =======', verifiedTasksRes)
-
-		const updatedAt = new Date(verifiedTasksRes[0].updatedAt);
-		const currentTime = new Date();
-		const timeDifference = currentTime - updatedAt;
-		const hoursDifference = timeDifference / (1000 * 60 * 60);
-		console.log('=========', updatedAt)
+		let currentDate = new Date()
+		let hoursDifference = (dateTime - currentDate)/ (1000 * 60 * 60);
+		
 		if (hoursDifference > 72) {
 			console.log("hoursDifference true")
 			data.isDelayedRated = true
 		}
-		let ratingRes = await createPayloadAndInsertRating(data)
-		if (ratingRes.error || !ratingRes.data) {
-			return res.status(500).send(sendResponse(500, '', 'insertUserRating', null, req.data.signature))
-		}
-		return res.status(200).send(sendResponse(200, 'Rating Inserted', 'insertUserRating', null, req.data.signature))
 	}
 	let ratingRes = await createPayloadAndInsertRating(data)
 	if (ratingRes.error || !ratingRes.data) {
@@ -175,15 +159,9 @@ exports.getYearAllUserRating = getYearAllUserRating
 
 const createPayloadAndInsertRating = async function (data) {
 	try {
-		let payload = {
-			userId: data.userId,
-			givenBy: data.givenBy,
-			rating: data.rating,
-			comments: [data.commentId],
-			date: data.date,
-			month: data.month,
-			year: data.year,
-			isDelayedRated: data.isDelayedRated
+		let payload = data
+		if(data.commentId){
+			payload.comments = [data.commentId]
 		}
 		let insertRes = await Rating.insertUserRating(payload)
 		return { data: insertRes, error: false }
