@@ -951,6 +951,7 @@ const getTaskDetailsByTaskId = async (req, res, next) => {
 	if (taskRes.error) {
 		return res.status(500).send(sendResponse(500, '', 'getTaskDetailsByTaskId', null, req.data.signature))
 	}
+	
 	return res.status(200).send(sendResponse(200, 'Task Fetched Successfully', 'getTaskDetailsByTaskId', taskRes.data, req.data.signature))
 }
 exports.getTaskDetailsByTaskId = getTaskDetailsByTaskId;
@@ -983,6 +984,26 @@ const createPayloadAndGetTask = async function (data) {
 			}
 		]
 		let populatedRes = await Task.taskPopulate(taskRes, commentPopulate)
+		let timeTaken = populatedRes.timeTaken
+
+		let payload = {
+			taskId: data.taskId,
+			new: { status: "ONGOING" }
+		}
+
+		let taskLogs = await getTaskLogs(payload, {}, '', { createdAt: -1 })
+		
+		if (taskLogs.length) {
+			let timetakenDate = new Date().getTime() - new Date(taskLogs[0].createdAt).getTime();
+			const totalSeconds = Math.floor(timetakenDate / 1000);
+			const totalMinutes = Math.floor(totalSeconds / 60);
+			console.log("=====================================", totalMinutes);
+			
+			timeTaken += totalMinutes;
+		}
+
+		populatedRes.timeTaken = timeTaken 
+		
 		return { data: populatedRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndGetTask Error : ", err)
