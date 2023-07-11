@@ -984,25 +984,28 @@ const createPayloadAndGetTask = async function (data) {
 			}
 		]
 		let populatedRes = await Task.taskPopulate(taskRes, commentPopulate)
-		let timeTaken = populatedRes.timeTaken
+		if(populatedRes.status == 'ONGOING'){
 
-		let payload = {
-			taskId: data.taskId,
-			new: { status: "ONGOING" }
-		}
-
-		let taskLogs = await getTaskLogs(payload, {}, '', { createdAt: -1 })
-		
-		if (taskLogs.length) {
-			let timetakenDate = new Date().getTime() - new Date(taskLogs[0].createdAt).getTime();
-			const totalSeconds = Math.floor(timetakenDate / 1000);
-			const totalMinutes = Math.floor(totalSeconds / 60);
-			console.log("=====================================", totalMinutes);
+			let timeTaken = populatedRes.timeTaken
+	
+			let payload = {
+				taskId: data.taskId,
+				new: { status: "ONGOING" }
+			}
+	
+			let taskLogs = await getTaskLogs(payload, {}, '', { createdAt: -1 })	
 			
-			timeTaken += totalMinutes;
+			if (taskLogs.length) {
+				let timetakenDate = new Date().getTime() - new Date(taskLogs[0].createdAt).getTime();
+				const totalSeconds = Math.floor(timetakenDate / 1000);
+				const totalMinutes = Math.floor(totalSeconds / 60);
+				console.log("=====================================", totalMinutes);
+				
+				timeTaken += totalMinutes;
+			}
+			populatedRes.timeTaken = timeTaken 
 		}
 
-		populatedRes.timeTaken = timeTaken 
 		
 		return { data: populatedRes, error: false }
 	} catch (err) {
