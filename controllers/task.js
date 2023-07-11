@@ -36,7 +36,7 @@ const insertUserTask = async (req, res, next) => {
 	currentDate = new Date(currentDate.getTime() - timeZoneOffsetMinutes * 1000 * 60)
 
 	if (data.dueDate && ((new Date(data.dueDate)).getDate() < currentDate.getDate())) {
-		return res.status(400).send(sendResponse(400, "Bete, ye sab mat karo... Rating 0 ho jayegi tumhari aaj ki.", 'insertUserTask', null, req.data.signature))
+		return res.status(400).send(sendResponse(400, "Bete, ye sab mat karo... Rating 0 ho gayi aaj ki.", 'insertUserTask', null, req.data.signature))
 	}
 
 	let projectData = await Project.findSpecificProject({ _id: data.projectId });
