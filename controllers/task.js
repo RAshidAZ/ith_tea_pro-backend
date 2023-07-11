@@ -1667,11 +1667,15 @@ const updateTaskStatus = async (req, res, next) => {
 	}
 
 	if (!ifAllowedToUpdateTaskStatus.data.allowed) {
-		return res.status(400).send(sendResponse(401, 'Not Allowed update task status', 'updateTaskStatus', null, req.data.signature))
+		return res.status(400).send(sendResponse(400, 'Not Allowed update task status', 'updateTaskStatus', null, req.data.signature))
 	}
 
 	if (fetchTaskById.data.status != 'ONGOING' && data.status == 'COMPLETED') {
-		return res.status(400).send(sendResponse(401, "Change Status to ONGOING Before Completing Task", 'updateTaskStatus', null, req.data.signature))
+		return res.status(400).send(sendResponse(400, "Change the status to ONGOING Before Completing Task", 'updateTaskStatus', null, req.data.signature))
+	}
+
+	if (!fetchTaskById.data.dueDate && data.status == 'COMPLETED') {
+		return res.status(400).send(sendResponse(400, "Can't complete task without dueDate", 'updateTaskStatus', null, req.data.signature))
 	}
 
 	if (fetchTaskById.data.dueDate && data.status == 'COMPLETED') {
@@ -1681,73 +1685,35 @@ const updateTaskStatus = async (req, res, next) => {
 	}
 
 	// Task Completion time calculator
-	if (data.status == 'ONHOLD') {
+	if (['ONHOLD', 'COMPLETED'].includes(data.status)) {
 		let payload = {
 			taskId: data.taskId,
-			$or: [{ actionTaken: "TASK_ADDED" }, { actionTaken: "TASK_STATUS_UPDATED" }],
+			// $or: [{ actionTaken: "TASK_ADDED" }, { actionTaken: "TASK_STATUS_UPDATED" }],
 			new: { status: "ONGOING" }
 		}
 
 		let previousTask = await getTaskLogs(payload, {}, '', { createdAt: -1 })
-		console.log(previousTask)
-		if (previousTask.length === 0) {
-			data.timeTaken = 0
-		} else {
-			if (fetchTaskById.data.timeTaken !== 0) {
-				let timetakenDate = new Date().getTime() - new Date(previousTask[0].createdAt).getTime();
-				const totalSeconds = Math.floor(timetakenDate / 1000);
-				const totalMinutes = Math.floor(totalSeconds / 60);
-				console.log("=====================================", totalMinutes);
-				let addTotalTime = fetchTaskById.data.timeTaken + totalMinutes;
-				console.log("test time on hold ", addTotalTime);
-				data.timeTaken = addTotalTime;
-			} else {
-				data.timeTaken
-			}
-		}
-	}
-
-	// Task Completion time calculator
-	if (data.status == 'COMPLETED') {
-		if (fetchTaskById.data.timeTaken == 0) {
-			let payload = {
-				taskId: data.taskId,
-				$or: [{ actionTaken: "TASK_ADDED" }, { actionTaken: "TASK_STATUS_UPDATED" }],
-				new: { status: "ONGOING" }
-			}
-			let previousTask = await getTaskLogs(payload, {}, '', { createdAt: -1 })
-			console.log(previousTask)
-			if (previousTask.length === 0) {
-				data.timeTaken = 0
-			} else {
-				let timetakenDate = new Date().getTime() - new Date(previousTask[0].createdAt).getTime();
-				const totalSeconds = Math.floor(timetakenDate / 1000);
-				const totalMinutes = Math.floor(totalSeconds / 60);
-				console.log("=====================================", totalMinutes)
-				data.timeTaken = totalMinutes
-			}
-		} else {
-			let payload = {
-				taskId: data.taskId,
-				$or: [{ actionTaken: "TASK_ADDED" }, { actionTaken: "TASK_STATUS_UPDATED" }],
-				new: { status: "ONGOING" }
-			}
-			let previousTask = await getTaskLogs(payload, {}, '', { createdAt: -1 })
-			let previousTime = fetchTaskById.data.timeTaken
+		console.log("Previous Tasks.......", previousTask)
+		data.timeTaken = 0
+		if (previousTask.length) {
 			let timetakenDate = new Date().getTime() - new Date(previousTask[0].createdAt).getTime();
 			const totalSeconds = Math.floor(timetakenDate / 1000);
 			const totalMinutes = Math.floor(totalSeconds / 60);
-			let calculatedMinutes = previousTime + totalMinutes
-			data.timeTaken = calculatedMinutes
+			console.log("=====================================", totalMinutes);
+			
+			data.timeTaken += totalMinutes;
+			if (fetchTaskById.data.timeTaken) {
+				data.timeTaken += fetchTaskById.data.timeTaken;
+			}
+
 		}
+
 	}
 
-	if (!fetchTaskById.data.dueDate && data.status == 'COMPLETED') {
-		return res.status(400).send(sendResponse(401, "Can't complete task without dueDate", 'updateTaskStatus', null, req.data.signature))
-	}
+
 
 	if (fetchTaskById.data?.isVerified) {
-		return res.status(400).send(sendResponse(400, 'Task Already Rated', 'updateTaskStatus', null, req.data.signature))
+		return res.status(400).send(sendResponse(400, 'Task Already Verified', 'updateTaskStatus', null, req.data.signature))
 	}
 
 	// if (!['SUPER_ADMIN', "ADMIN"].includes(data.auth.role)) {
@@ -1758,7 +1724,7 @@ const updateTaskStatus = async (req, res, next) => {
 	// 		return res.status(400).send(sendResponse(400, 'You are not allowed to update tasks status', 'updateTaskStatus', null, req.data.signature))
 	// 	}
 	// }
-	if (fetchTaskById.data.ratingAllowed==false && data.status =='COMPLETED'){
+	if (fetchTaskById.data.ratingAllowed == false && data.status == 'COMPLETED') {
 		data.isVerified = true
 	}
 
@@ -1799,7 +1765,7 @@ const createPayloadAndUpdateTaskStatus = async function (data) {
 			}
 		}
 
-		if (data.status == 'ONHOLD') {
+		if (['ONHOLD', 'COMPLETED'].includes(data.status)) {
 			updatePayload['$set'] = {
 				status: data.status,
 				completedDate: new Date(),
@@ -1807,14 +1773,7 @@ const createPayloadAndUpdateTaskStatus = async function (data) {
 				timeTaken: data.timeTaken
 			}
 		}
-		if (data.status == 'COMPLETED') {
-			updatePayload['$set'] = {
-				status: data.status,
-				completedDate: new Date(),
-				isDelayTask: data.isDelayTask || false,
-				timeTaken: data.timeTaken
-			}
-		}
+		
 		if (data.isVerified) {
 			updatePayload.isVerified = data.isVerified
 		}
@@ -2460,7 +2419,7 @@ const checkifAllowedToEditTask = async function (data) {
 
 		console.log("============created/auth=======", taskCreatedRolePriority, authRolePriority)
 		console.log("============1234567auth=======", data.auth.role)
-		
+
 
 		if (authRolePriority < taskCreatedRolePriority) {
 			return { data: { allowed: false }, error: false }
