@@ -36,6 +36,11 @@ const insertUserTask = async (req, res, next) => {
 	currentDate = new Date(currentDate.getTime() - timeZoneOffsetMinutes * 1000 * 60)
 
 	if (data.dueDate && ((new Date(data.dueDate)).getDate() < currentDate.getDate())) {
+
+		console.log("+++++++++++++++",new Date(data.dueDate).getDate())
+		console.log("===",new Date().getDate())
+		console.log("===",new Date(data.dueDate).getDate() < currentDate.getDate())
+
 		return res.status(400).send(sendResponse(400, "Bete, ye sab mat karo... Rating 0 ho gayi aaj ki.", 'insertUserTask', null, req.data.signature))
 	}
 
@@ -611,9 +616,6 @@ const exportDataToExcel = async (req, res, next) => {
 		{ header: "S no.", key: "s_no", width: 7 },
 		{ header: "Project Name", key: "projectName", width: 20 },
 		{ header: "Section Name", key: "section", width: 20 },
-		{ header: "Completed Tasks", key: "completedTasks", width: 15 },
-		{ header: "Total Tasks", key: "totalTasks", width: 10 },
-		{ header: 'Task ReOpened', key: 'isReOpen', width: 13 },
 		{ header: 'Task Title', key: 'taskTitle', width: 20 },
 		{ header: 'Task status', key: 'status', width: 20 },
 		{ header: 'Task description', key: 'description', width: 25 },
@@ -621,8 +623,10 @@ const exportDataToExcel = async (req, res, next) => {
 		{ header: 'Task CreatedBy', key: 'createdBy', width: 20 },
 		{ header: 'Task AssignedTo', key: 'assignedTo', width: 20 },
 		{ header: 'Task DueDate', key: 'dueDate', width: 20 },
-		{ header: 'Task Rated', key: 'isVerified', width: 10 },
-		{ header: 'Task Rating', key: 'rating', width: 10 },
+		{ header: 'Task Verified', key: 'isVerified', width: 12 },
+		{ header: 'Task Estimated Time', key: 'defaultTaskTime', width: 20 },
+		{ header: 'Task Completion Time', key: 'timeTaken', width: 20 },
+		{ header: 'Task Completed Date', key: 'completedDate', width: 20 },
 		{ header: 'Task Created On', key: 'createdAt', width: 20 },
 
 
@@ -647,8 +651,18 @@ const exportDataToExcel = async (req, res, next) => {
 			let lead = tasks.lead[0]?.name;
 			let assignedTo = tasks?.assignedTo?.name
 			let createdBy = tasks?.createdBy?.name
+			let hoursAvailableThen = tasks?.defaultTaskTime?.hours || 0
+			let minutesAvailableThen = tasks?.defaultTaskTime?.minutes || 0
+			let defaultTaskTime = hoursAvailableThen + 'H' +" "+ minutesAvailableThen  + "Mins" 
+			// time calculation for excel 
+			const hours = Math.floor(tasks?.timeTaken / 60) || 0 ;
+			const remainingMinutes = tasks?.timeTaken % 60  || 0 ;
+			let timeTaken = hours + "H" + " " + remainingMinutes + "Mins"   
+
 			let createdAt = tasks.createdAt;
 			let dueDate = tasks?.dueDate;
+			let completedDateOrNot = tasks?.completedDate || "Task Not Completed";
+			let completedDate = completedDateOrNot;
 			let isVerified = tasks?.isVerified;
 			let isReOpen = tasks?.isReOpen;
 			let rating = tasks?.rating;
@@ -669,12 +683,15 @@ const exportDataToExcel = async (req, res, next) => {
 			task.createdBy = createdBy
 			task.assignedTo = assignedTo
 			task.dueDate = dueDate
+			task.completedDate = completedDate
+			task.defaultTaskTime = defaultTaskTime
+			task.timeTaken = timeTaken
 			task.isVerified = isVerified
 			task.isReOpen = isReOpen
 			task.rating = rating
 			task.createdAt = createdAt
 
-			worksheet.addRow(task, task.taskTitle, task.projectName, task.section, task.lead, task.status, task.assignedTo, task.dueDate, task.isVerified, task.rating, task.createdBy, task.createdAt, task.isReOpen);
+			worksheet.addRow(task, task.taskTitle, task.projectName, task.section, task.lead, task.status, task.assignedTo, task.dueDate, task.isVerified, task.rating, task.createdBy, task.createdAt,task.defaultTaskTime,task.completedDate,task.timeTaken);
 
 			counter++;
 		});

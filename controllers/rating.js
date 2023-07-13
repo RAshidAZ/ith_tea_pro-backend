@@ -53,23 +53,25 @@ const insertUserRating = async (req, res, next) => {
 	}
 
 	if (!["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) {
-		const time = '23:59:59:000Z';
-		const dateString = `${data.year}-${data.month}-${data.date}`;
+		const time = '18:30:00.000Z';
+		const dateString = `${data.year}-${data.month}-${data.date-1}`;
 		const dateTimeString = `${dateString} ${time}`;
 		const dateTime = new Date(dateTimeString);
-
-		const gteTime = '00:00:00:000Z';
-		const greaterthsnDateTimeString = `${dateString} ${gteTime}`;
+		
+		const gteTime = '18:29:59.999Z';
+		const gtedateString = `${data.year}-${data.month}-${data.date}`;
+		const greaterthsnDateTimeString = `${gtedateString} ${gteTime}`;
 		const gteDateTime = new Date(greaterthsnDateTimeString);
 		console.log(dateTime)
-		console.log(gteDateTime)
-
+		
 		let payload = {
 			assignedTo: data.userId,
+			status:"COMPLETED",
 			isVerified: false,
 			ratingAllowed: true,
-			updatedAt: { $gte: gteDateTime, $lte: dateTime }
+			dueDate: { $gte: dateTime , $lte: gteDateTime}
 		}
+		console.log("Rating date filter =======",payload)
 		let sortCriteria = {
 			updatedAt: -1
 		}
