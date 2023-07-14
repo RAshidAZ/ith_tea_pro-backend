@@ -758,6 +758,9 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			let createdBy = JSON.parse(data.createdBy)
 			filter["tasks.createdBy"] = { $in: createdBy.map(el => mongoose.Types.ObjectId(el)) }
 		}
+		if(data.taskFor == "Rating"){
+			filter["tasks.status"] = {$ne : "ONHOLD"}
+		}
 		if (data.sections) {
 			let sections = JSON.parse(data.sections)
 			filter["tasks.section"] = { $in: sections.map(el => mongoose.Types.ObjectId(el)) }
