@@ -316,6 +316,10 @@ const editUserTask = async (req, res, next) => {
 		data.ratingAllowed = true
 	}
 
+	if(!data.ratingAllowed && data.status == 'COMPLETED') {
+		data.isVerified = true
+	}
+
 	let taskRes = await createPayloadAndEditTask(data)
 	if (taskRes.error) {
 		return res.status(500).send(sendResponse(500, '', 'editUserTask', null, req.data.signature))
@@ -526,6 +530,10 @@ const createPayloadAndEditTask = async function (data) {
 
 		if (JSON.stringify(data.miscType)) {
 			updatePayload.miscType = data.miscType
+		}
+
+		if (JSON.stringify(data.isVerified)) {
+			updatePayload.isVerified = data.isVerified
 		}
 
 		if (JSON.stringify(data.projectId)) {
