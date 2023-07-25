@@ -30,7 +30,7 @@ exports.getUserRating = getUserRating
 const insertUserRating = async (req, res, next) => {
 	let data = req.data;
 
-	if (!data.rating || !data.userId || !data.date || !data.month || !data.year) {
+	if (!JSON.stringify(data.rating) || !data.userId || !data.date || !data.month || !data.year) {
 		return res.status(400).send(sendResponse(400, "Params Missing", 'insertUserRating', null, req.data.signature))
 	}
 	//TODO: Change after auth is updated
