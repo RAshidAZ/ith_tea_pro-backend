@@ -161,7 +161,15 @@ exports.getYearAllUserRating = getYearAllUserRating
 
 const createPayloadAndInsertRating = async function (data) {
 	try {
-		let payload = data
+		let payload = {}
+		let allowedKeys = ['rating', 'isDelayedRated', 'date', 'month', 'year', 'taskIds', 'userId', 'absent']
+		let keys = Object.keys(data)
+		
+		for (let i = 0; i < keys.length; i++) {
+			if (allowedKeys.includes(keys[i])) {
+				payload[keys[i]] = data[keys[i]]
+			}
+		}
 		if(data.commentId){
 			payload.comments = [data.commentId]
 		}
@@ -341,10 +349,18 @@ const getAllUsersRatingForMonth = async function (data) {
 					monthlyAverage: {
 						$avg: {
 							$map: {
-								input: "$ratings.rating",
+								input: "$ratings",
 								as: "rating",
-								in: "$$rating"
-							}
+								in: {
+								  $cond: {
+									if: { 
+										$or : [{ $not: ["$$rating.absent"]},{$eq: ["$$rating.absent", false]}],
+									}, // Your condition here
+									then: "$$rating.rating",
+									else: null // or any other default value you prefer
+								  }
+								}
+							  }
 						}
 					}
 

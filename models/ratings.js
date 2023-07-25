@@ -8,7 +8,7 @@ let ratingSchema = new Schema({
     },
     rating: {
         type: Number,
-        min: 0,
+        min: -1,
         default: -1
     },
     comments: [
@@ -18,6 +18,10 @@ let ratingSchema = new Schema({
         }
     ],
     isDelayedRated:{
+        type:Boolean,
+        default:false  
+    },
+	absent:{
         type:Boolean,
         default:false  
     },
