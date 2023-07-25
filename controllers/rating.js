@@ -346,6 +346,7 @@ const getAllUsersRatingForMonth = async function (data) {
 					"ratings.month": 1,
 					"ratings.year": 1,
 					"ratings.taskIds": 1,
+					"ratings.absent": 1,
 					monthlyAverage: {
 						$avg: {
 							$map: {
