@@ -330,7 +330,9 @@ const getAllUsersRatingForMonth = async function (data) {
 					_id: "$_id",
 					name: { $first: "$name" },
 					email: { $first: "$email" },
-					ratings: { $push: "$ratings" }
+					ratings: { $push: "$ratings" },
+					managerIds: { $first: "$managerIds" },
+
 				}
 			},
 			{ $sort: { "name": 1, "ratings.date": 1 } },
@@ -340,6 +342,7 @@ const getAllUsersRatingForMonth = async function (data) {
 
 					name: 1,
 					email: 1,
+					managerIds: 1,
 					"ratings.rating": 1,
 					"ratings.dueDate": 1,
 					"ratings.date": 1,
