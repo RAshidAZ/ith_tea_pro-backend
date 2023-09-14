@@ -1,685 +1,1004 @@
-const mongoose = require('mongoose');
-const moment = require('moment');
-const { sendResponse } = require('../helpers/sendResponse')
-const queryController = require('../query')
+const mongoose = require("mongoose");
+const moment = require("moment");
+const { sendResponse } = require("../helpers/sendResponse");
+const queryController = require("../query");
 const { Rating, User, Project, Task } = queryController;
 
-const commentController = require('./comment');
+const commentController = require("./comment");
 
 const actionLogController = require("../controllers/actionLogs");
 
 const getUserRating = async (req, res, next) => {
-	let data = req.data;
+  let data = req.data;
 
-	if (!data.userId || !data.date || !data.month || !data.year) {
-		return res.status(400).send(sendResponse(400, "Params Missing", 'getUserRating', null, req.data.signature))
-	}
+  if (!data.userId || !data.date || !data.month || !data.year) {
+    return res
+      .status(400)
+      .send(
+        sendResponse(
+          400,
+          "Params Missing",
+          "getUserRating",
+          null,
+          req.data.signature
+        )
+      );
+  }
 
-	let userRating = await findUserRatingGivenDate(data)
-	if (userRating.error) {
-		return res.status(500).send(sendResponse(500, "", 'getUserRating', null, req.data.signature))
-	}
-	if (!userRating.data) {
-		return res.status(400).send(sendResponse(400, "Rating Not Given", 'getUserRating', null, req.data.signature))
-	}
-	return res.status(200).send(sendResponse(200, 'Rating Fetched', 'getUserRating', userRating.data, req.data.signature))
-}
-exports.getUserRating = getUserRating
-
+  let userRating = await findUserRatingGivenDate(data);
+  if (userRating.error) {
+    return res
+      .status(500)
+      .send(sendResponse(500, "", "getUserRating", null, req.data.signature));
+  }
+  if (!userRating.data) {
+    return res
+      .status(400)
+      .send(
+        sendResponse(
+          400,
+          "Rating Not Given",
+          "getUserRating",
+          null,
+          req.data.signature
+        )
+      );
+  }
+  return res
+    .status(200)
+    .send(
+      sendResponse(
+        200,
+        "Rating Fetched",
+        "getUserRating",
+        userRating.data,
+        req.data.signature
+      )
+    );
+};
+exports.getUserRating = getUserRating;
 
 const insertUserRating = async (req, res, next) => {
-	let data = req.data;
+  let data = req.data;
 
-	if (!JSON.stringify(data.rating) || !data.userId || !data.date || !data.month || !data.year) {
-		return res.status(400).send(sendResponse(400, "Params Missing", 'insertUserRating', null, req.data.signature))
-	}
-	//TODO: Change after auth is updated
-	data.givenBy = data.auth.id
-	// data.givenBy = "601e3c6ef5eb242d4408dcc8"
+  if (
+    !JSON.stringify(data.rating) ||
+    !data.userId ||
+    !data.date ||
+    !data.month ||
+    !data.year
+  ) {
+    return res
+      .status(400)
+      .send(
+        sendResponse(
+          400,
+          "Params Missing",
+          "insertUserRating",
+          null,
+          req.data.signature
+        )
+      );
+  }
+  //TODO: Change after auth is updated
+  data.givenBy = data.auth.id;
+  // data.givenBy = "601e3c6ef5eb242d4408dcc8"
 
-	let checkRes = await findUserRatingGivenDate(data)
-	if (checkRes.error) {
-		return res.status(500).send(sendResponse(500, '', 'insertUserRating', null, req.data.signature))
-	}
-	if (checkRes.data) {
-		return res.status(400).send(sendResponse(400, "Rating Already Given", 'insertUserRating', null, req.data.signature))
-	}
-	if(data.comment){
-		let commentRes = await commentController.createPayloadAndInsertComment(data)
-		if (commentRes.error || !commentRes.data) {
-			return res.status(500).send(sendResponse(500, '', 'insertUserRating', null, req.data.signature))
-		}
-		data.commentId = commentRes.data._id
-	}
+  let checkRes = await findUserRatingGivenDate(data);
+  if (checkRes.error) {
+    return res
+      .status(500)
+      .send(
+        sendResponse(500, "", "insertUserRating", null, req.data.signature)
+      );
+  }
+  if (checkRes.data) {
+    return res
+      .status(400)
+      .send(
+        sendResponse(
+          400,
+          "Rating Already Given",
+          "insertUserRating",
+          null,
+          req.data.signature
+        )
+      );
+  }
+  if (data.comment) {
+    let commentRes = await commentController.createPayloadAndInsertComment(
+      data
+    );
+    if (commentRes.error || !commentRes.data) {
+      return res
+        .status(500)
+        .send(
+          sendResponse(500, "", "insertUserRating", null, req.data.signature)
+        );
+    }
+    data.commentId = commentRes.data._id;
+  }
 
-	if (!["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) {
-		const time = '18:30:00.000Z';
-		const dateString = `${data.year}-${data.month}-${data.date-1}`;
-		const dateTimeString = `${dateString} ${time}`;
-		const dateTime = new Date(dateTimeString);
-		
-		const gteTime = '18:29:59.999Z';
-		const gtedateString = `${data.year}-${data.month}-${data.date}`;
-		const greaterthsnDateTimeString = `${gtedateString} ${gteTime}`;
-		const gteDateTime = new Date(greaterthsnDateTimeString);
-		console.log(dateTime)
-		
-		let payload = {
-			assignedTo: data.userId,
-			status:"COMPLETED",
-			isVerified: false,
-			ratingAllowed: true,
-			dueDate: { $gte: dateTime , $lte: gteDateTime}
-		}
-		console.log("Rating date filter =======",payload)
-		let sortCriteria = {
-			updatedAt: -1
-		}
-		let taskRes = await Task.taskFindQuery(payload, {}, '', sortCriteria)
+  if (!["SUPER_ADMIN", "ADMIN"].includes(data.auth.role)) {
+    const time = "18:30:00.000Z";
+    const dateString = `${data.year}-${data.month}-${data.date - 1}`;
+    const dateTimeString = `${dateString} ${time}`;
+    const dateTime = new Date(dateTimeString);
 
-		console.log('taskres========', taskRes)
+    const gteTime = "18:29:59.999Z";
+    const gtedateString = `${data.year}-${data.month}-${data.date}`;
+    const greaterthsnDateTimeString = `${gtedateString} ${gteTime}`;
+    const gteDateTime = new Date(greaterthsnDateTimeString);
+    console.log(dateTime);
 
-		if (!taskRes.length == 0) {
-			return res.status(400).send(sendResponse(400, "You Are Not Allowed To Rate Because There Are Tasks Pending For Verification", 'insertUserRating', null, req.data.signature))
-		}
+    let payload = {
+      assignedTo: data.userId,
+      status: "COMPLETED",
+      isVerified: false,
+      ratingAllowed: true,
+      dueDate: { $gte: dateTime, $lte: gteDateTime },
+    };
+    console.log("Rating date filter =======", payload);
+    let sortCriteria = {
+      updatedAt: -1,
+    };
+    let taskRes = await Task.taskFindQuery(payload, {}, "", sortCriteria);
 
-		let currentDate = new Date()
-		let hoursDifference = (dateTime - currentDate)/ (1000 * 60 * 60);
-		
-		if (hoursDifference > 72) {
-			console.log("hoursDifference true")
-			data.isDelayedRated = true
-		}
-	}
-	let ratingRes = await createPayloadAndInsertRating(data)
-	if (ratingRes.error || !ratingRes.data) {
-		return res.status(500).send(sendResponse(500, '', 'insertUserRating', null, req.data.signature))
-	}
+    console.log("taskres========", taskRes);
 
-	let actionLogData = {
-		actionTaken: 'RATE_TASK',
-		actionBy: data.auth.id,
-		userId: data.userId,
-		ratingId: ratingRes.data._id
-	}
-	data.actionLogData = actionLogData;
-	let addActionLogRes = await actionLogController.addRatingLog(data);
+    if (!taskRes.length == 0) {
+      return res
+        .status(400)
+        .send(
+          sendResponse(
+            400,
+            "You Are Not Allowed To Rate Because There Are Tasks Pending For Verification",
+            "insertUserRating",
+            null,
+            req.data.signature
+          )
+        );
+    }
 
-	if (addActionLogRes.error) {
-		return res.status(500).send(sendResponse(500, '', 'insertUserTask', null, req.data.signature))
-	}
+    let currentDate = new Date();
+    let hoursDifference = (dateTime - currentDate) / (1000 * 60 * 60);
 
-	return res.status(200).send(sendResponse(200, 'Rating Inserted', 'insertUserRating', null, req.data.signature))
-}
-exports.insertUserRating = insertUserRating
+    if (hoursDifference > 72) {
+      console.log("hoursDifference true");
+      data.isDelayedRated = true;
+    }
+  }
+  let ratingRes = await createPayloadAndInsertRating(data);
+  if (ratingRes.error || !ratingRes.data) {
+    return res
+      .status(500)
+      .send(
+        sendResponse(500, "", "insertUserRating", null, req.data.signature)
+      );
+  }
+
+  let actionLogData = {
+    actionTaken: "RATE_TASK",
+    actionBy: data.auth.id,
+    userId: data.userId,
+    ratingId: ratingRes.data._id,
+  };
+  data.actionLogData = actionLogData;
+  let addActionLogRes = await actionLogController.addRatingLog(data);
+
+  if (addActionLogRes.error) {
+    return res
+      .status(500)
+      .send(sendResponse(500, "", "insertUserTask", null, req.data.signature));
+  }
+
+  return res
+    .status(200)
+    .send(
+      sendResponse(
+        200,
+        "Rating Inserted",
+        "insertUserRating",
+        null,
+        req.data.signature
+      )
+    );
+};
+exports.insertUserRating = insertUserRating;
 
 const updateUserRating = async (req, res, next) => {
-	let data = req.data;
+  let data = req.data;
 
-	if (!data.hasOwnProperty('rating') || !data.ratingId) {
-		return res.status(400).send(sendResponse(400, "Params Missing", 'updateUserRating', null, req.data.signature))
-	}
+  if (!data.hasOwnProperty("rating") || !data.ratingId) {
+    return res
+      .status(400)
+      .send(
+        sendResponse(
+          400,
+          "Params Missing",
+          "updateUserRating",
+          null,
+          req.data.signature
+        )
+      );
+  }
 
-	let updateRes = await createPayloadAndUpdateRating(data)
-	if (updateRes.error) {
-		return res.status(500).send(sendResponse(500, '', 'updateUserRating', null, req.data.signature))
-	}
-	return res.status(200).send(sendResponse(200, 'Rating Updated', 'updateUserRating', null, req.data.signature))
-}
-exports.updateUserRating = updateUserRating
+  let updateRes = await createPayloadAndUpdateRating(data);
+  if (updateRes.error) {
+    return res
+      .status(500)
+      .send(
+        sendResponse(500, "", "updateUserRating", null, req.data.signature)
+      );
+  }
+  return res
+    .status(200)
+    .send(
+      sendResponse(
+        200,
+        "Rating Updated",
+        "updateUserRating",
+        null,
+        req.data.signature
+      )
+    );
+};
+exports.updateUserRating = updateUserRating;
 const getMonthAllUserRating = async (req, res, next) => {
-	let data = req.data;
+  let data = req.data;
 
-	console.log("=============month and year", data.month, data.year)
-	if (!data.month || !data.year) {
-		return res.status(400).send(sendResponse(400, "Params Missing", 'getMonthAllUserRating', null, req.data.signature))
-	}
+  console.log("=============month and year", data.month, data.year);
+  if (!data.month || !data.year) {
+    return res
+      .status(400)
+      .send(
+        sendResponse(
+          400,
+          "Params Missing",
+          "getMonthAllUserRating",
+          null,
+          req.data.signature
+        )
+      );
+  }
 
-	let ratingRes = await getAllUsersRatingForMonth(data)
-	if (ratingRes.error) {
-		return res.status(500).send(sendResponse(500, '', 'getMonthAllUserRating', null, req.data.signature))
-	}
-	return res.status(200).send(sendResponse(200, 'Ratings Fetched', 'getMonthAllUserRating', ratingRes.data, req.data.signature))
-}
-exports.getMonthAllUserRating = getMonthAllUserRating
+  let ratingRes = await getAllUsersRatingForMonth(data);
+  if (ratingRes.error) {
+    return res
+      .status(500)
+      .send(
+        sendResponse(500, "", "getMonthAllUserRating", null, req.data.signature)
+      );
+  }
+  return res
+    .status(200)
+    .send(
+      sendResponse(
+        200,
+        "Ratings Fetched",
+        "getMonthAllUserRating",
+        ratingRes.data,
+        req.data.signature
+      )
+    );
+};
+exports.getMonthAllUserRating = getMonthAllUserRating;
 
 const getYearAllUserRating = async (req, res, next) => {
-	let data = req.data;
+  let data = req.data;
 
-	console.log("=============year", data.year)
-	if (!data.year) {
-		return res.status(400).send(sendResponse(400, "Params Missing", 'getYearAllUserRating', null, req.data.signature))
-	}
+  console.log("=============year", data.year);
+  if (!data.year) {
+    return res
+      .status(400)
+      .send(
+        sendResponse(
+          400,
+          "Params Missing",
+          "getYearAllUserRating",
+          null,
+          req.data.signature
+        )
+      );
+  }
 
-	let ratingRes = await getAllUsersRatingForYear(data)
-	if (ratingRes.error) {
-		return res.status(500).send(sendResponse(500, '', 'getYearAllUserRating', null, req.data.signature))
-	}
-	return res.status(200).send(sendResponse(200, 'Ratings Fetched', 'getYearAllUserRating', ratingRes.data, req.data.signature))
-}
-exports.getYearAllUserRating = getYearAllUserRating
+  let ratingRes = await getAllUsersRatingForYear(data);
+  if (ratingRes.error) {
+    return res
+      .status(500)
+      .send(
+        sendResponse(500, "", "getYearAllUserRating", null, req.data.signature)
+      );
+  }
+  return res
+    .status(200)
+    .send(
+      sendResponse(
+        200,
+        "Ratings Fetched",
+        "getYearAllUserRating",
+        ratingRes.data,
+        req.data.signature
+      )
+    );
+};
+exports.getYearAllUserRating = getYearAllUserRating;
 
 const createPayloadAndInsertRating = async function (data) {
-	try {
-		let payload = {}
-		let allowedKeys = ['rating', 'isDelayedRated', 'date', 'month', 'year', 'taskIds', 'userId', 'absent']
-		let keys = Object.keys(data)
-		
-		for (let i = 0; i < keys.length; i++) {
-			if (allowedKeys.includes(keys[i])) {
-				payload[keys[i]] = data[keys[i]]
-			}
-		}
-		if(data.commentId){
-			payload.comments = [data.commentId]
-		}
-		let insertRes = await Rating.insertUserRating(payload)
-		return { data: insertRes, error: false }
-	} catch (error) {
-		console.log("createPayloadAndInsertRating Error : ", error)
-		return { data: error, error: true }
-	}
-}
+  try {
+    let payload = {};
+    let allowedKeys = [
+      "rating",
+      "isDelayedRated",
+      "date",
+      "month",
+      "year",
+      "taskIds",
+      "userId",
+      "absent",
+    ];
+    let keys = Object.keys(data);
+
+    for (let i = 0; i < keys.length; i++) {
+      if (allowedKeys.includes(keys[i])) {
+        payload[keys[i]] = data[keys[i]];
+      }
+    }
+    if (data.commentId) {
+      payload.comments = [data.commentId];
+    }
+    let insertRes = await Rating.insertUserRating(payload);
+    return { data: insertRes, error: false };
+  } catch (error) {
+    console.log("createPayloadAndInsertRating Error : ", error);
+    return { data: error, error: true };
+  }
+};
 const createPayloadAndUpdateRating = async function (data) {
-	try {
-		let payload = {
-			_id: data.ratingId,
-		}
-		let updatePayload = {
-			rating: data.rating
-		}
-		let updateRes = await Rating.ratingFindOneAndUpdate(payload, updatePayload)
-		return { data: updateRes, error: false }
-	} catch (error) {
-		console.log("createPayloadAndUpdateRating Error : ", error)
-		return { data: error, error: true }
-	}
-}
+  try {
+    let payload = {
+      _id: data.ratingId,
+    };
+    let updatePayload = {
+      rating: data.rating,
+    };
+    let updateRes = await Rating.ratingFindOneAndUpdate(payload, updatePayload);
+    return { data: updateRes, error: false };
+  } catch (error) {
+    console.log("createPayloadAndUpdateRating Error : ", error);
+    return { data: error, error: true };
+  }
+};
 
 const findUserRatingGivenDate = async function (data) {
-	try {
-		let payload = {
-			userId: data.userId,
-			date: data.date,
-			month: data.month,
-			year: data.year,
-		}
-		let projections = {
-			_id: 0,
-			rating: 1
-		}
-		let insertRes = await Rating.ratingFindOne(payload, projections)
-		return { data: insertRes, error: false }
-	} catch (error) {
-		console.log("findUserRatingGivenDate Error : ", error)
-		return { data: error, error: true }
-	}
-}
+  try {
+    let payload = {
+      userId: data.userId,
+      date: data.date,
+      month: data.month,
+      year: data.year,
+    };
+    let projections = {
+      _id: 0,
+      rating: 1,
+    };
+    let insertRes = await Rating.ratingFindOne(payload, projections);
+    return { data: insertRes, error: false };
+  } catch (error) {
+    console.log("findUserRatingGivenDate Error : ", error);
+    return { data: error, error: true };
+  }
+};
 
 const addCommnetIdInRatingById = async function (data) {
-	try {
-		let payload = {
-			_id: data.ratingId,
-		}
-		let updatePayload = {
-			$addToSet: { comments: data.commentId }
-		}
-		let insertRes = await Rating.addCommnetIdInRatingById(payload, updatePayload)
-		return { data: insertRes, error: false }
-	} catch (error) {
-		console.log("addCommnetIdInRatingById Error : ", error)
-		return { data: error, error: true }
-	}
-}
+  try {
+    let payload = {
+      _id: data.ratingId,
+    };
+    let updatePayload = {
+      $addToSet: { comments: data.commentId },
+    };
+    let insertRes = await Rating.addCommnetIdInRatingById(
+      payload,
+      updatePayload
+    );
+    return { data: insertRes, error: false };
+  } catch (error) {
+    console.log("addCommnetIdInRatingById Error : ", error);
+    return { data: error, error: true };
+  }
+};
 exports.addCommnetIdInRatingById = addCommnetIdInRatingById;
 
 const getAllUsersRatingByRatingDuration = async (req, res, next) => {
-	let data = req.data
+  let data = req.data;
 
-	if (data.ratingDuration == "Yearly") {
-		if (!data.year) {
-			return res.status(400).send(sendResponse(400, "Params Missing", 'getAllUsersRatingByRatingDuration', null, req.data.signature))
-		}
-		let ratingRes = await getAllUsersRatingForYear(data)
-		if (ratingRes.error) {
-			return res.status(500).send(sendResponse(500, '', 'getAllUsersRatingByRatingDuration', null, req.data.signature))
-		}
-		return res.status(200).send(sendResponse(200, 'Ratings Fetched', 'getAllUsersRatingByRatingDuration', ratingRes.data, req.data.signature))
-
-	} else if (data.ratingDuration == "Monthly") {
-
-		if (!data.month || !data.year) {
-			return res.status(400).send(sendResponse(400, "Params Missing", 'getAllUsersRatingByRatingDuration', null, req.data.signature))
-		}
-		let ratingRes = await getAllUsersRatingForMonth(data)
-		if (ratingRes.error) {
-			return res.status(500).send(sendResponse(500, '', 'getAllUsersRatingByRatingDuration', null, req.data.signature))
-		}
-		return res.status(200).send(sendResponse(200, 'Ratings Fetched', 'getAllUsersRatingByRatingDuration', ratingRes.data, req.data.signature))
-
-	} else {
-		if (!data.date || data.month || data.year) {
-			return res.status(400).send(sendResponse(400, 'Missing params', 'getRatingByDate', null, req.data.signature))
-		}
-		let ratingRes = await getRatingByDate(data)
-		if (ratingRes.error) {
-			return res.status(500).send(sendResponse(500, '', 'getAllUsersRatingByRatingDuration', null, req.data.signature))
-		}
-		return res.status(200).send(sendResponse(200, 'Ratings Fetched', 'getAllUsersRatingByRatingDuration', ratingRes.data, req.data.signature))
-	}
-}
+  if (data.ratingDuration == "Yearly") {
+    if (!data.year) {
+      return res
+        .status(400)
+        .send(
+          sendResponse(
+            400,
+            "Params Missing",
+            "getAllUsersRatingByRatingDuration",
+            null,
+            req.data.signature
+          )
+        );
+    }
+    let ratingRes = await getAllUsersRatingForYear(data);
+    if (ratingRes.error) {
+      return res
+        .status(500)
+        .send(
+          sendResponse(
+            500,
+            "",
+            "getAllUsersRatingByRatingDuration",
+            null,
+            req.data.signature
+          )
+        );
+    }
+    return res
+      .status(200)
+      .send(
+        sendResponse(
+          200,
+          "Ratings Fetched",
+          "getAllUsersRatingByRatingDuration",
+          ratingRes.data,
+          req.data.signature
+        )
+      );
+  } else if (data.ratingDuration == "Monthly") {
+    if (!data.month || !data.year) {
+      return res
+        .status(400)
+        .send(
+          sendResponse(
+            400,
+            "Params Missing",
+            "getAllUsersRatingByRatingDuration",
+            null,
+            req.data.signature
+          )
+        );
+    }
+    let ratingRes = await getAllUsersRatingForMonth(data);
+    if (ratingRes.error) {
+      return res
+        .status(500)
+        .send(
+          sendResponse(
+            500,
+            "",
+            "getAllUsersRatingByRatingDuration",
+            null,
+            req.data.signature
+          )
+        );
+    }
+    return res
+      .status(200)
+      .send(
+        sendResponse(
+          200,
+          "Ratings Fetched",
+          "getAllUsersRatingByRatingDuration",
+          ratingRes.data,
+          req.data.signature
+        )
+      );
+  } else {
+    if (!data.date || data.month || data.year) {
+      return res
+        .status(400)
+        .send(
+          sendResponse(
+            400,
+            "Missing params",
+            "getRatingByDate",
+            null,
+            req.data.signature
+          )
+        );
+    }
+    let ratingRes = await getRatingByDate(data);
+    if (ratingRes.error) {
+      return res
+        .status(500)
+        .send(
+          sendResponse(
+            500,
+            "",
+            "getAllUsersRatingByRatingDuration",
+            null,
+            req.data.signature
+          )
+        );
+    }
+    return res
+      .status(200)
+      .send(
+        sendResponse(
+          200,
+          "Ratings Fetched",
+          "getAllUsersRatingByRatingDuration",
+          ratingRes.data,
+          req.data.signature
+        )
+      );
+  }
+};
 exports.getAllUsersRatingByRatingDuration = getAllUsersRatingByRatingDuration;
 
 const getAllUsersRatingForMonth = async function (data) {
-	try {
-		let roleFilter = ["SUPER_ADMIN"]
-		let findData = {}
-		if (data.auth.role == 'CONTRIBUTOR') {
-			findData.isDeleted = false
-			roleFilter.push('LEAD')
-			roleFilter.push('ADMIN')
-		}
-		if (data.auth.role == 'LEAD') {
-			findData.isDeleted = false
-			roleFilter.push('ADMIN')
-		}
-		findData.role = { $nin: roleFilter }
-		// findData.ratingAllowed  = { $nin: [false] }
-		if (data.userId) {
-			findData._id = mongoose.Types.ObjectId(data.userId)
-		}
-		if (data.userRating) {
-			findData._id = mongoose.Types.ObjectId(data.auth.id)
-		}
-		if (!data.userRating && ['LEAD', 'CONTRIBUTOR', 'ADMIN'].includes(data.auth.role) && data.filteredProjects) {
-			let allProjectUsers = await filteredProjectsUsers(data)
-			if (allProjectUsers && allProjectUsers.data) {
-				findData._id = { $in: (allProjectUsers.data).map((el) => mongoose.Types.ObjectId(el)) }
-			}
-		}
+  try {
+    let roleFilter = ["SUPER_ADMIN"];
+    let findData = { isDeleted: false };
+    if (data.auth.role == "CONTRIBUTOR") {
+      findData.isDeleted = false;
+      roleFilter.push("LEAD");
+      roleFilter.push("ADMIN");
+    }
+    if (data.auth.role == "LEAD") {
+      findData.isDeleted = false;
+      roleFilter.push("ADMIN");
+    }
+    findData.role = { $nin: roleFilter };
+    // findData.ratingAllowed  = { $nin: [false] }
+    if (data.userId) {
+      findData._id = mongoose.Types.ObjectId(data.userId);
+    }
+    if (data.userRating) {
+      findData._id = mongoose.Types.ObjectId(data.auth.id);
+    }
+    if (
+      !data.userRating &&
+      ["LEAD", "CONTRIBUTOR", "ADMIN"].includes(data.auth.role) &&
+      data.filteredProjects
+    ) {
+      let allProjectUsers = await filteredProjectsUsers(data);
+      if (allProjectUsers && allProjectUsers.data) {
+        findData._id = {
+          $in: allProjectUsers.data.map((el) => mongoose.Types.ObjectId(el)),
+        };
+      }
+    }
 
-		console.log("================find filter in month rating=============", roleFilter)
-		let payload = [
+    console.log(
+      "================find filter in month rating=============",
+      roleFilter
+    );
+    let payload = [
+      {
+        $match: findData,
+      },
+      {
+        $lookup: {
+          from: "ratings",
+          let: { userId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$userId", "$$userId"] },
+                    { $eq: ["$year", parseInt(data.year)] },
+                    { $eq: ["$month", parseInt(data.month)] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "ratings",
+        },
+      },
+      { $unwind: { path: "$ratings", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: "$_id",
+          name: { $first: "$name" },
+          email: { $first: "$email" },
+          ratings: { $push: "$ratings" },
+          managerIds: { $first: "$managerIds" },
+        },
+      },
+      { $sort: { name: 1, "ratings.date": 1 } },
+      {
+        $project: {
+          name: 1,
+          email: 1,
+          managerIds: 1,
+          "ratings.rating": 1,
+          "ratings.dueDate": 1,
+          "ratings.date": 1,
+          "ratings.month": 1,
+          "ratings.year": 1,
+          "ratings.taskIds": 1,
+          "ratings.absent": 1,
+          monthlyAverage: {
+            $avg: {
+              $map: {
+                input: "$ratings",
+                as: "rating",
+                in: {
+                  $cond: {
+                    if: {
+                      $or: [
+                        { $not: ["$$rating.absent"] },
+                        { $eq: ["$$rating.absent", false] },
+                      ],
+                    }, // Your condition here
+                    then: "$$rating.rating",
+                    else: null, // or any other default value you prefer
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    ];
 
-			{
-				$match: findData
-			},
-			{
-				$lookup: {
-					from: "ratings",
-					let: { "userId": "$_id" },
-					pipeline: [
-						{
-							$match: {
-								"$expr": {
-									$and: [
-										{ $eq: ["$userId", "$$userId"] },
-										{ $eq: ["$year", parseInt(data.year)] },
-										{ $eq: ["$month", parseInt(data.month)] }
-									]
-								}
-							}
-						}
-					],
-					as: "ratings"
-				}
-			},
-			{ $unwind: { path: "$ratings", "preserveNullAndEmptyArrays": true } },
-			{
-				$group: {
-					_id: "$_id",
-					name: { $first: "$name" },
-					email: { $first: "$email" },
-					ratings: { $push: "$ratings" },
-					managerIds: { $first: "$managerIds" },
-
-				}
-			},
-			{ $sort: { "name": 1, "ratings.date": 1 } },
-			{
-
-				$project: {
-
-					name: 1,
-					email: 1,
-					managerIds: 1,
-					"ratings.rating": 1,
-					"ratings.dueDate": 1,
-					"ratings.date": 1,
-					"ratings.month": 1,
-					"ratings.year": 1,
-					"ratings.taskIds": 1,
-					"ratings.absent": 1,
-					monthlyAverage: {
-						$avg: {
-							$map: {
-								input: "$ratings",
-								as: "rating",
-								in: {
-								  $cond: {
-									if: { 
-										$or : [{ $not: ["$$rating.absent"]},{$eq: ["$$rating.absent", false]}],
-									}, // Your condition here
-									then: "$$rating.rating",
-									else: null // or any other default value you prefer
-								  }
-								}
-							  }
-						}
-					}
-
-				}
-
-			}
-		]
-
-		// let ratingRes = await Rating.getAllUsersRatingForMonth(payload)
-		let ratingRes = await User.getAllUsersRatingForMonth(payload)
-		return { data: ratingRes, error: false }
-	} catch (error) {
-		console.log("getAllUsersRatingForMonth Error : ", error)
-		return { data: error, error: true }
-	}
-}
+    // let ratingRes = await Rating.getAllUsersRatingForMonth(payload)
+    let ratingRes = await User.getAllUsersRatingForMonth(payload);
+    return { data: ratingRes, error: false };
+  } catch (error) {
+    console.log("getAllUsersRatingForMonth Error : ", error);
+    return { data: error, error: true };
+  }
+};
 exports.getAllUsersRatingForMonth = getAllUsersRatingForMonth;
 
-
 const getAllUsersRatingForYear = async function (data) {
-	try {
-		let roleFilter = ["SUPER_ADMIN"];
-		let findData = {};
-		if (data.auth.role == 'CONTRIBUTOR') {
-			findData.isDeleted = false
-			roleFilter.push('LEAD')
-			roleFilter.push('ADMIN')
-		}
-		if (data.auth.role == 'LEAD') {
-			findData.isDeleted = false
-			roleFilter.push('ADMIN')
-		}
-		findData.role = { $nin: roleFilter }
-		if (data.userId) {
-			findData._id = mongoose.Types.ObjectId(data.userId)
-		}
-		if (data.userRating) {
-			findData._id = mongoose.Types.ObjectId(data.auth.id)
-		}
-		if (!data.userRating && ['LEAD', 'CONTRIBUTOR', 'ADMIN'].includes(data.auth.role) && data.filteredProjects) {
-			let allProjectUsers = await filteredProjectsUsers(data)
-			if (allProjectUsers && allProjectUsers.data) {
-				findData._id = { $in: allProjectUsers.data.map(el => mongoose.Types.ObjectId(el)) }
-			}
-		}
+  try {
+    let roleFilter = ["SUPER_ADMIN"];
+    let findData = { isDeleted: false };
+    if (data.auth.role == "CONTRIBUTOR") {
+      roleFilter.push("LEAD");
+      roleFilter.push("ADMIN");
+    }
+    if (data.auth.role == "LEAD") {
+      roleFilter.push("ADMIN");
+    }
+    findData.role = { $nin: roleFilter };
+    if (data.userId) {
+      findData._id = mongoose.Types.ObjectId(data.userId);
+    }
+    if (data.userRating) {
+      findData._id = mongoose.Types.ObjectId(data.auth.id);
+    }
+    if (
+      !data.userRating &&
+      ["LEAD", "CONTRIBUTOR", "ADMIN"].includes(data.auth.role) &&
+      data.filteredProjects
+    ) {
+      let allProjectUsers = await filteredProjectsUsers(data);
+      if (allProjectUsers && allProjectUsers.data) {
+        findData._id = {
+          $in: allProjectUsers.data.map((el) => mongoose.Types.ObjectId(el)),
+        };
+      }
+    }
 
-		console.log("================find filter in year rating=============", roleFilter)
-		let payload = [
-			{ $match: findData },
-			{
-				$lookup: {
-					from: "ratings",
-					localField: "_id",
-					foreignField: "userId",
-					as: "ratings"
-				}
-			},
-			{ $unwind: { path: "$ratings", preserveNullAndEmptyArrays: true } },
-			{
-				$match: {
-					$or: [
-						{ ratings: { $exists: false } },
-						{
-							$and: [
-								{ "ratings.year": parseInt(data.year) }
-							]
-						}
-					]
-				}
-			},
-			{
-				$group: {
-					_id: "$_id",
-					name: { $first: "$name" },
-					email: { $first: "$email" },
-					ratings: { $push: "$ratings" },
-					monthlyAverages: {
-						$push: {
-							month: "$ratings.month",
-							avg: {
-								$avg: {
-									$ifNull: ["$ratings.rating", 0] // Handle missing ratings array or null values
-								}
-							}
-						}
-					}
-				}
-			},
-			{ $sort: { "name": 1, "ratings.date": 1 } },
-			{
-				$project: {
-					name: 1,
-					email: 1,
-					// ratings: 1,
-					monthlyAverages: 1,
-					yearlyAverage: {
-						$avg: "$monthlyAverages.avg"
-					}
-				}
-			}
-		];
+    console.log(
+      "================find filter in year rating=============",
+      roleFilter
+    );
+    let payload = [
+      { $match: findData },
+      {
+        $lookup: {
+          from: "ratings",
+          localField: "_id",
+          foreignField: "userId",
+          as: "ratings",
+        },
+      },
+      { $unwind: { path: "$ratings", preserveNullAndEmptyArrays: true } },
+      {
+        $match: {
+          $or: [
+            { ratings: { $exists: false } },
+            {
+              $and: [{ "ratings.year": parseInt(data.year) }],
+            },
+          ],
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          name: { $first: "$name" },
+          email: { $first: "$email" },
+          ratings: { $push: "$ratings" },
+          monthlyAverages: {
+            $push: {
+              month: "$ratings.month",
+              avg: {
+                $avg: {
+                  $ifNull: ["$ratings.rating", 0], // Handle missing ratings array or null values
+                },
+              },
+            },
+          },
+        },
+      },
+      { $sort: { name: 1, "ratings.date": 1 } },
+      {
+        $project: {
+          name: 1,
+          email: 1,
+          // ratings: 1,
+          monthlyAverages: 1,
+          yearlyAverage: {
+            $avg: "$monthlyAverages.avg",
+          },
+        },
+      },
+    ];
 
-		let ratingRes = await User.getAllUsersRatingForMonth(payload)
-		return { data: ratingRes, error: false }
-	} catch (error) {
-		console.log("getAllUsersRatingForYear Error: ", error)
-		return { data: error, error: true }
-	}
+    let ratingRes = await User.getAllUsersRatingForMonth(payload);
+    return { data: ratingRes, error: false };
+  } catch (error) {
+    console.log("getAllUsersRatingForYear Error: ", error);
+    return { data: error, error: true };
+  }
 };
 
 exports.getAllUsersRatingForYear = getAllUsersRatingForYear;
 
-
-
 const createPayloadAndGetComments = async function (data) {
-	try {
-		let payload = [
-			{
-				$match: { "_id": mongoose.Types.ObjectId(data.ratingId) }
-			},
-			{
-				$lookup: {
-					from: "comments",
-					localField: "comments",
-					foreignField: "_id",
-					as: "comments"
-				}
-			},
-			{ $unwind: "$comments" },
-			{
-				$lookup: {
-					from: "users",
-					localField: "comments.commentedBy",
-					foreignField: "_id",
-					as: "comments.commentedBy"
-				}
-			},
-			{ $sort: { "comments.createdAt": -1 } },
-			{ $project: { _id: 0, 'rating': "$rating", "comments.comment": 1, "comments._id": 1, "comments.createdAt": 1, "comments.commentedBy.name": 1, } }
-		]
-		let ratingRes = await Rating.applyAggregateOnRating(payload)
-		return { data: ratingRes, error: false }
-	} catch (error) {
-		console.log("createPayloadAndGetComments Error : ", error)
-		return { data: error, error: true }
-	}
-}
-exports.createPayloadAndGetComments = createPayloadAndGetComments
+  try {
+    let payload = [
+      {
+        $match: { _id: mongoose.Types.ObjectId(data.ratingId) },
+      },
+      {
+        $lookup: {
+          from: "comments",
+          localField: "comments",
+          foreignField: "_id",
+          as: "comments",
+        },
+      },
+      { $unwind: "$comments" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "comments.commentedBy",
+          foreignField: "_id",
+          as: "comments.commentedBy",
+        },
+      },
+      { $sort: { "comments.createdAt": -1 } },
+      {
+        $project: {
+          _id: 0,
+          rating: "$rating",
+          "comments.comment": 1,
+          "comments._id": 1,
+          "comments.createdAt": 1,
+          "comments.commentedBy.name": 1,
+        },
+      },
+    ];
+    let ratingRes = await Rating.applyAggregateOnRating(payload);
+    return { data: ratingRes, error: false };
+  } catch (error) {
+    console.log("createPayloadAndGetComments Error : ", error);
+    return { data: error, error: true };
+  }
+};
+exports.createPayloadAndGetComments = createPayloadAndGetComments;
 
 const getWeekRating = async (req, res, next) => {
-	let data = req.data;
+  let data = req.data;
 
-	let ratingRes = await createPayloadAndGetWeekRating(data)
-	if (ratingRes.error) {
-		return res.status(500).send(sendResponse(500, '', 'getMonthAllUserRating', null, req.data.signature))
-	}
-	return res.status(200).send(sendResponse(200, 'Weekly Ratings Fetched', 'getMonthAllUserRating', ratingRes.data, req.data.signature))
-}
-exports.getWeekRating = getWeekRating
+  let ratingRes = await createPayloadAndGetWeekRating(data);
+  if (ratingRes.error) {
+    return res
+      .status(500)
+      .send(
+        sendResponse(500, "", "getMonthAllUserRating", null, req.data.signature)
+      );
+  }
+  return res
+    .status(200)
+    .send(
+      sendResponse(
+        200,
+        "Weekly Ratings Fetched",
+        "getMonthAllUserRating",
+        ratingRes.data,
+        req.data.signature
+      )
+    );
+};
+exports.getWeekRating = getWeekRating;
 
 const createPayloadAndGetWeekRating = async function (data) {
-	try {
-		let payload = {
-			userId: data.auth.id,
-		}
-		let sortCriteria = {
-			date: 1
-		}
+  try {
+    let payload = {
+      userId: data.auth.id,
+    };
+    let sortCriteria = {
+      date: 1,
+    };
 
-		const currentDate = moment();
+    const currentDate = moment();
 
-		let weekCount = (data.previousWeek && data.weekCount) ? parseInt(data.weekCount) : 0;
+    let weekCount =
+      data.previousWeek && data.weekCount ? parseInt(data.weekCount) : 0;
 
-		const monday = currentDate.clone().startOf('week').subtract(weekCount, 'weeks')
+    const monday = currentDate
+      .clone()
+      .startOf("week")
+      .subtract(weekCount, "weeks");
 
-		const startDate = monday.format('DD');
-		const startMonth = monday.format('MM');
-		const startYear = monday.format('YY');
+    const startDate = monday.format("DD");
+    const startMonth = monday.format("MM");
+    const startYear = monday.format("YY");
 
-		const fullEndDate = monday.clone().add(6, 'days')
-		const endDate = monday.clone().add(6, 'days').format('DD');
-		const endMonth = monday.clone().add(6, 'days').format('MM');
-		const endYear = monday.clone().add(6, 'days').format('YY');
+    const fullEndDate = monday.clone().add(6, "days");
+    const endDate = monday.clone().add(6, "days").format("DD");
+    const endMonth = monday.clone().add(6, "days").format("MM");
+    const endYear = monday.clone().add(6, "days").format("YY");
 
-		console.log("Start date of the week: ", startDate, startMonth, startYear);
-		console.log("End date of the week: ", endDate, endMonth, endYear);
+    console.log("Start date of the week: ", startDate, startMonth, startYear);
+    console.log("End date of the week: ", endDate, endMonth, endYear);
 
-		const datesBetween = []
-		if (parseInt(endDate) < parseInt(startDate)) {
-			while (monday.isSameOrBefore(fullEndDate)) {
+    const datesBetween = [];
+    if (parseInt(endDate) < parseInt(startDate)) {
+      while (monday.isSameOrBefore(fullEndDate)) {
+        datesBetween.push(parseInt(monday.format("DD")));
+        monday.add(1, "days");
+      }
+      payload.date = { $in: datesBetween };
+      payload.month = { $in: [parseInt(startMonth), parseInt(endMonth)] };
+    } else {
+      payload.date = { $gte: parseInt(startDate), $lte: parseInt(endDate) };
+      payload.month = { $gte: parseInt(startMonth), $lte: parseInt(endMonth) };
+    }
+    payload.year = { $gte: parseInt(startYear), $lte: parseInt(endYear) };
 
-				datesBetween.push(parseInt(monday.format('DD')));
-				monday.add(1, 'days');
-			}
-			payload.date = { $in: datesBetween }
-			payload.month = { $in: [parseInt(startMonth), parseInt(endMonth)] }
-		} else {
+    let weeklyRating = await Rating.getUserRating(payload, {}, sortCriteria);
 
-			payload.date = { $gte: parseInt(startDate), $lte: parseInt(endDate) }
-			payload.month = { $gte: parseInt(startMonth), $lte: parseInt(endMonth) }
-		}
-		payload.year = { $gte: parseInt(startYear), $lte: parseInt(endYear) }
-
-		let weeklyRating = await Rating.getUserRating(payload, {}, sortCriteria)
-
-		return { data: weeklyRating, error: false }
-	} catch (error) {
-		console.log("createPayloadAndGetWeekRating Error : ", error)
-		return { data: error, error: true }
-	}
-}
+    return { data: weeklyRating, error: false };
+  } catch (error) {
+    console.log("createPayloadAndGetWeekRating Error : ", error);
+    return { data: error, error: true };
+  }
+};
 exports.createPayloadAndGetWeekRating = createPayloadAndGetWeekRating;
 
 const getRatingByDate = async (req, res, next) => {
-	let data = req.data;
+  let data = req.data;
 
-	if (data.date || data.month || data.year) {
-		return res.status(400).send(sendResponse(400, 'Missing params', 'getRatingByDate', null, req.data.signature))
-	}
-	let ratingRes = await createPayloadAndGetDayRating(data)
-	console.log(ratingRes)
-	if (ratingRes.error) {
-		return res.status(500).send(sendResponse(500, '', 'getRatingByDate', null, req.data.signature))
-	}
-	return res.status(200).send(sendResponse(200, 'Day Ratings Fetched', 'getMonthAllUserRating', ratingRes.data, req.data.signature))
-}
-exports.getRatingByDate = getRatingByDate
+  if (data.date || data.month || data.year) {
+    return res
+      .status(400)
+      .send(
+        sendResponse(
+          400,
+          "Missing params",
+          "getRatingByDate",
+          null,
+          req.data.signature
+        )
+      );
+  }
+  let ratingRes = await createPayloadAndGetDayRating(data);
+  console.log(ratingRes);
+  if (ratingRes.error) {
+    return res
+      .status(500)
+      .send(sendResponse(500, "", "getRatingByDate", null, req.data.signature));
+  }
+  return res
+    .status(200)
+    .send(
+      sendResponse(
+        200,
+        "Day Ratings Fetched",
+        "getMonthAllUserRating",
+        ratingRes.data,
+        req.data.signature
+      )
+    );
+};
+exports.getRatingByDate = getRatingByDate;
 
 const createPayloadAndGetDayRating = async function (data) {
-	try {
-		const day = data.date;
-		const month = data.month;
-		const year = data.year;
+  try {
+    const day = data.date;
+    const month = data.month;
+    const year = data.year;
 
-		let payload = {
-			userId: data.userId || data.auth.id,
-			date: day,
-			month: month,
-			year: year
-		}
+    let payload = {
+      userId: data.userId || data.auth.id,
+      date: day,
+      month: month,
+      year: year,
+    };
 
-		let populate = "taskIds"
-		populate = [
-			{
-				path: "taskIds"
-			},
-			{
-				path: "taskIds",
-				populate: {
-					path: "verificationComments"
-				}
-			}]
+    let populate = "taskIds";
+    populate = [
+      {
+        path: "taskIds",
+      },
+      {
+        path: "taskIds",
+        populate: {
+          path: "verificationComments",
+        },
+      },
+    ];
 
-
-		let dayRating = await Rating.findUserRatingAndPopulate(payload, {}, populate)
-		return { data: dayRating, error: false }
-	} catch (error) {
-		console.log("createPayloadAndGetWeekRating Error : ", error)
-		return { data: error, error: true }
-	}
-}
-exports.createPayloadAndGetDayRating = createPayloadAndGetDayRating
+    let dayRating = await Rating.findUserRatingAndPopulate(
+      payload,
+      {},
+      populate
+    );
+    return { data: dayRating, error: false };
+  } catch (error) {
+    console.log("createPayloadAndGetWeekRating Error : ", error);
+    return { data: error, error: true };
+  }
+};
+exports.createPayloadAndGetDayRating = createPayloadAndGetDayRating;
 
 const filteredDistinctProjectsUsers = async function (data) {
-	try {
+  try {
+    let field = "accessibleBy";
+    let payload = {
+      _id: { $in: data.filteredProjects || [] },
+    };
 
-
-		let field = 'accessibleBy'
-		let payload = {
-			_id: { $in: data.filteredProjects || [] }
-		}
-
-		let projectsUsers = await Project.distinctProjects(field, payload)
-		let allUsers = projectsUsers || []
-		allUsers.push(data.auth.id)
-		console.log("======================all users======", allUsers)
-		return { data: allUsers, error: false }
-	} catch (err) {
-		console.log("createPayloadAndEditUserDetails Error : ", err)
-		return { data: err, error: true }
-	}
-
-}
-exports.filteredDistinctProjectsUsers = filteredDistinctProjectsUsers
+    let projectsUsers = await Project.distinctProjects(field, payload);
+    let allUsers = projectsUsers || [];
+    allUsers.push(data.auth.id);
+    console.log("======================all users======", allUsers);
+    return { data: allUsers, error: false };
+  } catch (err) {
+    console.log("createPayloadAndEditUserDetails Error : ", err);
+    return { data: err, error: true };
+  }
+};
+exports.filteredDistinctProjectsUsers = filteredDistinctProjectsUsers;
 
 const filteredProjectsUsers = async function (data) {
-	try {
-
-		let pipeline = [
-			{
-				$group: {
-					_id: null,
-					users: { $push: { $concatArrays: ["$managedBy", "$accessibleBy"] } }
-				}
-			},
-			{
-				$project: {
-					_id: 0,
-					users: {
-						$reduce: {
-							input: "$users",
-							initialValue: [],
-							in: { $setUnion: ["$$value", "$$this"] }
-						}
-					}
-				}
-			}
-		]
-		let projectsUsers = await Project.projectAggregate(pipeline)
-		let allUsers = (projectsUsers && projectsUsers.length && projectsUsers[0].users) || []
-		allUsers.push(data.auth.id)
-		return { data: allUsers, error: false }
-	} catch (err) {
-		console.log("filteredProjectsUsers Error : ", err)
-		return { data: err, error: true }
-	}
-
-}
+  try {
+    let pipeline = [
+      {
+        $group: {
+          _id: null,
+          users: { $push: { $concatArrays: ["$managedBy", "$accessibleBy"] } },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          users: {
+            $reduce: {
+              input: "$users",
+              initialValue: [],
+              in: { $setUnion: ["$$value", "$$this"] },
+            },
+          },
+        },
+      },
+    ];
+    let projectsUsers = await Project.projectAggregate(pipeline);
+    let allUsers =
+      (projectsUsers && projectsUsers.length && projectsUsers[0].users) || [];
+    allUsers.push(data.auth.id);
+    return { data: allUsers, error: false };
+  } catch (err) {
+    console.log("filteredProjectsUsers Error : ", err);
+    return { data: err, error: true };
+  }
+};

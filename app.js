@@ -23,6 +23,7 @@ let swagger = require('swagger-node-express').createNew(app);
 
 const whitelistOrigin = [
     'http://localhost:3000',
+    'http://localhost:5174',
     'https://projects.ith.tech',
     'https://www.projects.ith.tech'
 ];
