@@ -921,7 +921,10 @@ const createPayloadAndGetGroupByTask = async function (data) {
 
 
 
+		console.time('total')
+		console.time('first')
 		let taskRes = await Project.projectAggregate(aggregate)
+		console.timeEnd('first')
 
 		let populate = []
 		if (data.groupBy == 'default') {
@@ -959,7 +962,10 @@ const createPayloadAndGetGroupByTask = async function (data) {
 			populate.push({ path: 'tasks.lead', model: 'users', select: 'name profilePicture' })
 		}
 
+		console.time('second')
 		let populatedRes = await Project.projectPopulate(taskRes, populate)
+		console.timeEnd('second')
+		console.timeEnd('total')
 		return { data: populatedRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndGetGroupByTask Error : ", err)
@@ -1992,7 +1998,7 @@ const createPayloadAndGetTaskComments = async function (data) {
 		}
 
 		if (data.dueDate) {
-			findData.dueDate = new Date(new Date().setUTCHours(18, 29, 59, 000))
+			findData.dueDate = new Date(new Date().setUTCHours(18, 29, 59, 0))
 		}
 
 		let populate = 'comments verificationComments'
@@ -2112,7 +2118,7 @@ exports.getAllUnassignedUsersList = getAllUnassignedUsersList;
 const createPayloadAndGetAllUnassignedUsers = async function (data) {
 	try {
 		let dateFilter = {};
-		const fromDate = new Date(new Date().setUTCHours(0, 0, 0, 000))
+		const fromDate = new Date(new Date().setUTCHours(0, 0, 0, 0))
 		console.log("fromDate", fromDate)
 		data.fromDate = fromDate;
 		dateFilter['$gte'] = new Date(data.fromDate)

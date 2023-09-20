@@ -542,26 +542,26 @@ const createPayloadAndgetAllProjects = async function (data) {
 			{
 				$match: findData
 			})
-		pipeline.push(
-			{
-				$lookup: {
-					from: "tasks",
-					let: { "projectId": "$_id" },
-					pipeline: [
-						{
-							$match: {
-								"$expr": {
-									$and: [
-										{ $eq: ["$isDeleted", false] },
-										{ $eq: ["$projectId", "$$projectId"] }
-									]
-								}
-							}
-						}
-					],
-					as: "tasks"
-				}
-			})
+		// pipeline.push(
+		// 	{
+		// 		$lookup: {
+		// 			from: "tasks",
+		// 			let: { "projectId": "$_id" },
+		// 			pipeline: [
+		// 				{
+		// 					$match: {
+		// 						"$expr": {
+		// 							$and: [
+		// 								{ $eq: ["$isDeleted", false] },
+		// 								{ $eq: ["$projectId", "$$projectId"] }
+		// 							]
+		// 						}
+		// 					}
+		// 				}
+		// 			],
+		// 			as: "tasks"
+		// 		}
+		// 	})
 
 			// pipeline.push({ "$unwind": { "path": "$tasks", preserveNullAndEmptyArrays: true } })
 		pipeline.push(
@@ -586,18 +586,35 @@ const createPayloadAndgetAllProjects = async function (data) {
 			},
 			)
 		// pipeline.push({ "$unwind": { "path": "$managedBy", preserveNullAndEmptyArrays: true } })
+		// pipeline.push(
+		// 	{
+		// 		$lookup: {
+		// 			from: "projectsections",
+		// 			localField: "sections",
+		// 			foreignField: "_id",
+		// 			as: "sections"
+		// 		}
+		// 	}
+			
+		// )
+		// pipeline.push({ "$unwind": { "path": "$sections", preserveNullAndEmptyArrays: true } })
 		pipeline.push(
 			{
-				$lookup: {
-					from: "projectsections",
-					localField: "sections",
-					foreignField: "_id",
-					as: "sections"
+				$project: {
+					'accessibleBy.profilePicture' : 1,
+					'accessibleBy.email' : 1,
+					'accessibleBy.name' : 1,
+					colorCode:1,
+					description:1,
+					createdAt:1,
+					updatedAt:1,
+					status:1,
+					description:1,
+					name:1,
+
 				}
 			}
-			
 		)
-		// pipeline.push({ "$unwind": { "path": "$sections", preserveNullAndEmptyArrays: true } })
 		pipeline.push(
 			{
 				$sort: {
@@ -606,7 +623,9 @@ const createPayloadAndgetAllProjects = async function (data) {
 			}
 		)
 
+		console.time('getAllProjects')
 		let projectRes = await Project.projectAggregate(pipeline)
+		console.timeEnd('getAllProjects')
 		return { data: projectRes, error: false }
 	} catch (err) {
 		console.log("createPayloadAndgetAllProjects Error : ", err)
@@ -1595,3 +1614,43 @@ const createPayloadAndfindSpecificProjectUsersForRating = async function (data) 
 		return { data: err, error: true }
 	}
 }
+
+const getProjectsList = async (req, res, next) => {
+	let data = req.data;
+
+	let projectRes = await createPayloadAndgetProjectsList(data)
+
+	if (projectRes.error || !projectRes.data) {
+		return res.status(500).send(sendResponse(500, '', 'getProjectsList', null, req.data.signature))
+	}
+	return res.status(200).send(sendResponse(200, 'Projects Fetched', 'getProjectsList', projectRes.data, req.data.signature))
+}
+exports.getProjectsList = getProjectsList;
+
+const createPayloadAndgetProjectsList = async function (data) {
+	try {
+
+		let findData = {
+			"isDeleted": false
+		}
+		
+		if(data.filteredProjects){
+			let filterProjects = data.filteredProjects.map(el=> mongoose.Types.ObjectId(el))
+			findData['_id'] = { $in : filterProjects}
+		}
+
+		// if (!['SUPER_ADMIN'].includes(data.auth.role)) {
+		// 	findData["$or"] = [
+		// 			{ accessibleBy: mongoose.Types.ObjectId(data.auth.id) },
+		// 			{ managedBy: mongoose.Types.ObjectId(data.auth.id) },
+		// 		]
+		// }
+
+		let projectRes = await Project.getAllProjects(findData,{name:1,description:1,updatedAt:1},{updatedAt:-1},'_id')
+		return { data: projectRes, error: false }
+	} catch (err) {
+		console.log("createPayloadAndgetProjectsList Error : ", err)
+		return { data: err, error: true }
+	}
+}
+exports.createPayloadAndgetProjectsList = createPayloadAndgetProjectsList;
