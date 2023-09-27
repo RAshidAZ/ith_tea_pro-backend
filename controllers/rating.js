@@ -597,6 +597,15 @@ const getAllUsersRatingForMonth = async function (data) {
         },
       },
       { $unwind: { path: "$ratings", preserveNullAndEmptyArrays: true } },
+	  {
+		$lookup: {
+			from: "comments",
+			localField: "ratings.comments",
+			foreignField: "_id",			
+			as: "ratings.comments",
+		  },
+
+	  },
       {
         $group: {
           _id: "$_id",
@@ -619,6 +628,9 @@ const getAllUsersRatingForMonth = async function (data) {
           "ratings.year": 1,
           "ratings.taskIds": 1,
           "ratings.absent": 1,
+          "ratings.comments": 1,
+
+
           monthlyAverage: {
             $avg: {
               $map: {
