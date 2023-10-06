@@ -24,6 +24,7 @@ const whitelistOrigin = [
   "https://projects.ith.tech",
   "https://www.projects.ith.tech",
 ];
+
 app.use(
   cors({
     credentials: true,
