@@ -14,7 +14,6 @@ const bodyParser = require("body-parser");
 const helmet = require("helmet");
 const cors = require("cors");
 const device = require("express-device");
-const compression = require("compression");
 const app = express();
 let swagger = require("swagger-node-express").createNew(app);
 
@@ -130,10 +129,6 @@ app.set("trust proxy", true);
 const formatRequest = require("./helpers/formatRequest");
 app.use(formatRequest);
 
-const zipResponseMiddleware = require("./middlewares/zipMiddleware");
-// Use the middleware globally (before defining routes)
-app.use(zipResponseMiddleware);
-
 const comment = require("./routes/comment");
 const rating = require("./routes/rating");
 const task = require("./routes/task");
@@ -143,16 +138,6 @@ const project = require("./routes/project");
 const projectLogs = require("./routes/projectLogs");
 const analytics = require("./routes/analytics");
 const taskLogs = require("./routes/taskLogs");
-
-// Enable GZIP compression middleware
-// app.use((req, res, next) => {
-//     res.setHeader('Content-Encoding', 'gzip');
-//     res.setHeader('Vary', 'Accept-Encoding');
-//     const gzip = zlib.createGzip();
-//     gzip.pipe(res);
-//     req.pipe(gzip);
-//     next();
-//   });
 
 app.use("/rating", rating);
 app.use("/comment", comment);
@@ -164,7 +149,6 @@ app.use("/projectlogs", projectLogs);
 app.use("/tasklogs", taskLogs);
 app.use("/analytics", analytics);
 const auth = require("./routes/auth");
-const zlib = require("zlib");
 
 app.use("/rating", rating);
 app.use("/auth", auth);
