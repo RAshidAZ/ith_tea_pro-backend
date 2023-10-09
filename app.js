@@ -16,7 +16,6 @@ const cors = require("cors");
 const device = require("express-device");
 const app = express();
 let swagger = require("swagger-node-express").createNew(app);
-const compression = require('compression');
 
 const whitelistOrigin = [
   "http://localhost:3000",
@@ -130,9 +129,6 @@ app.set("trust proxy", true);
 
 const formatRequest = require("./helpers/formatRequest");
 app.use(formatRequest);
-
-// Apply the compression middleware to all routes
-app.use(compression());
 
 const comment = require("./routes/comment");
 const rating = require("./routes/rating");
